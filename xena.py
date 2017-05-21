@@ -52,7 +52,7 @@ def xena_matrix_update_RNA(file_dict, init_matrix = pd.DataFrame()):
 def main():
     """The main pipeline for importing GDC data into Xena.
     """
-    
+
     label_field = 'cases.samples.portions.analytes.aliquots.submitter_id'
     data_type_tuples = [('Gene Expression Quantification', 'HTSeq - Counts'),
                         ('Gene Expression Quantification', 'HTSeq - FPKM'),
