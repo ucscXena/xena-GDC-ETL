@@ -4,13 +4,10 @@
 from __future__ import division
 from __future__ import print_function
 
-import gzip
 import json
 import os.path
 import sys
-import timeit
 
-import numpy as np
 import pandas as pd
 import requests
 
@@ -102,7 +99,7 @@ def download_data(ids_dict, dir_path="", rename_ext_num=1):
     file_count = 0
     data_endpt = '{}/data/'.format(GDC_API_BASE)
     chunk_size = 1024
-    status = '\r[{{}}/{:d}] Downloading "{{}}": {{:3.0%}}'.format(total_count)
+    status = '\r[{{}}/{:d}] Download "{{}}": {{:3.0%}}'.format(total_count)
     file_dict = {}
     print('Download data to "{}"'.format(os.path.abspath(dir_path)))
     
@@ -133,44 +130,8 @@ def download_data(ids_dict, dir_path="", rename_ext_num=1):
                           end='')
                     sys.stdout.flush()
                 file_dict[key] = os.path.abspath(file_path)
-        print('\r[{}/{}] "{}" downloaded.      '.format(str(file_count),
-                                                        str(total_count), 
-                                                        file_name))
+        print('')
     return file_dict
-
-def xena_matrix_update_RNA(file_dict, init_matrix = pd.DataFrame()):
-    """Data transformation and assembly for RNAseq data
-    
-    Args:
-        file_dict: A dict of file path.
-        init_matrix: A matrix to be updated with new data.
-    Returns:
-        A pandas data frame for updated data matrix.
-    """
-    # TODO: Move to a separated module.
-    # TODO: Name/Doc the function with its actual functionality so that it 
-    #       doesn't has to be restricted to a specific data type?
-    
-    total_files = len(file_dict)
-    new_matrix = init_matrix
-    i = 0
-    for key in file_dict:
-        i = i + 1
-        print('\rProcessing {}/{} file ...'.format(i, total_files), end='')
-        with gzip.open(file_dict[key], 'r') as f:
-            raw_col = pd.read_table(f, 
-                                    sep='\t', 
-                                    header=None, 
-                                    names=[key], 
-                                    index_col=0)
-            transformed_col = np.log2(raw_col + 1)
-            new_matrix = new_matrix.merge(transformed_col, 
-                                          how='outer', 
-                                          left_index=True, 
-                                          right_index=True)
-    print('\rAll {} files have been processed. '.format(total_files), end='')
-    print('Data Transformation done.')
-    return new_matrix
 
 def label_files(uuids, label_field):
     """Query GDC with files' UUIDs for a proper sample label.
@@ -195,8 +156,8 @@ def label_files(uuids, label_field):
               'fields':'file_id,{}'.format(label_field),
               'size':len(uuids)}
     response = requests.post(files_endpt, data=params)
+    uuids_dict = {}
     if response.status_code == 200:
-        uuids_dict = {}
         for hit in response.json()['data']['hits']:
             label = hit[label_key]
             while isinstance(label, list) or isinstance(label, dict):
@@ -207,26 +168,51 @@ def label_files(uuids, label_field):
             uuids_dict[label] = hit['file_id']
     return uuids_dict
 
+def get_all_case_ids():
+    """Collect selected information for all cases on GDC
+    """
+    
+    cases_endpt = '{}/cases'.format(GDC_API_BASE)
+    fields_list = ['case_id',
+                   'project.project_id',
+                   'project.primary_site',
+                   'project.disease_type',
+                   'submitter_id']
+    expand_list = ['demographic',
+                   'diagnoses']
+    size = 10
+    params = {'fields':','.join(fields_list), 
+              'expand':','.join(expand_list),
+              'size':size}
+    cur_page = 0
+    total_pages = 1
+    cases_dataframe = pd.DataFrame()
+    while (total_pages > cur_page):
+        from_record = size * cur_page + 1
+        params['from'] = from_record
+        cases_r = requests.post(cases_endpt, data=params)
+        cur_page = cases_r.json()['data']['pagination']['page']
+        total_pages = cases_r.json()['data']['pagination']['pages']
+        print('\rProcessing page {}/{}...'.format(cur_page, total_pages), 
+              end='')
+        for hit in cases_r.json()['data']['hits']:
+            case_id = hit['case_id']
+            case_record = {}
+            if 'diagnoses' in hit:
+                case_record.update(hit['diagnoses'][0])
+            if 'demographic' in hit:
+                case_record.update(hit['demographic'])
+            if 'project' in hit:
+                case_record.update(hit['project'])
+            case_record['submitter_id'] = hit['submitter_id']
+            case_df = pd.DataFrame.from_dict({case_id: case_record},
+                                             orient='index')
+            cases_dataframe = cases_dataframe.append(case_df)
+    cases_dataframe.to_csv('cases.tsv', sep='\t')
+
 def main():
-    start_time = timeit.default_timer()
-    print('Script starts')
-    query_test = {'cases.project.project_id': 'TCGA-BRCA',
-                  'data_category': 'Transcriptome Profiling',
-                  'files.analysis.workflow_type': 'HTSeq - FPKM-UQ'}
-
-    file_ids_list = get_files_uuids(and_eq_filter_constructor(query_test))
-
-    label_field = 'cases.samples.portions.analytes.aliquots.submitter_id'
-    file_ids_dict = label_files(file_ids_list, label_field)
-
-    print('Start to download at {} sec.'.format(timeit.default_timer() - start_time))
-    file_dict = download_data(file_ids_dict, rename_ext_num=3)
-    print('Download finishes at {} sec.'.format(timeit.default_timer() - start_time))
-
-    test = xena_matrix_update_RNA(file_dict)
-    print('Data transformation finishes at {} sec.'.format(timeit.default_timer() - start_time))
-    test.to_csv('test.tsv', sep='\t')
-    print('Script finishes at {} sec.'.format(timeit.default_timer() - start_time))
+    print('A simple python module for GDC API functionality.')
+    #get_all_case_ids()
 
 if __name__ == '__main__':
     main()
