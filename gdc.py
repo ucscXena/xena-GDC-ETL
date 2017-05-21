@@ -14,7 +14,7 @@ import requests
 GDC_API_BASE = 'https://api.gdc.cancer.gov'
 
 def get_all_project_ids():
-    """Get project ids for all projects in GDC
+    """Get project ids for all projects on GDC.
     
     Return: A list of project id for all projects in GDC
     """
@@ -29,7 +29,7 @@ def get_all_project_ids():
     return [p['project_id'] for p in projects_list]
 
 def get_files_uuids(query_filter):
-    """Get a list of file UUIDs matching query conditions
+    """Get UUIDs for files matching query conditions.
     
     Args:
         query_filter: A dict for query conditions conforming to GDC API's 
@@ -49,7 +49,8 @@ def get_files_uuids(query_filter):
     return [f['file_id'] for f in files_list]
 
 def and_eq_filter_constructor(filter_dict):
-    """ A simple constructor for GDC API's query filter
+    """ A simple constructor converting a query dictionary into GDC API 
+    specific filters.
     
     Convert a diction of query condition into a diction conforming to GDC 
     API's format. Conditions in the input dict will be combined together with 
@@ -72,7 +73,7 @@ def and_eq_filter_constructor(filter_dict):
     return {"op":"and", "content":operands_list}
 
 def download_data(ids_dict, dir_path="", rename_ext_num=1):
-    """Download GDC open access files
+    """Download open access data from GDC according to input UUIDs.
     
     Use GDC's data endpoint to download open access files stored in the GDC by 
     specifying file UUID(s). UUID(s) should be provided as a list of string. 
@@ -134,13 +135,16 @@ def download_data(ids_dict, dir_path="", rename_ext_num=1):
     return file_dict
 
 def label_files(uuids, label_field):
-    """Query GDC with files' UUIDs for a proper sample label.
+    """Label a list of file UUIDs with their corresponding field of selection. 
+    
+    Query GDC with files' UUIDs for proper sample labels, such as their 
+    corresponding "aliquots.submitter_id".
     
     Args:
         uuids: A list of UUIDs for data files to be labeled.
         label_field: A single GDC available file field whose value will be 
             used as the sample label.
-    Return: A dict where each value is one input UUID and the key is the
+    Return: A dict where each value is one input UUID with its key being the
         corresponding label.
     """
     
@@ -168,8 +172,8 @@ def label_files(uuids, label_field):
             uuids_dict[label] = hit['file_id']
     return uuids_dict
 
-def get_all_case_ids():
-    """Collect selected information for all cases on GDC
+def get_all_case_info():
+    """Get some basic information for all cases on GDC.
     """
     
     cases_endpt = '{}/cases'.format(GDC_API_BASE)
@@ -187,6 +191,8 @@ def get_all_case_ids():
     cur_page = 0
     total_pages = 1
     cases_dataframe = pd.DataFrame()
+    # Cases Endpoint on GDC fail to handle big size query; have to iterate 
+    # over pages.
     while (total_pages > cur_page):
         from_record = size * cur_page + 1
         params['from'] = from_record
@@ -196,23 +202,28 @@ def get_all_case_ids():
         print('\rProcessing page {}/{}...'.format(cur_page, total_pages), 
               end='')
         for hit in cases_r.json()['data']['hits']:
-            case_id = hit['case_id']
             case_record = {}
             if 'diagnoses' in hit:
-                case_record.update(hit['diagnoses'][0])
+                case_record.update({('diagnoses', key): value 
+                                    for key, value 
+                                    in hit['diagnoses'][0].items()})
             if 'demographic' in hit:
-                case_record.update(hit['demographic'])
+                case_record.update({('demographic', key): value 
+                                    for key, value 
+                                    in hit['demographic'].items()})
             if 'project' in hit:
-                case_record.update(hit['project'])
-            case_record['submitter_id'] = hit['submitter_id']
-            case_df = pd.DataFrame.from_dict({case_id: case_record},
-                                             orient='index')
+                case_record.update({('project', key): value 
+                                    for key, value 
+                                    in hit['project'].items()})
+            case_record[('cases', 'submitter_id')] = hit['submitter_id']
+            case_df = pd.DataFrame(case_record, 
+                                   index=[hit['case_id']]).sort_index(axis=1)
             cases_dataframe = cases_dataframe.append(case_df)
     cases_dataframe.to_csv('cases.tsv', sep='\t')
 
 def main():
     print('A simple python module for GDC API functionality.')
-    #get_all_case_ids()
+    #get_all_case_info()
 
 if __name__ == '__main__':
     main()

@@ -13,7 +13,8 @@ import pandas as pd
 import gdc
 
 def xena_matrix_update_RNA(file_dict, init_matrix = pd.DataFrame()):
-    """Data transformation and assembly for RNAseq data
+    """Transformation (log2(x+1)) and data matrix assembly for RNA-seq data 
+    (HTSeq - Counts, HTSeq - FPKM and HTSeq - FPKM-UQ).
     
     Args:
         file_dict: A dict of file path, with the key being sample label and 
@@ -24,7 +25,6 @@ def xena_matrix_update_RNA(file_dict, init_matrix = pd.DataFrame()):
     Returns:
         A Pandas DataFrame for Xena matrix.
     """
-    # TODO: Move to a separated module.
     # TODO: Name/Doc the function with its actual functionality so that it 
     #       doesn't has to be restricted to a specific data type?
     
@@ -50,6 +50,9 @@ def xena_matrix_update_RNA(file_dict, init_matrix = pd.DataFrame()):
     return new_matrix
 
 def main():
+    """The main pipeline for importing GDC data into Xena.
+    """
+    
     label_field = 'cases.samples.portions.analytes.aliquots.submitter_id'
     data_type_tuples = [('Gene Expression Quantification', 'HTSeq - Counts'),
                         ('Gene Expression Quantification', 'HTSeq - FPKM'),
@@ -58,7 +61,6 @@ def main():
     project_ids_list = gdc.get_all_project_ids()
     # Remove the line below to get RNA-Seq data for all 39 projects on GDC.
     project_ids_list = ['TCGA-BRCA']
-    project_ids_list = ['TARGET-OS']
 
     start_time = timeit.default_timer()
     for project_id in project_ids_list:
