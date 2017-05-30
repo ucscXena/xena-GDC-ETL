@@ -11,7 +11,8 @@ import sys
 import pandas as pd
 import requests
 
-GDC_API_BASE = 'https://api.gdc.cancer.gov'
+_GDC_API_BASE = 'https://api.gdc.cancer.gov'
+_SUPPORTED_FILE_TYPES = {'xml', 'txt', 'tar', 'gz', 'md5', 'xlsx', 'xls'}
 
 def get_all_project_ids():
     """Get project ids for all projects on GDC.
@@ -19,7 +20,7 @@ def get_all_project_ids():
     Return: A list of project id for all projects in GDC
     """
     
-    projects_endpt = '{}/projects'.format(GDC_API_BASE)
+    projects_endpt = '{}/projects'.format(_GDC_API_BASE)
     projects_r = requests.get(projects_endpt)
     total_projects = projects_r.json()['data']['pagination']['total']
     url = '{}?size={}&fields=project_id'.format(projects_endpt, 
@@ -39,7 +40,7 @@ def get_files_uuids(query_filter):
     Return: A list of file UUIDs matching query conditions
     """
     
-    files_endpt = '{}/files'.format(GDC_API_BASE)
+    files_endpt = '{}/files'.format(_GDC_API_BASE)
     params = {'filters':json.dumps(query_filter), 'fields':'file_id'}
     files_r = requests.post(files_endpt, data=params)
     size = files_r.json()['data']['pagination']['total']
@@ -72,7 +73,7 @@ def and_eq_filter_constructor(filter_dict):
                                                    "value":filter_dict[key]}})
     return {"op":"and", "content":operands_list}
 
-def download_data(ids_dict, dir_path="", rename_ext_num=1):
+def download_data(ids_dict, dir_path=""):
     """Download open access data from GDC according to input UUIDs.
     
     Use GDC's data endpoint to download open access files stored in the GDC by 
@@ -84,9 +85,6 @@ def download_data(ids_dict, dir_path="", rename_ext_num=1):
             UUIDs. Keys will be used in return dict.
         dir_path: Optinal. A string for downloading directory. Default 
             download directory is the current working directory.
-        rename_ext_num: Optional. An int specify how many file name extensions 
-            should be kept when renaming is required for name collision. 
-            Default is to keep one last extension.
     Returns:
         A dict of absolute paths for downloaded files. Keys are corresponding
         keys in the input ids_list.
@@ -98,7 +96,7 @@ def download_data(ids_dict, dir_path="", rename_ext_num=1):
     
     total_count = len(ids_dict)
     file_count = 0
-    data_endpt = '{}/data/'.format(GDC_API_BASE)
+    data_endpt = '{}/data/'.format(_GDC_API_BASE)
     chunk_size = 1024
     status = '\r[{{}}/{:d}] Download "{{}}": {{:3.0%}}'.format(total_count)
     file_dict = {}
@@ -111,14 +109,14 @@ def download_data(ids_dict, dir_path="", rename_ext_num=1):
         if response.status_code == 200:
             # Assume file name provided in the response header.
             content_disp = response.headers['Content-Disposition']
-            file_name = content_disp[content_disp.find('filename=') + 9:]
-            file_path = os.path.join(dir_path, file_name)
-            # Handle file name collision
-            if os.path.isfile(file_path):
-                file_name_split = file_name.rsplit('.', rename_ext_num)
-                file_name_split[0] = ids_dict[key]
-                file_name = ".".join(file_name_split)
-                file_path = os.path.join(dir_path, file_name)
+            gdc_file_name = content_disp[content_disp.find('filename=') + 9:]
+            # https://github.com/broadinstitute/gdctools/blob/master/gdctools/lib/meta.py
+            name_list = gdc_file_name.split('.')
+            for i in range(len(name_list)):
+                if name_list[i] in _SUPPORTED_FILE_TYPES:
+                    break
+            download_file_name = '.'.join([key, ids_dict[key]] + name_list[i:])
+            file_path = os.path.join(dir_path, download_file_name)
             # Assume file size provided in the response header.
             file_size = int(response.headers['Content-Length'])
             with open(file_path, 'wb') as file:
@@ -126,7 +124,7 @@ def download_data(ids_dict, dir_path="", rename_ext_num=1):
                     file.write(chunk)
                     downloaded = downloaded + chunk_size
                     print(status.format(file_count, 
-                                        file_name, 
+                                        download_file_name, 
                                         downloaded/file_size), 
                           end='')
                     sys.stdout.flush()
@@ -149,7 +147,7 @@ def label_files(uuids, label_field):
     """
     
     label_key = label_field.split('.', 1)[0]
-    files_endpt = '{}/files'.format(GDC_API_BASE)
+    files_endpt = '{}/files'.format(_GDC_API_BASE)
     file_ids_filter = {"op":"in",
                        "content":{
                                "field":"file_id",
@@ -176,7 +174,7 @@ def get_all_case_info():
     """Get some basic information for all cases on GDC.
     """
     
-    cases_endpt = '{}/cases'.format(GDC_API_BASE)
+    cases_endpt = '{}/cases'.format(_GDC_API_BASE)
     fields_list = ['case_id',
                    'project.project_id',
                    'project.primary_site',
