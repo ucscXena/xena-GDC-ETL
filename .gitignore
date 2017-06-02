@@ -1,6 +1,7 @@
 # Repository specific files #
 #############################
 *.tsv
+gitignore/
 
 # Compiled source #
 ###################
