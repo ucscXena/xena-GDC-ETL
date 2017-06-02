@@ -29,6 +29,54 @@ def get_all_project_ids():
     projects_list = projects_r.json()['data']['hits']
     return [p['project_id'] for p in projects_list]
 
+def get_file_dict(query_filter, sample_label_field=None, rename=True):
+    """Get a dictionary of files matching query conditions.
+    
+    Args:
+        query_filter: A dict for query conditions conforming to GDC API's 
+            query format. See:
+            https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query
+        sample_label_field: A single GDC available file field whose value will 
+            be used as the sample label.
+        rename: A boolean. Default is true. When true, the file name will be 
+            rename as "uuid.xena_label.file_type".
+        
+    Return: A dict of files matching query conditions.
+    """
+    
+    files_endpt = '{}/files'.format(_GDC_API_BASE)
+    params = {'filters':json.dumps(query_filter), 'size':1}
+    if sample_label_field is None:
+        params['fields'] = 'file_id,file_name'
+    else:
+        params['fields'] = 'file_id,file_name,{}'.format(sample_label_field)
+    response = requests.post(files_endpt, data=params)
+    params['size'] = response.json()['data']['pagination']['total']
+    response = requests.get(files_endpt, params=params)
+
+    file_dict = {}
+    if response.status_code == 200:
+        if sample_label_field is None:
+            root_field_group = 'file_id'
+        else:
+            root_field_group = sample_label_field.split('.', 1)[0]
+        for hit in response.json()['data']['hits']:
+            label = hit[root_field_group]
+            while isinstance(label, list) or isinstance(label, dict):
+                if isinstance(label, list):
+                    label = label[0]
+                elif isinstance(label, dict):
+                    label = label.values()
+            file_id = hit['file_id']
+            # https://github.com/broadinstitute/gdctools/blob/master/gdctools/lib/meta.py
+            name_list = hit['file_name'].split('.')
+            for i in range(len(name_list)):
+                if name_list[i] in _SUPPORTED_FILE_TYPES:
+                    break
+            file_name = '.'.join([label, file_id] + name_list[i:])
+            file_dict[file_id] = file_name
+    return file_dict
+
 def get_files_uuids(query_filter):
     """Get UUIDs for files matching query conditions.
     
@@ -37,7 +85,7 @@ def get_files_uuids(query_filter):
             query format. See:
             https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query
         
-    Return: A list of file UUIDs matching query conditions
+    Return: A list of file UUIDs matching query conditions.
     """
     
     files_endpt = '{}/files'.format(_GDC_API_BASE)
@@ -72,6 +120,54 @@ def and_eq_filter_constructor(filter_dict):
         operands_list.append({"op":"=", "content":{"field":key,
                                                    "value":filter_dict[key]}})
     return {"op":"and", "content":operands_list}
+
+def new_download_data(ids, dir_path=""):
+    if isinstance(ids, str):
+        id_dict = {ids: None}
+    elif isinstance(ids, list):
+        id_dict = dict(zip(ids, [None] * len(ids)))
+    elif isinstance(ids, dict):
+        id_dict = ids
+    else:
+        error_message = 'Wrong input type: ids={} {}'.format(ids, type(ids))
+        raise Exception(error_message)
+    total_count = len(id_dict)
+    file_count = 0
+    data_endpt = '{}/data/'.format(_GDC_API_BASE)
+    chunk_size = 1024
+    file_dict = {}
+    status = '\r[{{}}/{:d}] Download "{{}}": {{:3.0%}}'.format(total_count)
+    print('Download data to "{}"'.format(os.path.abspath(dir_path)))
+    
+    # Decide to download files one by one because multiple file downloading 
+    # through GDC's API doesn't give file size which make download progress 
+    # report impossible.
+    for uuid in id_dict:
+        file_count = file_count + 1
+        downloaded = 0
+        response = requests.get(data_endpt + uuid, stream=True)
+        if response.status_code == 200:
+            if id_dict[uuid] is None:
+                # Assume file name provided in the response header.
+                content_disp = response.headers['Content-Disposition']
+                file_name = content_disp[content_disp.find('filename=') + 9:]
+            else:
+                file_name = id_dict[uuid]
+            file_path = os.path.join(dir_path, file_name)
+            # Assume file size provided in the response header.
+            file_size = int(response.headers['Content-Length'])
+            with open(file_path, 'wb') as file:
+                for chunk in response.iter_content(chunk_size):
+                    file.write(chunk)
+                    downloaded = downloaded + chunk_size
+                    print(status.format(file_count, 
+                                        file_name, 
+                                        downloaded/file_size), 
+                          end='')
+                    sys.stdout.flush()
+                file_dict[uuid] = os.path.abspath(file_path)
+        print('')
+    return file_dict
 
 def download_data(ids_dict, dir_path=""):
     """Download open access data from GDC according to input UUIDs.
