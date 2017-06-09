@@ -5,100 +5,29 @@ from __future__ import division
 from __future__ import print_function
 
 import json
-import os.path
 import sys
 
-import pandas as pd
 import requests
 
 _GDC_API_BASE = 'https://api.gdc.cancer.gov'
 _SUPPORTED_FILE_TYPES = {'xml', 'txt', 'tar', 'gz', 'md5', 'xlsx', 'xls'}
-
-def get_all_project_ids():
-    """Get project ids for all projects on GDC.
-    
-    Return: A list of project id for all projects in GDC
-    """
-    
-    projects_endpt = '{}/projects'.format(_GDC_API_BASE)
-    projects_r = requests.get(projects_endpt)
-    total_projects = projects_r.json()['data']['pagination']['total']
-    url = '{}?size={}&fields=project_id'.format(projects_endpt, 
-                                                total_projects)
-    projects_r = requests.get(url)
-    projects_list = projects_r.json()['data']['hits']
-    return [p['project_id'] for p in projects_list]
-
-def get_file_dict(query_filter, sample_label_field=None, rename=True):
-    """Get a dictionary of files matching query conditions.
-    
-    Args:
-        query_filter: A dict for query conditions conforming to GDC API's 
-            query format. See:
-            https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query
-        sample_label_field: A single GDC available file field whose value will 
-            be used as the sample label.
-        rename: A boolean. Default is true. When true, the file name will be 
-            rename as "uuid.xena_label.file_type".
-        
-    Return: A dict of files matching query conditions.
-    """
-    
-    files_endpt = '{}/files'.format(_GDC_API_BASE)
-    params = {'filters':json.dumps(query_filter), 'size':1}
-    if sample_label_field is None:
-        params['fields'] = 'file_id,file_name'
-    else:
-        params['fields'] = 'file_id,file_name,{}'.format(sample_label_field)
-    response = requests.post(files_endpt, data=params)
-    params['size'] = response.json()['data']['pagination']['total']
-    response = requests.get(files_endpt, params=params)
-
-    file_dict = {}
-    if response.status_code == 200:
-        if sample_label_field is None:
-            root_field_group = 'file_id'
-        else:
-            root_field_group = sample_label_field.split('.', 1)[0]
-        for hit in response.json()['data']['hits']:
-            label = hit[root_field_group]
-            while isinstance(label, list) or isinstance(label, dict):
-                if isinstance(label, list):
-                    label = label[0]
-                elif isinstance(label, dict):
-                    label = label.values()
-            file_id = hit['file_id']
-            # https://github.com/broadinstitute/gdctools/blob/master/gdctools/lib/meta.py
-            name_list = hit['file_name'].split('.')
-            for i in range(len(name_list)):
-                if name_list[i] in _SUPPORTED_FILE_TYPES:
-                    break
-            file_name = '.'.join([label, file_id] + name_list[i:])
-            file_dict[file_id] = file_name
-    return file_dict
-
-def get_files_uuids(query_filter):
-    """Get UUIDs for files matching query conditions.
-    
-    Args:
-        query_filter: A dict for query conditions conforming to GDC API's 
-            query format. See:
-            https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query
-        
-    Return: A list of file UUIDs matching query conditions.
-    """
-    
-    files_endpt = '{}/files'.format(_GDC_API_BASE)
-    params = {'filters':json.dumps(query_filter), 'fields':'file_id'}
-    files_r = requests.post(files_endpt, data=params)
-    size = files_r.json()['data']['pagination']['total']
-    params['size'] = size
-    files_r = requests.get(files_endpt, params=params)
-    files_list = files_r.json()['data']['hits']
-    return [f['file_id'] for f in files_list]
+_SUPPORTED_DATASETS = [{'data_type': 'Copy Number Segment'},
+                       {'data_type': 'Masked Copy Number Segment'},
+                       {'data_type': 'Isoform Expression Quantification'},
+                       {'data_type': 'miRNA Expression Quantification'},
+                       {'data_type': 'Methylation Beta Value'},
+                       {'analysis.workflow_type': 'HTSeq - Counts'},
+                       {'analysis.workflow_type': 'HTSeq - FPKM'},
+                       {'analysis.workflow_type': 'HTSeq - FPKM-UQ'},
+                       {'analysis.workflow_type': 'MuSE Variant Aggregation and Masking'},
+                       {'analysis.workflow_type': 'MuTect2 Variant Aggregation and Masking'},
+                       {'analysis.workflow_type': 'SomaticSniper Variant Aggregation and Masking'},
+                       {'analysis.workflow_type': 'VarScan2 Variant Aggregation and Masking'},
+                       {'data_type': 'Biospecimen Supplement'},
+                       {'data_type': 'Clinical Supplement'}]
 
 def and_eq_filter_constructor(filter_dict):
-    """ A simple constructor converting a query dictionary into GDC API 
+    """A simple constructor converting a query dictionary into GDC API 
     specific filters.
     
     Convert a diction of query condition into a diction conforming to GDC 
@@ -121,203 +50,118 @@ def and_eq_filter_constructor(filter_dict):
                                                    "value":filter_dict[key]}})
     return {"op":"and", "content":operands_list}
 
-def new_download_data(ids, dir_path=""):
-    if isinstance(ids, str):
-        id_dict = {ids: None}
-    elif isinstance(ids, list):
-        id_dict = dict(zip(ids, [None] * len(ids)))
-    elif isinstance(ids, dict):
-        id_dict = ids
-    else:
-        error_message = 'Wrong input type: ids={} {}'.format(ids, type(ids))
-        raise Exception(error_message)
-    total_count = len(id_dict)
-    file_count = 0
-    data_endpt = '{}/data/'.format(_GDC_API_BASE)
-    chunk_size = 1024
-    file_dict = {}
-    status = '\r[{{}}/{:d}] Download "{{}}": {{:3.0%}}'.format(total_count)
-    print('Download data to "{}"'.format(os.path.abspath(dir_path)))
-    
-    # Decide to download files one by one because multiple file downloading 
-    # through GDC's API doesn't give file size which make download progress 
-    # report impossible.
-    for uuid in id_dict:
-        file_count = file_count + 1
-        downloaded = 0
-        response = requests.get(data_endpt + uuid, stream=True)
-        if response.status_code == 200:
-            if id_dict[uuid] is None:
-                # Assume file name provided in the response header.
-                content_disp = response.headers['Content-Disposition']
-                file_name = content_disp[content_disp.find('filename=') + 9:]
-            else:
-                file_name = id_dict[uuid]
-            file_path = os.path.join(dir_path, file_name)
-            # Assume file size provided in the response header.
-            file_size = int(response.headers['Content-Length'])
-            with open(file_path, 'wb') as file:
-                for chunk in response.iter_content(chunk_size):
-                    file.write(chunk)
-                    downloaded = downloaded + chunk_size
-                    print(status.format(file_count, 
-                                        file_name, 
-                                        downloaded/file_size), 
-                          end='')
-                    sys.stdout.flush()
-                file_dict[uuid] = os.path.abspath(file_path)
-        print('')
-    return file_dict
-
-def download_data(ids_dict, dir_path=""):
-    """Download open access data from GDC according to input UUIDs.
-    
-    Use GDC's data endpoint to download open access files stored in the GDC by 
-    specifying file UUID(s). UUID(s) should be provided as a list of string. 
-    Files will be "GET" from GDC one by one with progress information.
+def get_file_dict(query_filter, label_field=None, label_func=None):
+    """Get a dictionary of files matching query conditions.
     
     Args:
-        ids_list: A dict of UUIDs for files to be downloaded. Values are 
-            UUIDs. Keys will be used in return dict.
-        dir_path: Optinal. A string for downloading directory. Default 
-            download directory is the current working directory.
-    Returns:
-        A dict of absolute paths for downloaded files. Keys are corresponding
-        keys in the input ids_list.
-    """
-    
-    # Decide to download files one by one because multiple file downloading 
-    # through GDC's API doesn't give file size which make download progress 
-    # report impossible.
-    
-    total_count = len(ids_dict)
-    file_count = 0
-    data_endpt = '{}/data/'.format(_GDC_API_BASE)
-    chunk_size = 1024
-    status = '\r[{{}}/{:d}] Download "{{}}": {{:3.0%}}'.format(total_count)
-    file_dict = {}
-    print('Download data to "{}"'.format(os.path.abspath(dir_path)))
-    
-    for key in ids_dict:
-        file_count = file_count + 1
-        downloaded = 0
-        response = requests.get(data_endpt + ids_dict[key], stream=True)
-        if response.status_code == 200:
-            # Assume file name provided in the response header.
-            content_disp = response.headers['Content-Disposition']
-            gdc_file_name = content_disp[content_disp.find('filename=') + 9:]
-            # https://github.com/broadinstitute/gdctools/blob/master/gdctools/lib/meta.py
-            name_list = gdc_file_name.split('.')
-            for i in range(len(name_list)):
-                if name_list[i] in _SUPPORTED_FILE_TYPES:
-                    break
-            download_file_name = '.'.join([key, ids_dict[key]] + name_list[i:])
-            file_path = os.path.join(dir_path, download_file_name)
-            # Assume file size provided in the response header.
-            file_size = int(response.headers['Content-Length'])
-            with open(file_path, 'wb') as file:
-                for chunk in response.iter_content(chunk_size):
-                    file.write(chunk)
-                    downloaded = downloaded + chunk_size
-                    print(status.format(file_count, 
-                                        download_file_name, 
-                                        downloaded/file_size), 
-                          end='')
-                    sys.stdout.flush()
-                file_dict[key] = os.path.abspath(file_path)
-        print('')
-    return file_dict
-
-def label_files(uuids, label_field):
-    """Label a list of file UUIDs with their corresponding field of selection. 
-    
-    Query GDC with files' UUIDs for proper sample labels, such as their 
-    corresponding "aliquots.submitter_id".
-    
-    Args:
-        uuids: A list of UUIDs for data files to be labeled.
+        query_filter: A dict of query conditions searching for files of 
+            interest. It should follow GDC API's query format. See:
+            https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query
         label_field: A single GDC available file field whose value will be 
-            used as the sample label.
-    Return: A dict where each value is one input UUID with its key being the
-        corresponding label.
+            used as the sample label. Default is None which makes the final 
+            file name become "UUID.file_extension". If provided, the final 
+            file name will be "label.UUID.file_extension". Learn more: 
+            https://wiki.nci.nih.gov/display/TCGA/TCGA+barcode
+        label_func: A function taking in one string returned from GDC and 
+            processing it into a sample label. This argument will be ignored 
+            if "label_field" is None. Default is None, meaning returns from 
+            GDC will be used as sample labels directly.
+        
+    Return: A dict of files matching query conditions. The key will be a 
+        file's UUID, while the value is the file name which can be used during
+        downloading
     """
     
-    label_key = label_field.split('.', 1)[0]
     files_endpt = '{}/files'.format(_GDC_API_BASE)
-    file_ids_filter = {"op":"in",
-                       "content":{
-                               "field":"file_id",
-                               "value":uuids
-                               }
-                       }
-    params = {'filters':json.dumps(file_ids_filter), 
-              'fields':'file_id,{}'.format(label_field),
-              'size':len(uuids)}
+    params = {'filters':json.dumps(query_filter), 'size':1}
+    if label_field is None:
+        params['fields'] = 'file_id,file_name'
+    else:
+        params['fields'] = 'file_id,file_name,{}'.format(label_field)
     response = requests.post(files_endpt, data=params)
-    uuids_dict = {}
+    params['size'] = response.json()['data']['pagination']['total']
+    response = requests.get(files_endpt, params=params)
+
+    file_dict = {}
     if response.status_code == 200:
+        if label_field is None:
+            root_field_group = 'file_id'
+        else:
+            root_field_group = label_field.split('.', 1)[0]
         for hit in response.json()['data']['hits']:
-            label = hit[label_key]
+            label = hit[root_field_group]
             while isinstance(label, list) or isinstance(label, dict):
                 if isinstance(label, list):
                     label = label[0]
                 elif isinstance(label, dict):
                     label = label.values()
-            uuids_dict[label] = hit['file_id']
-    return uuids_dict
+            if (label_field is not None) and (label_func is not None):
+                label = label_func(label)
+            file_id = hit['file_id']
+            # https://github.com/broadinstitute/gdctools/blob/master/gdctools/lib/meta.py
+            name_list = hit['file_name'].split('.')
+            for i in range(len(name_list)):
+                if name_list[i] in _SUPPORTED_FILE_TYPES:
+                    break
+            file_name = '.'.join([label, file_id] + name_list[i:])
+            file_dict[file_id] = file_name
+    return file_dict
 
-def get_all_case_info():
-    """Get some basic information for all cases on GDC.
+def download_data(uuid, path=None):
+    """ Download a single file from GDC.
+    
+    Args:
+        uuid: str
+            UUID for the target file.
+        path: str, default None.
+            Path for saving the download file. If None, the download file 
+            will be saved under current python work directory with the 
+            original filename from GDC.
+    
+    Returns:
+        status: boolean
     """
     
-    cases_endpt = '{}/cases'.format(_GDC_API_BASE)
-    fields_list = ['case_id',
-                   'project.project_id',
-                   'project.primary_site',
-                   'project.disease_type',
-                   'submitter_id']
-    expand_list = ['demographic',
-                   'diagnoses']
-    size = 10
-    params = {'fields':','.join(fields_list), 
-              'expand':','.join(expand_list),
-              'size':size}
-    cur_page = 0
-    total_pages = 1
-    cases_dataframe = pd.DataFrame()
-    # Cases Endpoint on GDC fail to handle big size query; have to iterate 
-    # over pages.
-    while (total_pages > cur_page):
-        from_record = size * cur_page + 1
-        params['from'] = from_record
-        cases_r = requests.post(cases_endpt, data=params)
-        cur_page = cases_r.json()['data']['pagination']['page']
-        total_pages = cases_r.json()['data']['pagination']['pages']
-        print('\rProcessing page {}/{}...'.format(cur_page, total_pages), 
-              end='')
-        for hit in cases_r.json()['data']['hits']:
-            case_record = {}
-            if 'diagnoses' in hit:
-                case_record.update({('diagnoses', key): value 
-                                    for key, value 
-                                    in hit['diagnoses'][0].items()})
-            if 'demographic' in hit:
-                case_record.update({('demographic', key): value 
-                                    for key, value 
-                                    in hit['demographic'].items()})
-            if 'project' in hit:
-                case_record.update({('project', key): value 
-                                    for key, value 
-                                    in hit['project'].items()})
-            case_record[('cases', 'submitter_id')] = hit['submitter_id']
-            case_df = pd.DataFrame(case_record, 
-                                   index=[hit['case_id']]).sort_index(axis=1)
-            cases_dataframe = cases_dataframe.append(case_df)
-    cases_dataframe.to_csv('cases.tsv', sep='\t')
+    data_endpt = '{}/data/'.format(_GDC_API_BASE)
+    chunk_size = 4096
+    response = requests.get(data_endpt + uuid, stream=True)
+    if response.status_code == 200:
+        file_size = int(response.headers['Content-Length'])
+        if path is None:
+            content_disp = response.headers['Content-Disposition']
+            path = content_disp[content_disp.find('filename=') + 9:]
+        with open(path, 'wb') as f:
+            downloaded = 0
+            print('  0%', end='')
+            for chunk in response.iter_content(chunk_size):
+                f.write(chunk)
+                downloaded = downloaded + chunk_size
+                print('{}{:4.0%}'.format('\b' * 4, downloaded/file_size), 
+                      end='')
+                sys.stdout.flush()
+            print('\b\b\b\b100%')
+        return True
+    else:
+        return False
+
+def get_all_project_ids():
+    """Get project ids for all projects on GDC.
+    
+    Returns:
+        project_list: A list of project id for all projects in GDC
+    """
+    
+    projects_endpt = '{}/projects'.format(_GDC_API_BASE)
+    projects_r = requests.get(projects_endpt)
+    total_projects = projects_r.json()['data']['pagination']['total']
+    url = '{}?size={}&fields=project_id'.format(projects_endpt, 
+                                                total_projects)
+    projects_r = requests.get(url)
+    projects_list = projects_r.json()['data']['hits']
+    return [p['project_id'] for p in projects_list]
 
 def main():
     print('A simple python module for GDC API functionality.')
-    #get_all_case_info()
 
 if __name__ == '__main__':
     main()
