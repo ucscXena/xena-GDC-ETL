@@ -1,10 +1,10 @@
-{"owner":"TCGA",
+{"owner":"{{program}}",
  "longTitle":
- "TCGA breast invasive carcinoma (BRCA) gene expression by RNAseq (polyA+ IlluminaHiSeq)",
- "cohort":"TCGA Breast Cancer (BRCA)",
+ "{{project}} gene expression by RNAseq (polyA+ IlluminaHiSeq)",
+ "cohort":"{{project}}",
  "url":
- "https://tcga-data.nci.nih.gov/tcgafiles/ftp_auth/distro_ftpusers/anonymous/tumor/brca/cgcc/unc.edu/illuminahiseq_rnaseqv2/rnaseqv2/",
- "dataSubType":"gene expression RNAseq",
+ "{{data_url}}",
+ "dataSubType":"{{data_type}}",
  ":probeMap":"/probeMap/hugo_gencode_v24_gtf",
  "security":"public",
  "dataProducer":
@@ -12,7 +12,7 @@
  "label":"gene expression RNAseq (polyA+ IlluminaHiSeq)",
  "tags":["cancer"],
  "path":"data/public/TCGA/BRCA/HiSeqV2",
- "anatomical_origin":["Breast"],
+ "anatomical_origin":["{{tissue}}"],
  "colNormalization":true,
  "name":"TCGA_BRCA_exp_HiSeqV2",
  "wrangling_procedure":
@@ -20,10 +20,10 @@
  "sample_type":["tumor"],
  "redistribution":true,
  "PLATFORM":"IlluminaHiSeq_RNASeqV2",
- "groupTitle":"TCGA breast invasive carcinoma",
+ "groupTitle":"{{project}}",
  "type":"genomicMatrix",
- "wrangler":"Xena TCGAscript RNAseq processed on 2016-08-16",
- "version":"2016-08-16",
+ "wrangler":"Xena TCGAscript RNAseq processed on {{date}}",
+ "version":"{{date}}",
  "gdata_tags":["transcription"],
  "unit":"log2(normalized_count+1)",
  "shortTitle":"gene expression RNAseq (polyA+ IlluminaHiSeq)",

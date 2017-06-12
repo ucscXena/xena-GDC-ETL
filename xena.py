@@ -5,9 +5,11 @@
 from __future__ import division
 from __future__ import print_function
 
+import datetime
 import os
 import timeit
 
+import jinja2
 import numpy as np
 import pandas as pd
 
@@ -265,8 +267,50 @@ def import_gdc(project, dataset_type, work_dir='.', matrix_dir=None,
         print('Saving matrix to {} ...'.format(matrix_path))
         xena_matrix.to_csv(matrix_path, sep='\t')
 
+def render_rna_counts_metadata(matrix_dir, matrix_name, keywords):
+    """Make "metadata.json" for Xena importing
+    
+    Args:
+        matrix_dir: str
+            Directory for corresponding data matrix. Generated metadata file 
+            will be saved in the same directory.
+        matrix_name: str
+            Filename for corresponding data matrix. Its extension will be 
+            changed into '.json' and then used as the name for generated 
+            metadata file.
+        keywords: dict
+            Must contain the following keywords in the template for proper 
+            rendering:
+                program
+                project
+                data_url
+                tissue
+    
+    Returns:
+        metadata: JSON formatted string. ready to be written into a file.
+    """
+
+    metadata_name = os.path.splitext(matrix_name)[0]+'.json'
+    metadata_path = os.path.join(matrix_dir, metadata_name)
+    keywords.update({'data_type': 'HTSeq - Counts', 
+                     'date': datetime.date.today().isoformat()})
+    
+    template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                                 'Resources')
+    jinja2_env = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(template_dir))
+    template = jinja2_env.get_template('template.rna.meta.json')
+    with open(metadata_path, 'w') as f:
+        f.write(template.render(**keywords))
+
 def main():
     print('A python module of Xena specific importing pipeline for GDC data.')
+#    rna_counts_metadata = {'program': 'TCGA',
+#                           'project': 'TCGA-BRCA',
+#                           'data_url': 'https://api.gdc.cancer.gov/data/',
+#                           'tissue': 'Breast'}
+#    render_rna_counts_metadata('gitignore', 'test.uuid.tsv', 
+#                               rna_counts_metadata)
     start_time = timeit.default_timer()
     import_gdc(project='TCGA-BRCA', dataset_type='rna_counts', 
                work_dir=r'gitignore')
