@@ -268,21 +268,26 @@ def import_gdc(project, dataset_type, work_dir='.', matrix_dir=None,
 def main():
     print('A python module of Xena specific importing pipeline for GDC data.')
     start_time = timeit.default_timer()
-    import_gdc(project='TCGA-CHOL', dataset_type='rna_counts', 
+    import_gdc(project='TCGA-BRCA', dataset_type='rna_counts', 
                work_dir=r'gitignore')
-    import_gdc(project='TCGA-CHOL', dataset_type='rna_fpkm', 
-               work_dir=r'gitignore')
-    import_gdc(project='TCGA-CHOL', dataset_type='rna_fpkmuq', 
-               work_dir=r'gitignore')
-    import_gdc(project='TCGA-CHOL', dataset_type='mirna', 
-               work_dir=r'gitignore')
-    import_gdc(project='TCGA-CHOL', dataset_type='mirna_isoform', 
-               work_dir=r'gitignore')
-    import_gdc(project='TCGA-CHOL', dataset_type='masked_cnv', 
-               work_dir=r'gitignore', mode='both')
+#    import_gdc(project='TCGA-CHOL', dataset_type='rna_counts', 
+#               work_dir=r'gitignore')
+#    import_gdc(project='TCGA-CHOL', dataset_type='rna_fpkm', 
+#               work_dir=r'gitignore')
+#    import_gdc(project='TCGA-CHOL', dataset_type='rna_fpkmuq', 
+#               work_dir=r'gitignore')
+#    import_gdc(project='TCGA-CHOL', dataset_type='mirna', 
+#               work_dir=r'gitignore')
+#    import_gdc(project='TCGA-CHOL', dataset_type='mirna_isoform', 
+#               work_dir=r'gitignore')
+#    import_gdc(project='TCGA-CHOL', dataset_type='masked_cnv', 
+#               work_dir=r'gitignore', mode='both')
     end_time = timeit.default_timer()
     print('Finish in {} sec.'.format(end_time - start_time))
-    est_time = 23870 / 75.18 * end_time / 60 / 60
+#    test_size_mb = 75.18 # TCGA-CHOL 6 types
+    test_size_mb = 310.76 # TCGA-BRCA rna_couts
+    total_size_mb = 23870
+    est_time = total_size_mb / test_size_mb * end_time / 60 / 60
     print('Expect to ETL all data in {} hours.'.format(est_time))
 
 if __name__ == '__main__':
