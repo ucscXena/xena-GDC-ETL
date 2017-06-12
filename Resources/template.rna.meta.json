@@ -1,0 +1,35 @@
+{"owner":"TCGA",
+ "longTitle":
+ "TCGA breast invasive carcinoma (BRCA) gene expression by RNAseq (polyA+ IlluminaHiSeq)",
+ "cohort":"TCGA Breast Cancer (BRCA)",
+ "url":
+ "https://tcga-data.nci.nih.gov/tcgafiles/ftp_auth/distro_ftpusers/anonymous/tumor/brca/cgcc/unc.edu/illuminahiseq_rnaseqv2/rnaseqv2/",
+ "dataSubType":"gene expression RNAseq",
+ ":probeMap":"/probeMap/hugo_gencode_v24_gtf",
+ "security":"public",
+ "dataProducer":
+ "University of North Carolina TCGA genome characterization center",
+ "label":"gene expression RNAseq (polyA+ IlluminaHiSeq)",
+ "tags":["cancer"],
+ "path":"data/public/TCGA/BRCA/HiSeqV2",
+ "anatomical_origin":["Breast"],
+ "colNormalization":true,
+ "name":"TCGA_BRCA_exp_HiSeqV2",
+ "wrangling_procedure":
+ "Level_3 data (file names: *.rsem.genes.normalized_results) are downloaded from TCGA DCC, log2(x+1) transformed, and processed at UCSC into Xena repository",
+ "sample_type":["tumor"],
+ "redistribution":true,
+ "PLATFORM":"IlluminaHiSeq_RNASeqV2",
+ "groupTitle":"TCGA breast invasive carcinoma",
+ "type":"genomicMatrix",
+ "wrangler":"Xena TCGAscript RNAseq processed on 2016-08-16",
+ "version":"2016-08-16",
+ "gdata_tags":["transcription"],
+ "unit":"log2(normalized_count+1)",
+ "shortTitle":"gene expression RNAseq (polyA+ IlluminaHiSeq)",
+ "notes":
+ "the probeMap is hugo for the short term, however probably around 10% of the gene symbols are not HUGO names, but ENTRE genes",
+ "primary_disease":"breast invasive carcinoma",
+ "RNAtype":"polyA+",
+ "description":
+ "The gene expression profile was measured experimentally using the Illumina HiSeq 2000 RNA Sequencing platform by the University of North Carolina TCGA genome characterization center. Level 3 data was downloaded from TCGA data coordination center. This dataset shows the gene-level transcription estimates, as in log2(x+1) transformed RSEM normalized count. Genes are mapped onto the human genome coordinates using UCSC Xena HUGO probeMap (see ID/Gene mapping link below for details). Reference to method description from University of North Carolina TCGA genome characterization center: <a href=\"https://tcga-data.nci.nih.gov/tcgafiles/ftp_auth/distro_ftpusers/anonymous/tumor/brca/cgcc/unc.edu/illuminahiseq_rnaseqv2/rnaseqv2/unc.edu_BRCA.IlluminaHiSeq_RNASeqV2.Level_3.1.11.0/DESCRIPTION.txt\" target=\"_blank\"><u>DCC description</u></a><br><br>In order to more easily view the differential expression between samples, we set the default view to center each gene or exon to zero by independently subtracting the mean of each gene or exon on the fly. Users can view the original non-normalized values by adjusting visualization settings.<br><br>"}

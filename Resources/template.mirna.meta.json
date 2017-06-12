@@ -1,0 +1,30 @@
+{"owner":"TCGA",
+ "longTitle":
+ "TCGA breast invasive carcinoma (BRCA) miRNA gene expression by RNAseq (IlluminaHiseq)",
+ "cohort":"TCGA Breast Cancer (BRCA)",
+ "cgDataVersion":1,
+ "url":
+ "https://tcga-data.nci.nih.gov/tcgafiles/ftp_auth/distro_ftpusers/anonymous/tumor/brca/cgcc/bcgsc.ca/illuminahiseq_mirnaseq/mirnaseq/",
+ "dataSubType":"miRNA gene expression RNAseq",
+ "security":"public",
+ "idSubType":"gene",
+ "dataProducer":
+ "British Columbia Cancer Agency TCGA genome characterization center",
+ "label":"miRNA gene expression (IlluminaHiseq)",
+ "tags":["cancer"],
+ "path":"data/public/TCGA/BRCA/miRNA_HiSeq_gene",
+ "anatomical_origin":["Breast"],
+ "colNormalization":true,
+ "name":"data/public/TCGA/BRCA/miRNA_HiSeq_gene",
+ "wrangling_procedure":
+ "Level_3 Data (file names: *.isoform.quantification.txt) download from TCGA DCC, for each sample, all isoform expression for the same miRNA gene are added together, log2(total_RPM +1) transformed, and deposited at UCSC into Xena repository.",
+ "sample_type":["tumor"],
+ "redistribution":true,
+ "domain":"TCGA",
+ "PLATFORM":"IlluminaHiSeq_miRNASeq",
+ "type":"genomicMatrix",
+ "wrangler":"cgData TCGAscript miRNAseq processed on 2016-11-21",
+ "version":"2016-11-21",
+ "gdata_tags":["transcription", "miRNA"],
+ "unit":"log2(RPM+1)",
+ "primary_disease":"breast invasive carcinoma"}
