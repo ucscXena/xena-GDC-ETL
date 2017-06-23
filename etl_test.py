@@ -5,26 +5,29 @@
 from __future__ import division
 from __future__ import print_function
 
+import os
 import timeit
 
 import xena
 
 start_time = timeit.default_timer()
+script_dir = os.path.dirname(os.path.abspath(__file__))
+work_dir = os.path.join(script_dir, r'gitignore')
 mode = 'both'
-#xena.import_gdc(project='TCGA-BRCA', dataset_type='rna_counts', 
-#                work_dir=r'gitignore', mode=mode)
+xena.import_gdc(project='TCGA-BRCA', dataset_type='rna_counts', 
+                work_dir=work_dir, mode=mode)
 #xena.import_gdc(project='TCGA-CHOL', dataset_type='rna_counts', 
-#                work_dir=r'gitignore', mode=mode)
+#                work_dir=work_dir, mode=mode)
 #xena.import_gdc(project='TCGA-CHOL', dataset_type='rna_fpkm', 
-#                work_dir=r'gitignore', mode=mode)
+#                work_dir=work_dir, mode=mode)
 #xena.import_gdc(project='TCGA-CHOL', dataset_type='rna_fpkmuq', 
-#                work_dir=r'gitignore', mode=mode)
-xena.import_gdc(project='TCGA-CHOL', dataset_type='mirna', 
-                work_dir=r'gitignore', mode=mode)
+#                work_dir=work_dir, mode=mode)
+#xena.import_gdc(project='TCGA-CHOL', dataset_type='mirna', 
+#                work_dir=work_dir, mode=mode)
 #xena.import_gdc(project='TCGA-CHOL', dataset_type='mirna_isoform', 
-#                work_dir=r'gitignore', mode=mode)
+#                work_dir=work_dir, mode=mode)
 #xena.import_gdc(project='TCGA-CHOL', dataset_type='masked_cnv', 
-#                work_dir=r'gitignore', mode=mode)
+#                work_dir=work_dir, mode=mode)
 end_time = timeit.default_timer()
 print('Finish in {} sec.'.format(end_time - start_time))
 #test_size_mb = 75.18 # TCGA-CHOL 6 types
