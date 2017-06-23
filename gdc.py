@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # Ensure Python 2 and 3 compatibility
 from __future__ import division
@@ -144,24 +145,29 @@ def download_data(uuid, path=None):
     else:
         return False
 
-def get_all_project_ids():
-    """Get project ids for all projects on GDC.
+def get_all_project_info():
+    """Get project info for all projects on GDC.
     
     Returns:
-        project_list: A list of project id for all projects in GDC
+        project_dict: A dict of project info for all projects in GDC
     """
     
     projects_endpt = '{}/projects'.format(_GDC_API_BASE)
     projects_r = requests.get(projects_endpt)
     total_projects = projects_r.json()['data']['pagination']['total']
-    url = '{}?size={}&fields=project_id'.format(projects_endpt, 
-                                                total_projects)
+    fields = 'name,primary_site,project_id,program.name'
+    url = '{}?size={}&fields={}'.format(projects_endpt, total_projects, fields)
     projects_r = requests.get(url)
-    projects_list = projects_r.json()['data']['hits']
-    return [p['project_id'] for p in projects_list]
+    project_dict = {}
+    for project in projects_r.json()['data']['hits']:
+        project['program'] = project['program']['name']
+        project['primary_site'] = project['primary_site'][0]
+        project_dict[project.pop('project_id')] = project
+    return project_dict
 
 def main():
     print('A simple python module for GDC API functionality.')
+    get_all_project_info()
 
 if __name__ == '__main__':
     main()
