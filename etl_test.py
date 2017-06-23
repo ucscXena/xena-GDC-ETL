@@ -13,7 +13,7 @@ import xena
 start_time = timeit.default_timer()
 script_dir = os.path.dirname(os.path.abspath(__file__))
 work_dir = os.path.join(script_dir, r'gitignore')
-mode = 'both'
+mode = 'download'
 xena.import_gdc(project='TCGA-BRCA', dataset_type='rna_counts', 
                 work_dir=work_dir, mode=mode)
 #xena.import_gdc(project='TCGA-CHOL', dataset_type='rna_counts', 
@@ -33,5 +33,5 @@ print('Finish in {} sec.'.format(end_time - start_time))
 #test_size_mb = 75.18 # TCGA-CHOL 6 types
 test_size_mb = 310.76 # TCGA-BRCA rna_couts
 total_size_mb = 23870
-est_time = total_size_mb / test_size_mb * end_time / 60 / 60
+est_time = total_size_mb / test_size_mb * (end_time - start_time) / 60 / 60
 print('Expect to process ({}) all data in {} hours.'.format(mode, est_time))
