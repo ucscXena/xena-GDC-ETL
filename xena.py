@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# coding=UTF-8
+# -*- coding: utf-8 -*-
 
 # Ensure Python 2 and 3 compatibility
 from __future__ import division
@@ -7,7 +7,6 @@ from __future__ import print_function
 
 import datetime
 import os
-import timeit
 
 import jinja2
 import numpy as np
@@ -71,7 +70,7 @@ def download_dataset(dataset_type, projects=None, work_dir='.'):
     smapleid_processing = lambda x: x[:-1]
     
     if projects is None:
-        projects = gdc.get_all_project_ids
+        projects = gdc.get_all_project_info().keys()
     if isinstance(projects, str):
         projects = [projects]
     total_projects = len(projects)
@@ -305,34 +304,15 @@ def render_rna_counts_metadata(matrix_dir, matrix_name, keywords):
 
 def main():
     print('A python module of Xena specific importing pipeline for GDC data.')
+
+#    print(gdc.get_all_project_info())
+
 #    rna_counts_metadata = {'program': 'TCGA',
 #                           'project': 'TCGA-BRCA',
 #                           'data_url': 'https://api.gdc.cancer.gov/data/',
 #                           'tissue': 'Breast'}
 #    render_rna_counts_metadata('gitignore', 'test.uuid.tsv', 
 #                               rna_counts_metadata)
-    start_time = timeit.default_timer()
-    import_gdc(project='TCGA-BRCA', dataset_type='rna_counts', 
-               work_dir=r'gitignore')
-#    import_gdc(project='TCGA-CHOL', dataset_type='rna_counts', 
-#               work_dir=r'gitignore')
-#    import_gdc(project='TCGA-CHOL', dataset_type='rna_fpkm', 
-#               work_dir=r'gitignore')
-#    import_gdc(project='TCGA-CHOL', dataset_type='rna_fpkmuq', 
-#               work_dir=r'gitignore')
-#    import_gdc(project='TCGA-CHOL', dataset_type='mirna', 
-#               work_dir=r'gitignore')
-#    import_gdc(project='TCGA-CHOL', dataset_type='mirna_isoform', 
-#               work_dir=r'gitignore')
-#    import_gdc(project='TCGA-CHOL', dataset_type='masked_cnv', 
-#               work_dir=r'gitignore', mode='both')
-    end_time = timeit.default_timer()
-    print('Finish in {} sec.'.format(end_time - start_time))
-#    test_size_mb = 75.18 # TCGA-CHOL 6 types
-    test_size_mb = 310.76 # TCGA-BRCA rna_couts
-    total_size_mb = 23870
-    est_time = total_size_mb / test_size_mb * end_time / 60 / 60
-    print('Expect to ETL all data in {} hours.'.format(est_time))
 
 if __name__ == '__main__':
     main()
