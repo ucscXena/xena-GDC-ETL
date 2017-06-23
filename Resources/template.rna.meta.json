@@ -1,7 +1,7 @@
 {"owner":"{{program}}",
  "longTitle":
- "{{project}} gene expression by RNAseq (polyA+ IlluminaHiSeq)",
- "cohort":"{{project}}",
+ "{{project_id}} gene expression by RNAseq (polyA+ IlluminaHiSeq)",
+ "cohort":"{{project_id}}",
  "url":
  "{{data_url}}",
  "dataSubType":"{{data_type}}",
@@ -12,7 +12,7 @@
  "label":"gene expression RNAseq (polyA+ IlluminaHiSeq)",
  "tags":["cancer"],
  "path":"data/public/TCGA/BRCA/HiSeqV2",
- "anatomical_origin":["{{tissue}}"],
+ "anatomical_origin":["{{primary_site}}"],
  "colNormalization":true,
  "name":"TCGA_BRCA_exp_HiSeqV2",
  "wrangling_procedure":
@@ -20,7 +20,7 @@
  "sample_type":["tumor"],
  "redistribution":true,
  "PLATFORM":"IlluminaHiSeq_RNASeqV2",
- "groupTitle":"{{project}}",
+ "groupTitle":"{{project_name}}",
  "type":"genomicMatrix",
  "wrangler":"Xena TCGAscript RNAseq processed on {{date}}",
  "version":"{{date}}",

@@ -7,6 +7,7 @@ from __future__ import print_function
 
 import datetime
 import os
+import sys
 
 import jinja2
 import numpy as np
@@ -149,6 +150,7 @@ def xena_matrix_merge(file_list, read_table_kwargs={}, merge_axis=1,
         file_count = file_count + 1
         print('\rProcessing {}/{} file...'.format(file_count, total_files), 
               end='')
+        sys.stdout.flush()
         with read_by_ext(file_path) as f:
             filename = os.path.basename(file_path)
             sample_id = filename.split('.', 1)[0]
