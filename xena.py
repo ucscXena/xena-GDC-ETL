@@ -178,25 +178,70 @@ def xena_matrix_merge(file_list, read_table_kwargs={}, merge_axis=1,
     print('Xena matrix ready.')
     return xena_matrix
 
-def import_gdc(project, dataset_type, work_dir='.', matrix_dir=None,
+def xena_maf_transform(input_path):
+    if isinstance(input_path, list):
+        if len(input_path) == 1:
+            input_file = input_path[0]
+        else:
+            msg = ('MAF file should be transformed one at a time. {} files '
+                + 'found in the input list')
+            raise ValueError(msg)
+    elif isinstance(input_path, str):
+        input_file = input_path
+    else:
+        msg = 'Unrecognized type for input_path: {}'.format(type(input_path))
+        raise ValueError(msg)
+
+    print('Reading {} ...'.format(input_file))
+    with read_by_ext(input_file) as f:
+        xena_matrix = pd.read_table(
+                f, 
+                header=0, 
+                usecols=[12, 36, 4, 5, 6, 39, 41, 50, 0, 10, 15, 109], 
+                comment='#'
+            )
+    rename_dict = {'Hugo_Symbol': 'gene', 
+                   'Chromosome': 'chrom', 
+                   'Start_Position': 'chromstart', 
+                   'End_Position': 'chromend', 
+                   'Reference_Allele': 'ref', 
+                   'Tumor_Seq_Allele2': 'alt', 
+                   'Tumor_Sample_Barcode': 'sampleid', 
+                   'HGVSp_Short': 'Amino_Acid_Change', 
+                   'Consequence': 'effect',
+                   'FILTER': 'filter'}
+    xena_matrix['dna_vaf'] = (xena_matrix['t_alt_count'] 
+                           / xena_matrix['t_depth'])
+    xena_matrix = (
+            xena_matrix.drop(['t_alt_count', 't_depth'], axis=1)
+                       .rename(columns=rename_dict)
+                       .set_index('sampleid', drop=False)
+        )
+    print('Xena matrix ready.')
+    return xena_matrix
+
+def import_gdc(project, dataset_type, work_path='.', matrix_dir=None,
                mode='both'):
-    """The main pipeline for importing GDC RNA-seq data into Xena.
+    """An interface to the main pipeline for importing GDC RNA-seq data into 
+    Xena.
     
     Args:
         project: str
             One project_id for a GDC project.
         dataset_type: str in ['rna_counts', 'rna_fpkm', 'rna_fpkmuq', 'mirna', 
             'mirna_isoform', 'masked_cnv']
-        work_dir: str, default '.'
+        work_path: str, default '.'
             For 'both' or 'download' mode, it will be used for building the 
             download directory structure and saving download files. For 
             'transform' mode, all files under this directory will be treated 
-            as data and used for building Xena compatible matrix.
+            as data and used for building Xena compatible matrix. For 
+            'transform' mode, work_path can also point to a file to be 
+            transformed rather than a directory.
         matrix_dir: str, default None
             One directory to save the final Xena matrix.
         mode: str in ['both', 'download', 'transform'], default 'both'
             Action(s) to take for importing data. For just 'download' data, a 
-            directory structure will be built under "work_dir" according to 
+            directory structure will be built under "work_path" according to 
             "projects" and "data_type_list". Data will be downloaded to 
             corresponding directories. For just 'transform' data, all files 
             under "data_dir" will be treated as one set of data. These data 
@@ -210,7 +255,8 @@ def import_gdc(project, dataset_type, work_dir='.', matrix_dir=None,
     """
     
     if dataset_type not in ['rna_counts', 'rna_fpkm', 'rna_fpkmuq', 'mirna',
-                            'mirna_isoform', 'masked_cnv']:
+                            'mirna_isoform', 'masked_cnv','muse', 'mutect2', 
+                            'somaticsniper', 'varscan2']:
         raise ValueError('Unrecognized dataset_type: {}.'.format(dataset_type))
 
     gdc_rna_counts = {'analysis.workflow_type': 'HTSeq - Counts'}
@@ -219,53 +265,101 @@ def import_gdc(project, dataset_type, work_dir='.', matrix_dir=None,
     gdc_mirna = {'data_type': 'miRNA Expression Quantification'}
     gdc_mirna_isoform = {'data_type': 'Isoform Expression Quantification'}
     gdc_masked_cnv = {'data_type': 'Masked Copy Number Segment'}
+    gdc_snv_muse = {
+            'analysis.workflow_type': 
+                'MuSE Variant Aggregation and Masking'
+        }
+    gdc_snv_mutect2 = {
+            'analysis.workflow_type': 
+                'MuTect2 Variant Aggregation and Masking'
+        }
+    gdc_snv_somaticsniper = {
+            'analysis.workflow_type': 
+                'SomaticSniper Variant Aggregation and Masking'
+        }
+    gdc_snv_varscan2 = {
+            'analysis.workflow_type': 
+                'VarScan2 Variant Aggregation and Masking'
+        }
+
+    trans_args_rna = {'read_table_kwargs': {'header': None, 'comment': '_'}}
+    trans_args_mirna = {'read_table_kwargs': {'header': 0, 'usecols': [0, 2]}}
+    trans_args_mirna_isoform = {'read_table_kwargs': {'header': 0, 
+                                                      'usecols': [1, 3]}}
+    trans_args_masked_cnv = {'read_table_kwargs': {'header': 0,
+                                                   'index_col': None,
+                                                   'usecols': [1, 2, 3, 5]},
+                             'merge_axis': 0,
+                             'average': False,
+                             'log_transform': False}
+
     dataset_map = {'rna_counts': {'gdc_type': gdc_rna_counts,
-                                  'read_table_kwargs': {'header': None,
-                                                        'comment': '_'},
-#                                                        'skipfooter': 5},
+                                  'trans_func': xena_matrix_merge,
+                                  'trans_args': trans_args_rna,
                                   'matrix_name': '{}.htseq.counts.tsv'},
                    'rna_fpkm': {'gdc_type': gdc_rna_fpkm,
-                                'read_table_kwargs': {'header': None},
+                                'trans_func': xena_matrix_merge,
+                                'trans_args': trans_args_rna,
                                 'matrix_name': '{}.htseq.fpkm.tsv'},
                    'rna_fpkmuq': {'gdc_type': gdc_rna_fpkmuq,
-                                  'read_table_kwargs': {'header': None},
+                                  'trans_func': xena_matrix_merge,
+                                  'trans_args': trans_args_rna,
                                   'matrix_name': '{}.htseq.fpkm-uq.tsv'},
                    'mirna': {'gdc_type': gdc_mirna,
-                             'read_table_kwargs': {'header': 0,
-                                                   'usecols': [0, 2]},
+                             'trans_func': xena_matrix_merge,
+                             'trans_args': trans_args_mirna,
                              'matrix_name': '{}.mirna.tsv'},
                    'mirna_isoform': {'gdc_type': gdc_mirna_isoform,
-                                     'read_table_kwargs': {'header': 0,
-                                                           'usecols': [1, 3]},
+                                     'trans_func': xena_matrix_merge,
+                                     'trans_args': trans_args_mirna_isoform,
                                      'matrix_name': '{}.mirna.isoform.tsv'}, 
                    'masked_cnv': {'gdc_type': gdc_masked_cnv,
-                                  'read_table_kwargs': {'header': 0, 
-                                                        'index_col': None, 
-                                                        'usecols': [1, 2, 
-                                                                    3, 5]}, 
-                                  'merge_axis': 0, 
-                                  'average': False, 
-                                  'log_transform': False,
-                                  'matrix_name': '{}.masked.cnv.tsv'}}
-    
-    gdc_type = dataset_map[dataset_type].pop('gdc_type')
-    matrix_name = dataset_map[dataset_type].pop('matrix_name').format(project)
+                                  'trans_func': xena_matrix_merge,
+                                  'trans_args': trans_args_masked_cnv,
+                                  'matrix_name': '{}.masked.cnv.tsv'},
+                   'muse': {'gdc_type': gdc_snv_muse,
+                            'trans_func': xena_maf_transform,
+                            'trans_args': {},
+                            'matrix_name': '{}.muse.snv.tsv'},
+                   'mutect2': {'gdc_type': gdc_snv_mutect2,
+                               'trans_func': xena_maf_transform,
+                               'trans_args': {},
+                               'matrix_name': '{}.mutect2.snv.tsv'},
+                   'somaticsniper': {
+                           'gdc_type': gdc_snv_somaticsniper,
+                           'trans_func': xena_maf_transform,
+                           'trans_args': {},
+                           'matrix_name': '{}.somaticsniper.snv.tsv'
+                        },
+                   'varscan2': {'gdc_type': gdc_snv_varscan2,
+                                'trans_func': xena_maf_transform,
+                                'trans_args': {},
+                                'matrix_name': '{}.varscan2.snv.tsv'}}
+
 
     if mode == 'both' or mode == 'download':
+        gdc_type = dataset_map[dataset_type]['gdc_type']
         dataset = download_dataset(projects=project, dataset_type=gdc_type,
-                                   work_dir=work_dir)
+                                   work_dir=work_path)
         file_list = dataset.values()[0]
 
     if mode == 'transform':
-        file_list = []
-        for f in os.listdir(work_dir):
-            file_list.append(os.path.join(work_dir, f))
+        if os.path.isdir(work_path):
+            file_list = []
+            for f in os.listdir(work_path):
+                file_list.append(os.path.join(work_path, f))
+        else:
+            file_list = [work_path]
+            work_path = os.path.dirname(work_path)
     
     if mode == 'both' or mode == 'transform':
-        xena_matrix = xena_matrix_merge(file_list, **dataset_map[dataset_type])
+        trans_func = dataset_map[dataset_type]['trans_func']
+        trans_args = dataset_map[dataset_type]['trans_args']
+        xena_matrix = trans_func(file_list, **trans_args)
         if matrix_dir is None:
-            matrix_dir = work_dir
-        matrix_path = os.path.join(matrix_dir, matrix_name)
+            matrix_dir = work_path
+        matrix_name = dataset_map[dataset_type]['matrix_name']
+        matrix_path = os.path.join(matrix_dir, matrix_name.format(project))
         print('Saving matrix to {} ...'.format(matrix_path))
         xena_matrix.to_csv(matrix_path, sep='\t')
 

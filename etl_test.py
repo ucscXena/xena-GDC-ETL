@@ -17,23 +17,26 @@ def main():
     matrix_dir = None
 #    work_dir = os.path.join(matrix_dir, 'TCGA-BRCA', 'HTSeq-Counts')
     mode = 'both'
-    xena.import_gdc(project='TCGA-BRCA', dataset_type='rna_counts', 
-                    work_dir=work_dir, mode=mode, matrix_dir=matrix_dir)
-    test_size_mb = 310.76 # TCGA-BRCA rna_couts
+#    xena.import_gdc(project='TCGA-BRCA', dataset_type='rna_counts', 
+#                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+#    test_size_mb = 310.76 # TCGA-BRCA rna_couts
 #    xena.import_gdc(project='TCGA-CHOL', dataset_type='rna_counts', 
-#                    work_dir=work_dir, mode=mode, matrix_dir=matrix_dir)
+#                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
 #    test_size_mb = 11.22 # TCGA-CHOL rna_counts
 #    xena.import_gdc(project='TCGA-CHOL', dataset_type='rna_fpkm', 
-#                    work_dir=work_dir, mode=mode)
+#                    work_path=work_dir, mode=mode)
 #    xena.import_gdc(project='TCGA-CHOL', dataset_type='rna_fpkmuq', 
-#                    work_dir=work_dir, mode=mode)
+#                    work_path=work_dir, mode=mode)
 #    xena.import_gdc(project='TCGA-CHOL', dataset_type='mirna', 
-#                    work_dir=work_dir, mode=mode)
+#                    work_path=work_dir, mode=mode)
 #    xena.import_gdc(project='TCGA-CHOL', dataset_type='mirna_isoform', 
-#                    work_dir=work_dir, mode=mode)
+#                    work_path=work_dir, mode=mode)
 #    xena.import_gdc(project='TCGA-CHOL', dataset_type='masked_cnv', 
-#                    work_dir=work_dir, mode=mode)
+#                    work_path=work_dir, mode=mode)
 #    test_size_mb = 75.18 # TCGA-CHOL 6 types
+    xena.import_gdc(project='TCGA-DLBC', dataset_type='muse', 
+                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+    test_size_mb = 1.29 # TCGA-DLBC muse
     end_time = timeit.default_timer()
     print('Finish in {} sec.'.format(end_time - start_time))
     total_size_mb = 23870
