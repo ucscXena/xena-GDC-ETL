@@ -1,31 +1,15 @@
-{"owner":"TCGA",
- "longTitle":
- "TCGA breast invasive carcinoma (BRCA) segmented copy number (delete germline cnv)",
- "cohort":"TCGA Breast Cancer (BRCA)",
- "cgDataVersion":1,
- "url":
- "https://tcga-data.nci.nih.gov/tcgafiles/ftp_auth/distro_ftpusers/anonymous/tumor/brca/cgcc/broad.mit.edu/genome_wide_snp_6/snp/",
+{"cohort":"{{ xena_cohort }}",
+ "url":"https://api.gdc.cancer.gov/data",
  "dataSubType":"copy number",
- "security":"public",
- "dataProducer":
- "Broad Institute of MIT and Harvard University cancer genomic characterization center",
- "label":"copy number segments (delete germline cnv)",
- "tags":["cancer"],
- "path":"data/public/TCGA/BRCA/SNP6_nocnv_genomicSegment",
- "anatomical_origin":["Breast"],
- "name":"TCGA_BRCA_GSNP6noCNV_gSeg",
+ "dataProducer":"Genomic Data Commons",
+ "label":"{{ project_id }} {{ gdc_type }}",
  "wrangling_procedure":
- "Level_3 data download from TCGA DCC, processed at UCSC into cgData repository",
- "sample_type":["tumor"],
- "assembly":"hg19",
- "redistribution":true,
- "domain":"TCGA",
- "PLATFORM":"SNP6",
+ "Data from different samples is combined into genomicSegment; chromosome location and segment mean data are presented.",
+ "PLATFORM":"Affymetrix SNP 6.0",
  "type":"genomicSegment",
- "wrangler":"cgData TCGAscript SNP6 processed on 2016-11-17",
- "version":"2016-11-17",
- "unit":"log2(tumor/normal)",
- "shortTitle":"copy number (delete germline cnv)",
- "primary_disease":"breast invasive carcinoma",
+ "wrangler":"Xena GDC ETL script",
+ "version":"{{ date }}",
+ "unit":"log2(copy-number/2)",
+{% if notes %} "notes":"{{ notes }}",{% endif %}
  "description":
- "TCGA breast invasive carcinoma (BRCA) segmented copy number variation profile after removing common germline copy number variation.<br><br> Copy number profile was measured experimentally using the Affymetrix Genome-Wide Human SNP Array 6.0 platform at the Broad TCGA genome characterization center. Raw copy numbers were estimated at each of the SNP and copy-number markers. <a href=\"http://www.ncbi.nlm.nih.gov/pubmed/15475419\" target=\"_blank\"><u>Circular binary segmentation</u></a> was then used to segment the copy number data. Segments are mapped to hg19 genome assembly at Broad. A fixed set of common germline cnv probes were removed prior to segmentation. Reference to the algorithm used by Broad to produce the dataset: <a href =\"https://tcga-data.nci.nih.gov/tcgafiles/ftp_auth/distro_ftpusers/anonymous/tumor/brca/cgcc/broad.mit.edu/genome_wide_snp_6/snp/broad.mit.edu_BRCA.Genome_Wide_SNP_6.mage-tab.1.2024.0/DESCRIPTION.txt\" target=\"_blank\"> <u>DCC description</u></a> and <a href=\"http://www.nature.com/nature/journal/vaop/ncurrent/suppinfo/nature07385.html\" target=\"_blank\"><u>nature 2008</u></a> .<br><br>"}
+ "{{ xena_cohort }} segmented copy number variation profile after removing common germline copy number variation.<br><br> Copy number profile was measured experimentally using the Affymetrix Genome-Wide Human SNP Array 6.0 platform at the Broad TCGA genome characterization center. Raw copy numbers were estimated at each of the SNP and copy-number markers. <a href=\"http://www.ncbi.nlm.nih.gov/pubmed/15475419\" target=\"_blank\"><u>Circular binary segmentation</u></a> was then used to segment the copy number data. Segments are mapped to hg19 genome assembly at Broad. A fixed set of common germline cnv probes were removed prior to segmentation. Reference to the algorithm used by Broad to produce the dataset: <a href =\"https://tcga-data.nci.nih.gov/tcgafiles/ftp_auth/distro_ftpusers/anonymous/tumor/brca/cgcc/broad.mit.edu/genome_wide_snp_6/snp/broad.mit.edu_BRCA.Genome_Wide_SNP_6.mage-tab.1.2024.0/DESCRIPTION.txt\" target=\"_blank\"> <u>DCC description</u></a> and <a href=\"http://www.nature.com/nature/journal/vaop/ncurrent/suppinfo/nature07385.html\" target=\"_blank\"><u>nature 2008</u></a> .<br><br>"}

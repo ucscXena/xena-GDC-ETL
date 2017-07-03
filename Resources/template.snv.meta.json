@@ -1,0 +1,14 @@
+{"cohort":"{{ xena_cohort }}",
+ "url":"{{ maf_url}}",
+ "dataSubType":"somatic mutation (SNPs and small INDELs)",
+ "dataProducer":"Genomic Data Commons",
+ "label":"{{ project_id }} {{ gdc_type }}",
+ "wrangling_procedure":
+ "Data from different samples is combined into mutationVector; \"Hugo_Symbol\", \"Chromosome\", \"Start_Position\", \"End_Position\", \"Reference_Allele\", \"Tumor_Seq_Allele2\", \"Tumor_Sample_Barcode\", \"HGVSp_Short\" and \"Consequence\" data are renamed accordingly and presented; \"dna_vaf\" data is added and is calculated by \"t_alt_count\"/\"t_depth\".",
+ "PLATFORM":"Illumina",
+ "type":"mutationVector",
+ "wrangler":"Xena GDC ETL script",
+ "version":"{{ date }}",
+{% if notes %} "notes":"{{ notes }}",{% endif %}
+ "description":
+ "{{ xena_cohort }} somatic mutation data. Sequencing data are generated on a IlluminaGA system. The calls are generated at Genome Institute at Washington University Sequencing Center using the WashU pipeline method."}

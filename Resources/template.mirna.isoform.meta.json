@@ -1,33 +1,17 @@
-{"owner":"TCGA",
- "longTitle":
- "TCGA breast invasive carcinoma (BRCA) miRNA isoform expression by RNAseq (IlluminaHiseq)",
- "cohort":"TCGA Breast Cancer (BRCA)",
- "cgDataVersion":1,
- "url":
- "https://tcga-data.nci.nih.gov/tcgafiles/ftp_auth/distro_ftpusers/anonymous/tumor/brca/cgcc/bcgsc.ca/illuminahiseq_mirnaseq/mirnaseq/",
+{"cohort":"{{ xena_cohort }}",
+ "url":"https://api.gdc.cancer.gov/data",
  "dataSubType":"miRNA isoform expression RNAseq",
  ":probeMap":"miRNA_HiSeq.probeMap",
- "security":"public",
- "idSubType":"isoform",
- "dataProducer":
- "British Columbia Cancer Agency TCGA genome characterization center",
- "label":"miRNA isoform expression (IlluminaHiseq)",
- "tags":["cancer"],
- "path":"data/public/TCGA/BRCA/miRNA_HiSeq",
- "anatomical_origin":["Breast"],
+ "dataProducer":"Genomic Data Commons",
+ "label":"{{ project_id }} {{ gdc_type }}",
  "colNormalization":true,
- "name":"TCGA_BRCA_miRNA_HiSeq",
  "wrangling_procedure":
- "Level_3 Data (file names: *.isoform.quantification.txt) download from TCGA DCC, log2(x+1) transformed, and processed at UCSC into Xena repository.",
- "sample_type":["tumor"],
- "redistribution":true,
- "domain":"TCGA",
- "PLATFORM":"IlluminaHiSeq_miRNASeq",
+ "RPM Data from the same sample but from different vials/portions/analytes/aliquotes is averaged; data from different samples is combined into genomicMatrix; all data is then log2(x+1) transformed.",
+ "PLATFORM":"Illumina",
  "type":"genomicMatrix",
- "wrangler":"cgData TCGAscript miRNAseq processed on 2016-11-21",
- "version":"2016-11-21",
- "gdata_tags":["transcription", "miRNA"],
+ "wrangler":"Xena GDC ETL script",
+ "version":"{{ date }}",
  "unit":"log2(RPM+1)",
- "primary_disease":"breast invasive carcinoma",
+{% if notes %} "notes":"{{ notes }}",{% endif %}
  "description":
- "TCGA breast invasive carcinoma (BRCA) miRNA expression by RNAseq. The miRNA expression profile was measured experimentally using the Illumina HiSeq 2000 RNA Sequencing platform by the British Columbia Cancer Agency TCGA genome characterization center. Level 3 interpreted level data was downloaded from TCGA data coordination center. Download data is in the unit of reads per million mapped reads (RPM). This dataset shows the miRNA transcription estimates in log2 (RPM). For more information see: http://nar.oxfordjournals.org/content/early/2015/08/13/nar.gkv808.full .<br><br>In order to more easily view the differential expression between samples, we set the default view to center each miRNA to zero by independently subtracting the mean of each miRNA across the cohort on the fly. Users can view the original non-normalized values by adjusting visualization settings.<br><br>"}
+ "{{ xena_cohort }} miRNA expression by RNAseq. The miRNA expression profile was measured experimentally using the Illumina HiSeq 2000 RNA Sequencing platform by the British Columbia Cancer Agency TCGA genome characterization center. Level 3 interpreted level data was downloaded from TCGA data coordination center. Download data is in the unit of reads per million mapped reads (RPM). This dataset shows the miRNA transcription estimates in log2 (RPM). For more information see: http://nar.oxfordjournals.org/content/early/2015/08/13/nar.gkv808.full .<br><br>In order to more easily view the differential expression between samples, we set the default view to center each miRNA to zero by independently subtracting the mean of each miRNA across the cohort on the fly. Users can view the original non-normalized values by adjusting visualization settings.<br><br>"}
