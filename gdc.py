@@ -51,7 +51,7 @@ def and_eq_filter_constructor(filter_dict):
                                                    "value":filter_dict[key]}})
     return {"op":"and", "content":operands_list}
 
-def get_file_dict(query_filter, label_field=None, label_func=None):
+def get_file_dict(query_filter, label_field=None):
     """Get a dictionary of files matching query conditions.
     
     Args:
@@ -59,14 +59,9 @@ def get_file_dict(query_filter, label_field=None, label_func=None):
             interest. It should follow GDC API's query format. See:
             https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query
         label_field: A single GDC available file field whose value will be 
-            used as the sample label. Default is None which makes the final 
-            file name become "UUID.file_extension". If provided, the final 
-            file name will be "label.UUID.file_extension". Learn more: 
-            https://wiki.nci.nih.gov/display/TCGA/TCGA+barcode
-        label_func: A function taking in one string returned from GDC and 
-            processing it into a sample label. This argument will be ignored 
-            if "label_field" is None. Default is None, meaning returns from 
-            GDC will be used as sample labels directly.
+            used for renaming downloaded files. Default is None which makes 
+            the final file name become "UUID.file_extension". If provided, 
+            the final file name will be "label.UUID.file_extension".
         
     Return: A dict of files matching query conditions. The key will be a 
         file's UUID, while the value is the file name which can be used during
@@ -96,8 +91,6 @@ def get_file_dict(query_filter, label_field=None, label_func=None):
                     label = label[0]
                 elif isinstance(label, dict):
                     label = label.values()
-            if (label_field is not None) and (label_func is not None):
-                label = label_func(label)
             file_id = hit['file_id']
             # https://github.com/broadinstitute/gdctools/blob/master/gdctools/lib/meta.py
             name_list = hit['file_name'].split('.')
