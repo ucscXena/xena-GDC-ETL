@@ -390,6 +390,40 @@ def render_rna_counts_metadata(matrix_dir, matrix_name, keywords):
         metadata: JSON formatted string. ready to be written into a file.
     """
 
+    cohort_map = {'TCGA-BRCA': 'TCGA Breast Cancer (BRCA)'
+                  'TCGA-LUAD': 'TCGA Lung Adenocarcinoma (LUAD)'
+                  'TCGA-UCEC': 'TCGA Endometrioid Cancer (UCEC)'
+                  'TCGA-LGG': 'TCGA Lower Grade Glioma (LGG)'
+                  'TCGA-HNSC': 'TCGA Head and Neck Cancer (HNSC)'
+                  'TCGA-PRAD': 'TCGA Prostate Cancer (PRAD)'
+                  'TCGA-LUSC': 'TCGA Lung Squamous Cell Carcinoma (LUSC)'
+                  'TCGA-THCA': 'TCGA Thyroid Cancer (THCA)'
+                  'TCGA-SKCM': 'TCGA Melanoma (SKCM)'
+                  'TCGA-OV': 'TCGA Ovarian Cancer (OV)'
+                  'TCGA-STAD': 'TCGA Stomach Cancer (STAD)'
+                  'TCGA-COAD': 'TCGA Colon Cancer (COAD)'
+                  'TCGA-BLCA': 'TCGA Bladder Cancer (BLCA)'
+                  'TCGA-GBM': 'TCGA Glioblastoma (GBM)'
+                  'TCGA-LIHC': 'TCGA Liver Cancer (LIHC)'
+                  'TCGA-KIRC': 'TCGA Kidney Clear Cell Carcinoma (KIRC)'
+                  'TCGA-CESC': 'TCGA Cervical Cancer (CESC)'
+                  'TCGA-KIRP': 'TCGA Kidney Papillary Cell Carcinoma (KIRP)'
+                  'TCGA-SARC': 'TCGA Sarcoma (SARC)'
+                  'TCGA-ESCA': 'TCGA Esophageal Cancer (ESCA)'
+                  'TCGA-PAAD': 'TCGA Pancreatic Cancer (PAAD)'
+                  'TCGA-PCPG': 'TCGA Pheochromocytoma & Paraganglioma (PCPG)'
+                  'TCGA-READ': 'TCGA Rectal Cancer (READ)'
+                  'TCGA-TGCT': 'TCGA Testicular Cancer (TGCT)'
+                  'TCGA-LAML': 'TCGA Acute Myeloid Leukemia (LAML)'
+                  'TCGA-THYM': 'TCGA Thymoma (THYM)'
+                  'TCGA-ACC': 'TCGA Adrenocortical Cancer (ACC)'
+                  'TCGA-MESO': 'TCGA Mesothelioma (MESO)'
+                  'TCGA-UVM': 'TCGA Ocular melanomas (UVM)'
+                  'TCGA-KICH': 'TCGA Kidney Chromophobe (KICH)'
+                  'TCGA-UCS': 'TCGA Uterine Carcinosarcoma (UCS)'
+                  'TCGA-CHOL': 'TCGA Bile Duct Cancer (CHOL)'
+                  'TCGA-DLBC': 'TCGA Large B-cell Lymphoma (DLBC)'}
+    
     metadata_name = os.path.splitext(matrix_name)[0]+'.json'
     metadata_path = os.path.join(matrix_dir, metadata_name)
     keywords.update({'data_type': 'HTSeq - Counts', 
