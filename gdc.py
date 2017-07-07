@@ -27,7 +27,7 @@ _SUPPORTED_DATASETS = [{'data_type': 'Copy Number Segment'},
                        {'data_type': 'Biospecimen Supplement'},
                        {'data_type': 'Clinical Supplement'}]
 
-def and_eq_filter_constructor(filter_dict):
+def and_in_filter_constructor(filter_dict):
     """A simple constructor converting a query dictionary into GDC API 
     specific filters.
     
@@ -47,8 +47,11 @@ def and_eq_filter_constructor(filter_dict):
     
     operands_list = []
     for key in filter_dict:
-        operands_list.append({"op":"=", "content":{"field":key,
-                                                   "value":filter_dict[key]}})
+        value = filter_dict[key]
+        if not isinstance(value, list):
+            value = [value]
+        operands_list.append({"op":"in", 
+                              "content":{"field":key, "value":value}})
     return {"op":"and", "content":operands_list}
 
 def get_file_dict(query_filter, label_field=None):
@@ -160,7 +163,7 @@ def get_all_project_info():
 
 def main():
     print('A simple python module for GDC API functionality.')
-    get_all_project_info()
+    print(get_all_project_info())
 
 if __name__ == '__main__':
     main()
