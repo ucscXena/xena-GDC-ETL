@@ -13,7 +13,7 @@ import xena
 def main():
     start_time = timeit.default_timer()
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    work_dir = os.path.join(script_dir, r'gitignore\test')
+    work_dir = os.path.join(script_dir, 'gitignore', 'test')
     matrix_dir = None
 #    work_dir = os.path.join(matrix_dir, 'TCGA-BRCA', 'HTSeq-Counts')
     mode = 'all'
