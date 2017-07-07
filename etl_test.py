@@ -13,10 +13,10 @@ import xena
 def main():
     start_time = timeit.default_timer()
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    work_dir = os.path.join(script_dir, 'gitignore')
+    work_dir = os.path.join(script_dir, r'gitignore\test')
     matrix_dir = None
 #    work_dir = os.path.join(matrix_dir, 'TCGA-BRCA', 'HTSeq-Counts')
-    mode = 'both'
+    mode = 'all'
 #    xena.import_gdc(project='TCGA-BRCA', dataset_type='rna_counts', 
 #                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
 #    test_size_mb = 310.76 # TCGA-BRCA rna_couts
@@ -38,14 +38,23 @@ def main():
                     work_path=work_dir, mode=mode)
     xena.import_gdc(project='TCGA-CHOL', dataset_type='mirna', 
                     work_path=work_dir, mode=mode)
-    xena.import_gdc(project='TCGA-CHOL', dataset_type='mirna_isoform', 
-                    work_path=work_dir, mode=mode)
+#    xena.import_gdc(project='TCGA-CHOL', dataset_type='mirna_isoform', 
+#                    work_path=work_dir, mode=mode)
     xena.import_gdc(project='TCGA-CHOL', dataset_type='masked_cnv', 
                     work_path=work_dir, mode=mode)
-    test_size_mb = 75.18 # TCGA-CHOL 6 types
+#    test_size_mb = 75.18 # TCGA-CHOL 6 types
 #    xena.import_gdc(project='TCGA-DLBC', dataset_type='muse', 
 #                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
 #    test_size_mb = 1.29 # TCGA-DLBC muse
+    xena.import_gdc(project='TCGA-CHOL', dataset_type='muse', 
+                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+    xena.import_gdc(project='TCGA-CHOL', dataset_type='mutect2', 
+                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+    xena.import_gdc(project='TCGA-CHOL', dataset_type='somaticsniper', 
+                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+    xena.import_gdc(project='TCGA-CHOL', dataset_type='varscan2', 
+                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+    test_size_mb = 62.42 # TCGA-CHOL 8 types
     end_time = timeit.default_timer()
     print('Finish in {} sec.'.format(end_time - start_time))
     total_size_mb = 23870

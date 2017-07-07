@@ -57,7 +57,7 @@ def download_dataset(dataset_type, projects=None, work_dir='.',
             A directory structure will be built under "work_dir" according to 
             "project_id(s)" and "dataset_type":
                 work_dir
-                └── project_id(s) joint by "_"
+                └── project_id(s) joint by "_" or "All_GDC_projects_%m-%d-%Y"
                     └── GDC_Raw_Data
                         └── dataset_type value(s) joint by "_" with whitespace 
                             removed
@@ -79,49 +79,44 @@ def download_dataset(dataset_type, projects=None, work_dir='.',
         files belonging to the dataset.
     """
     
-    if projects is None:
-        projects = gdc.get_all_project_info().keys()
+    dataset_description = ' - '.join(sorted(dataset_type.values()))
     if isinstance(projects, str):
         projects = [projects]
-    total_projects = len(projects)
-    project_count = 0
-    
     work_dir = os.path.abspath(work_dir)
-    project_dir = os.path.join(work_dir, '_'.join(projects), 'GDC_Raw_Data')
-    mkdir_p(project_dir)
-    dataset_dir = '_'.join(sorted(dataset_type.values())).replace(' ', '')
-    dataset_dir = os.path.join(project_dir, dataset_dir)
+    if projects is None:
+        cohort_dirname = datetime.date.today().strftime(
+                'All_GDC_projects_%m-%d-%Y'
+            )
+        print('Get "{}" dataset for {}.'.format(dataset_description, 
+                                                cohort_dirname))
+    else:
+        cohort_dirname = '_'.join(projects)
+        print('Get "{}" dataset for {}.'.format(dataset_description, projects))
+    dataset_dirname = '_'.join(sorted(dataset_type.values())).replace(' ', '')
+    dataset_dir = os.path.join(work_dir, cohort_dirname, 'GDC_Raw_Data', 
+                               dataset_dirname)
     mkdir_p(dataset_dir)
-    
-    print('Datasets will be downloaded to "{}".'.format(dataset_dir))
-    dataset_description = ' - '.join(sorted(dataset_type.values()))
-    dataset_status = 'Get "{}" dataset for project "[{}/{:d}] {}".'
-    dataset_status = dataset_status.format(dataset_description, '{}', 
-                                           total_projects, '{}')
-
-    for project_id in projects:
-        project_count += 1
-        print(dataset_status.format(project_count, project_id))
-        query_dict = {'cases.project.project_id': project_id,
-                      'access': 'open'}
-        query_dict.update(dataset_type)
-        query_filter = gdc.and_eq_filter_constructor(query_dict)
-        file_dict = gdc.get_file_dict(query_filter, label_field=label_field)
-        if not file_dict:
-            message = 'No {} data for "{}" project.'
-            print(message.format(dataset_description, project_id))
-            continue
-        data_dict = {dataset_dir: []}
-        total_files = len(file_dict)
-        file_count = 0
-        for uuid in file_dict:
-            file_count += 1
-            download_status = '[{:d}/{:d}] Download "{}": '
-            print(download_status.format(file_count, total_files, 
-                                         file_dict[uuid]), end='')
-            file_path = os.path.join(dataset_dir, file_dict[uuid])
-            if gdc.download_data(uuid, file_path):
-                data_dict[dataset_dir].append(file_path)
+    print('Datasets will be downloaded to\n"{}".'.format(dataset_dir))
+    query_dict = {'access': 'open'}
+    if projects is not None:
+        query_dict['cases.project.project_id'] = projects
+    query_dict.update(dataset_type)
+    query_filter = gdc.and_in_filter_constructor(query_dict)
+    file_dict = gdc.get_file_dict(query_filter, label_field=label_field)
+    if not file_dict:
+        message = 'No {} data for project {}.'
+        raise ValueError(message.format(dataset_description, projects))
+    data_dict = {dataset_dir: []}
+    total_files = len(file_dict)
+    file_count = 0
+    for uuid in file_dict:
+        file_count += 1
+        download_status = '[{:d}/{:d}] Download "{}": '
+        print(download_status.format(file_count, total_files, 
+                                     file_dict[uuid]), end='')
+        file_path = os.path.join(dataset_dir, file_dict[uuid])
+        if gdc.download_data(uuid, file_path):
+            data_dict[dataset_dir].append(file_path)
     return data_dict
 
 def read_by_ext(filename, mode='r'):
@@ -149,6 +144,10 @@ def read_by_ext(filename, mode='r'):
         return open(filename, mode)
 
 def process_average_log(df):
+    # The following if is for RNA-seq data
+    # TODO: Move to settings for rna data type
+    if df.index.name == 0:
+        df.index.name = 'Ensemble_ID'
     print('Averaging duplicated samples ...')
     df_avg = (
             df.rename(columns=lambda x: x[:-1])
@@ -159,6 +158,9 @@ def process_average_log(df):
     return np.log2(df_avg + 1)
 
 def process_maf(df):
+    df.index.name = 'Sample_ID'
+    print('Calculating "dna_vaf" ...')
+    df['dna_vaf'] = df['t_alt_count'] / df['t_depth']
     rename_dict = {'Hugo_Symbol': 'gene', 
                    'Chromosome': 'chrom', 
                    'Start_Position': 'chromstart', 
@@ -169,8 +171,6 @@ def process_maf(df):
                    'HGVSp_Short': 'Amino_Acid_Change', 
                    'Consequence': 'effect',
                    'FILTER': 'filter'}
-    print('Calculating "dna_vaf" ...')
-    df['dna_vaf'] = df['t_alt_count'] / df['t_depth']
     print('Re-organizing matrix ...')
     return (
             df.drop(['t_alt_count', 't_depth'], axis=1)
@@ -219,8 +219,142 @@ def xena_matrix_merge(file_list, read_table_kwargs={}, merge_axis=1,
     print('Xena matrix ready.')
     return xena_matrix
 
+def render_metadata(matrix_path, project=None, dataset_type=None, 
+                    keywords = {}):
+    """Make "metadata.json" for Xena importing
+    
+    Args:
+        matrix_path: str
+            Path to the file of Xena matrix. Generated metadata file 
+            will be saved in the same directory, with a ".json" postfix 
+            appended to the filename of Xena matrix. If project and/or 
+            dataset_type is None, project and/or dataset_type info will be 
+            extracted from the filename of Xena matrix.
+        project: str
+            GDC project_id.
+        dataset_type: str in ['rna_counts', 'rna_fpkm', 'rna_fpkmuq', 'mirna', 
+            'mirna_isoform', 'cnv', 'masked_cnv', 'muse', 'mutect2', 
+            'somaticsniper', 'varscan2']
+        keywords: dict
+            Optional keywords to be rendered from jinja2 templates. Keywords 
+            set by this dict have priority and won't be override. Supported 
+            keywords are "xena_cohort", "project_id", "gdc_type", 
+            "date", "notes", "maf_url".
+    
+    Returns:
+        metadata: JSON formatted string. ready to be written into a file.
+    """
+
+    print('Creating metadata file ...')
+    cohort_map = {'TCGA-BRCA': 'TCGA Breast Cancer (BRCA)',
+                  'TCGA-LUAD': 'TCGA Lung Adenocarcinoma (LUAD)',
+                  'TCGA-UCEC': 'TCGA Endometrioid Cancer (UCEC)',
+                  'TCGA-LGG': 'TCGA Lower Grade Glioma (LGG)',
+                  'TCGA-HNSC': 'TCGA Head and Neck Cancer (HNSC)',
+                  'TCGA-PRAD': 'TCGA Prostate Cancer (PRAD)',
+                  'TCGA-LUSC': 'TCGA Lung Squamous Cell Carcinoma (LUSC)',
+                  'TCGA-THCA': 'TCGA Thyroid Cancer (THCA)',
+                  'TCGA-SKCM': 'TCGA Melanoma (SKCM)',
+                  'TCGA-OV': 'TCGA Ovarian Cancer (OV)',
+                  'TCGA-STAD': 'TCGA Stomach Cancer (STAD)',
+                  'TCGA-COAD': 'TCGA Colon Cancer (COAD)',
+                  'TCGA-BLCA': 'TCGA Bladder Cancer (BLCA)',
+                  'TCGA-GBM': 'TCGA Glioblastoma (GBM)',
+                  'TCGA-LIHC': 'TCGA Liver Cancer (LIHC)',
+                  'TCGA-KIRC': 'TCGA Kidney Clear Cell Carcinoma (KIRC)',
+                  'TCGA-CESC': 'TCGA Cervical Cancer (CESC)',
+                  'TCGA-KIRP': 'TCGA Kidney Papillary Cell Carcinoma (KIRP)',
+                  'TCGA-SARC': 'TCGA Sarcoma (SARC)',
+                  'TCGA-ESCA': 'TCGA Esophageal Cancer (ESCA)',
+                  'TCGA-PAAD': 'TCGA Pancreatic Cancer (PAAD)',
+                  'TCGA-PCPG': 'TCGA Pheochromocytoma & Paraganglioma (PCPG)',
+                  'TCGA-READ': 'TCGA Rectal Cancer (READ)',
+                  'TCGA-TGCT': 'TCGA Testicular Cancer (TGCT)',
+                  'TCGA-LAML': 'TCGA Acute Myeloid Leukemia (LAML)',
+                  'TCGA-THYM': 'TCGA Thymoma (THYM)',
+                  'TCGA-ACC': 'TCGA Adrenocortical Cancer (ACC)',
+                  'TCGA-MESO': 'TCGA Mesothelioma (MESO)',
+                  'TCGA-UVM': 'TCGA Ocular melanomas (UVM)',
+                  'TCGA-KICH': 'TCGA Kidney Chromophobe (KICH)',
+                  'TCGA-UCS': 'TCGA Uterine Carcinosarcoma (UCS)',
+                  'TCGA-CHOL': 'TCGA Bile Duct Cancer (CHOL)',
+                  'TCGA-DLBC': 'TCGA Large B-cell Lymphoma (DLBC)'}
+    nominal_dtype_map = {'htseq.counts.tsv': 'rna_counts', 
+                         'htseq.fpkm.tsv': 'rna_fpkm', 
+                         'htseq.fpkm-uq.tsv': 'rna_fpkmuq', 
+                         'mirna.tsv': 'mirna', 
+                         'mirna.isoform.tsv': 'mirna_isoform', 
+                         'cnv.tsv': 'cnv', 
+                         'masked.cnv.tsv': 'masked_cnv', 
+                         'muse.snv.tsv': 'muse', 
+                         'mutect2.snv.tsv': 'mutect2', 
+                         'somaticsniper.snv.tsv': 'somaticsniper', 
+                         'varscan2.snv.tsv': 'varscan2'}
+    gdc_type_map = {'rna_counts': 'HTSeq - Counts',  
+                    'rna_fpkm': 'HTSeq - FPKM', 
+                    'rna_fpkmuq': 'HTSeq - FPKM-UQ', 
+                    'mirna': 'miRNA Expression Quantification', 
+                    'mirna_isoform': 'Isoform Expression Quantification', 
+                    'cnv': 'Copy Number Segment', 
+                    'masked_cnv': 'Masked Copy Number Segment', 
+                    'muse': 'MuSE Variant Aggregation and Masking', 
+                    'mutect2': 'MuTect2 Variant Aggregation and Masking', 
+                    'somaticsniper': 
+                        'SomaticSniper Variant Aggregation and Masking', 
+                    'varscan2': 'VarScan2 Variant Aggregation and Masking'}
+    template_map = {'rna_counts': 'template.rna.meta.json', 
+                    'rna_fpkm': 'template.rna.meta.json', 
+                    'rna_fpkmuq': 'template.rna.meta.json', 
+                    'mirna': 'template.mirna.meta.json', 
+                    'mirna_isoform': 'template.mirna.isoform.meta.json', 
+                    'cnv': 'template.cnv.meta.json', 
+                    'masked_cnv': 'template.cnv.meta.json', 
+                    'muse': 'template.snv.meta.json', 
+                    'mutect2': 'template.snv.meta.json', 
+                    'somaticsniper': 'template.snv.meta.json', 
+                    'varscan2': 'template.snv.meta.json'}
+    #       {{ maf_url}}
+    
+    if os.path.isdir(matrix_path):
+        message = ('Require a real file; '
+                +  '"matrix_path" now points to a directory: {}')
+        raise ValueError(message.format(matrix_path))
+    elif os.path.islink(matrix_path):
+        message = ('Require a real file; '
+                +  '"matrix_path" now points to a symbolic link: {}')
+        raise ValueError(message.format(matrix_path))
+    matrix_date = os.path.getmtime(matrix_path)
+    matrix_dir, matrix_filename = os.path.split(matrix_path)
+    metadata_path = os.path.join(matrix_dir, matrix_filename + '.json')
+    if (project is None) or (dataset_type is None):
+        nominal_project, nominal_dtype = matrix_filename.split('.', 1)
+        if project is None:
+            project = nominal_project
+        if dataset_type is None:
+            dataset_type = nominal_dtype_map[nominal_dtype]
+    if project in cohort_map:
+        xena_cohort = cohort_map[project]
+    else:
+        xena_cohort = project
+    gdc_type = gdc_type_map[dataset_type]
+    template_json = template_map[dataset_type]
+    variables = {'xena_cohort': xena_cohort, 
+                 'project_id': project, 
+                 'gdc_type': gdc_type, 
+                 'date': matrix_date}
+    variables.update(keywords)
+    
+    template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                                 'Resources')
+    jinja2_env = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(template_dir))
+    template = jinja2_env.get_template(template_json)
+    with open(metadata_path, 'w') as f:
+        f.write(template.render(**variables))
+    return metadata_path
+
 def import_gdc(project, dataset_type, work_path='.', matrix_dir=None,
-               mode='both'):
+               mode='all'):
     """An interface to the main pipeline for importing GDC RNA-seq data into 
     Xena.
     
@@ -228,9 +362,10 @@ def import_gdc(project, dataset_type, work_path='.', matrix_dir=None,
         project: str
             One project_id for a GDC project.
         dataset_type: str in ['rna_counts', 'rna_fpkm', 'rna_fpkmuq', 'mirna', 
-            'mirna_isoform', 'masked_cnv']
+            'mirna_isoform', 'cnv', 'masked_cnv', 'muse', 'mutect2', 
+            'somaticsniper', 'varscan2']
         work_path: str, default '.'
-            For 'both' or 'download' mode, it will be used for building the 
+            For 'all' or 'download' mode, it will be used for building the 
             download directory structure and saving download files. If 
             "work_path" is not a directory, its directory 
             (os.path.dirname(work_path)) will be used. For 'transform' mode, 
@@ -240,24 +375,24 @@ def import_gdc(project, dataset_type, work_path='.', matrix_dir=None,
             and this single file will be tranformed.
         matrix_dir: str, default None
             One directory to save the final Xena matrix.
-        mode: str in ['both', 'download', 'transform'], default 'both'
+        mode: str in ['all', 'download', 'transform'], default 'all'
             Action(s) to take for importing data. For just 'download' data, a 
             directory structure will be built under "work_path" according to 
             "projects" and "data_type_list". Data will be downloaded to 
             corresponding directories. For just 'transform' data, all files 
             under "data_dir" will be treated as one set of data. These data 
             will be transformed into one single Xena compatible matrix and 
-            saved under work_dir. When 'both' actions are performed, 
+            saved under work_dir. When 'all' actions are performed, 
             downloaded data will be automatically organized into data sets 
             according to "projects" and "data_type_list". Every data set will 
             be transformed into one single Xena compatible matrix and saved 
             together with its corresponding data. "data_dir" will be ignored 
-            under 'both' mode.
+            under 'all' mode.
     """
     
     if dataset_type not in ['rna_counts', 'rna_fpkm', 'rna_fpkmuq', 'mirna',
-                            'mirna_isoform', 'masked_cnv','muse', 'mutect2', 
-                            'somaticsniper', 'varscan2']:
+                            'mirna_isoform', 'cnv', 'masked_cnv', 'muse', 
+                            'mutect2', 'somaticsniper', 'varscan2']:
         raise ValueError('Unrecognized dataset_type: {}.'.format(dataset_type))
 
     gdc_rna_counts = {'analysis.workflow_type': 'HTSeq - Counts'}
@@ -265,6 +400,7 @@ def import_gdc(project, dataset_type, work_path='.', matrix_dir=None,
     gdc_rna_fpkmuq = {'analysis.workflow_type': 'HTSeq - FPKM-UQ'}
     gdc_mirna = {'data_type': 'miRNA Expression Quantification'}
     gdc_mirna_isoform = {'data_type': 'Isoform Expression Quantification'}
+    gdc_cnv = {'data_type': 'Copy Number Segment'}
     gdc_masked_cnv = {'data_type': 'Masked Copy Number Segment'}
     gdc_snv_muse = {
             'analysis.workflow_type': 
@@ -290,8 +426,8 @@ def import_gdc(project, dataset_type, work_path='.', matrix_dir=None,
     trans_args_mirna_isoform = {'read_table_kwargs': {'header': 0, 
                                                       'usecols': [1, 3]},
                                 'matrix_process': process_average_log}
-    trans_args_masked_cnv = {'read_table_kwargs': {'header': 0,
-                                                   'usecols': [1, 2, 3, 5]},
+    trans_args_cnv = {'read_table_kwargs': {'header': 0, 
+                                            'usecols': [1, 2, 3, 5]},
                              'merge_axis': 0}
     trans_args_snv = {'read_table_kwargs': {'header': 0,
                                             'usecols': [12, 36, 4, 5, 6, 39, 
@@ -316,8 +452,11 @@ def import_gdc(project, dataset_type, work_path='.', matrix_dir=None,
                    'mirna_isoform': {'gdc_type': gdc_mirna_isoform,
                                      'trans_args': trans_args_mirna_isoform,
                                      'matrix_name': '{}.mirna.isoform.tsv'}, 
+                   'cnv': {'gdc_type': gdc_cnv, 
+                           'trans_args': trans_args_cnv, 
+                           'matrix_name': '{}.cnv.tsv'},
                    'masked_cnv': {'gdc_type': gdc_masked_cnv,
-                                  'trans_args': trans_args_masked_cnv,
+                                  'trans_args': trans_args_cnv,
                                   'matrix_name': '{}.masked.cnv.tsv'},
                    'muse': {'gdc_type': gdc_snv_muse,
                             'trans_args': trans_args_snv,
@@ -339,7 +478,7 @@ def import_gdc(project, dataset_type, work_path='.', matrix_dir=None,
     else:
         work_dir = os.path.dirname(work_path)
 
-    if mode == 'both' or mode == 'download':
+    if mode == 'all' or mode == 'download':
         gdc_type = dataset_map[dataset_type]['gdc_type']
         dataset = download_dataset(projects=project, dataset_type=gdc_type,
                                    work_dir=work_dir)
@@ -352,7 +491,7 @@ def import_gdc(project, dataset_type, work_path='.', matrix_dir=None,
         else:
             file_list = [work_path]
     
-    if mode == 'both' or mode == 'transform':
+    if mode == 'all' or mode == 'transform':
         trans_args = dataset_map[dataset_type]['trans_args']
         xena_matrix = xena_matrix_merge(file_list, **trans_args)
         if matrix_dir is None:
@@ -365,89 +504,18 @@ def import_gdc(project, dataset_type, work_path='.', matrix_dir=None,
         matrix_path = os.path.join(matrix_dir, matrix_name.format(project))
         print('Saving matrix to {} ...'.format(matrix_path))
         xena_matrix.to_csv(matrix_path, sep='\t')
-        print('Data transformation is finished.')
-
-def render_rna_counts_metadata(matrix_dir, matrix_name, keywords):
-    """Make "metadata.json" for Xena importing
     
-    Args:
-        matrix_dir: str
-            Directory for corresponding data matrix. Generated metadata file 
-            will be saved in the same directory.
-        matrix_name: str
-            Filename for corresponding data matrix. Its extension will be 
-            changed into '.json' and then used as the name for generated 
-            metadata file.
-        keywords: dict
-            Must contain the following keywords in the template for proper 
-            rendering:
-                program
-                project
-                data_url
-                tissue
+    if mode == 'all':
+        render_metadata(matrix_path)
     
-    Returns:
-        metadata: JSON formatted string. ready to be written into a file.
-    """
-
-    cohort_map = {'TCGA-BRCA': 'TCGA Breast Cancer (BRCA)'
-                  'TCGA-LUAD': 'TCGA Lung Adenocarcinoma (LUAD)'
-                  'TCGA-UCEC': 'TCGA Endometrioid Cancer (UCEC)'
-                  'TCGA-LGG': 'TCGA Lower Grade Glioma (LGG)'
-                  'TCGA-HNSC': 'TCGA Head and Neck Cancer (HNSC)'
-                  'TCGA-PRAD': 'TCGA Prostate Cancer (PRAD)'
-                  'TCGA-LUSC': 'TCGA Lung Squamous Cell Carcinoma (LUSC)'
-                  'TCGA-THCA': 'TCGA Thyroid Cancer (THCA)'
-                  'TCGA-SKCM': 'TCGA Melanoma (SKCM)'
-                  'TCGA-OV': 'TCGA Ovarian Cancer (OV)'
-                  'TCGA-STAD': 'TCGA Stomach Cancer (STAD)'
-                  'TCGA-COAD': 'TCGA Colon Cancer (COAD)'
-                  'TCGA-BLCA': 'TCGA Bladder Cancer (BLCA)'
-                  'TCGA-GBM': 'TCGA Glioblastoma (GBM)'
-                  'TCGA-LIHC': 'TCGA Liver Cancer (LIHC)'
-                  'TCGA-KIRC': 'TCGA Kidney Clear Cell Carcinoma (KIRC)'
-                  'TCGA-CESC': 'TCGA Cervical Cancer (CESC)'
-                  'TCGA-KIRP': 'TCGA Kidney Papillary Cell Carcinoma (KIRP)'
-                  'TCGA-SARC': 'TCGA Sarcoma (SARC)'
-                  'TCGA-ESCA': 'TCGA Esophageal Cancer (ESCA)'
-                  'TCGA-PAAD': 'TCGA Pancreatic Cancer (PAAD)'
-                  'TCGA-PCPG': 'TCGA Pheochromocytoma & Paraganglioma (PCPG)'
-                  'TCGA-READ': 'TCGA Rectal Cancer (READ)'
-                  'TCGA-TGCT': 'TCGA Testicular Cancer (TGCT)'
-                  'TCGA-LAML': 'TCGA Acute Myeloid Leukemia (LAML)'
-                  'TCGA-THYM': 'TCGA Thymoma (THYM)'
-                  'TCGA-ACC': 'TCGA Adrenocortical Cancer (ACC)'
-                  'TCGA-MESO': 'TCGA Mesothelioma (MESO)'
-                  'TCGA-UVM': 'TCGA Ocular melanomas (UVM)'
-                  'TCGA-KICH': 'TCGA Kidney Chromophobe (KICH)'
-                  'TCGA-UCS': 'TCGA Uterine Carcinosarcoma (UCS)'
-                  'TCGA-CHOL': 'TCGA Bile Duct Cancer (CHOL)'
-                  'TCGA-DLBC': 'TCGA Large B-cell Lymphoma (DLBC)'}
-    
-    metadata_name = os.path.splitext(matrix_name)[0]+'.json'
-    metadata_path = os.path.join(matrix_dir, metadata_name)
-    keywords.update({'data_type': 'HTSeq - Counts', 
-                     'date': datetime.date.today().isoformat()})
-    
-    template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
-                                 'Resources')
-    jinja2_env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(template_dir))
-    template = jinja2_env.get_template('template.rna.meta.json')
-    with open(metadata_path, 'w') as f:
-        f.write(template.render(**keywords))
+    print('Data transformation is finished.')
 
 def main():
     print('A python module of Xena specific importing pipeline for GDC data.')
 
-#    print(gdc.get_all_project_info())
-
-#    rna_counts_metadata = {'program': 'TCGA',
-#                           'project': 'TCGA-BRCA',
-#                           'data_url': 'https://api.gdc.cancer.gov/data/',
-#                           'tissue': 'Breast'}
-#    render_rna_counts_metadata('gitignore', 'test.uuid.tsv', 
-#                               rna_counts_metadata)
+#    l = os.listdir(r'gitignore\TCGA-CHOL\Xena_Matrices')
+#    for f in l:
+#        render_metadata(os.path.join(r'gitignore\TCGA-CHOL\Xena_Matrices', f))
 
 if __name__ == '__main__':
     main()

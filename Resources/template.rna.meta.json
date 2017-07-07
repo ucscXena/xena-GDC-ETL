@@ -11,7 +11,6 @@
  "type":"genomicMatrix",
  "wrangler":"Xena GDC ETL script",
  "version":"{{ date }}",
- "unit":"{% if norm %}log2(normalized_count+1){% else %}log2(count+1){% endif %}",
-{% if notes %} "notes":"{{ notes }}",{% endif %}
- "description":
- "The gene expression profile was measured experimentally using the Illumina HiSeq 2000 RNA Sequencing platform by the University of North Carolina TCGA genome characterization center. Level 3 data was downloaded from TCGA data coordination center. This dataset shows the gene-level transcription estimates, as in log2(x+1) transformed RSEM normalized count. Genes are mapped onto the human genome coordinates using UCSC Xena HUGO probeMap (see ID/Gene mapping link below for details). Reference to method description from University of North Carolina TCGA genome characterization center: <a href=\"https://tcga-data.nci.nih.gov/tcgafiles/ftp_auth/distro_ftpusers/anonymous/tumor/brca/cgcc/unc.edu/illuminahiseq_rnaseqv2/rnaseqv2/unc.edu_BRCA.IlluminaHiSeq_RNASeqV2.Level_3.1.11.0/DESCRIPTION.txt\" target=\"_blank\"><u>DCC description</u></a><br><br>In order to more easily view the differential expression between samples, we set the default view to center each gene or exon to zero by independently subtracting the mean of each gene or exon on the fly. Users can view the original non-normalized values by adjusting visualization settings.<br><br>"}
+ "unit":"{% if norm %}log2(normalized_count+1){% else %}log2(count+1){% endif %}"{% if notes %},
+ "notes":"{{ notes }}"{% endif %}
+}

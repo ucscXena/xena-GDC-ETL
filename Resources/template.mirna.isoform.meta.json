@@ -11,7 +11,6 @@
  "type":"genomicMatrix",
  "wrangler":"Xena GDC ETL script",
  "version":"{{ date }}",
- "unit":"log2(RPM+1)",
-{% if notes %} "notes":"{{ notes }}",{% endif %}
- "description":
- "{{ xena_cohort }} miRNA expression by RNAseq. The miRNA expression profile was measured experimentally using the Illumina HiSeq 2000 RNA Sequencing platform by the British Columbia Cancer Agency TCGA genome characterization center. Level 3 interpreted level data was downloaded from TCGA data coordination center. Download data is in the unit of reads per million mapped reads (RPM). This dataset shows the miRNA transcription estimates in log2 (RPM). For more information see: http://nar.oxfordjournals.org/content/early/2015/08/13/nar.gkv808.full .<br><br>In order to more easily view the differential expression between samples, we set the default view to center each miRNA to zero by independently subtracting the mean of each miRNA across the cohort on the fly. Users can view the original non-normalized values by adjusting visualization settings.<br><br>"}
+ "unit":"log2(RPM+1)"{% if notes %},
+ "notes":"{{ notes }}"{% endif %}
+}

@@ -1,0 +1,16 @@
+{"start_index":1,
+ "cohort":"{{ xena_cohort }}",
+ "url":"https://api.gdc.cancer.gov/data",
+ "dataSubType":"copy number",
+ "dataProducer":"Genomic Data Commons",
+ "label":"{{ project_id }} {{ gdc_type }}",
+ "wrangling_procedure":
+ "Data from different samples is combined into genomicSegment; chromosome location and segment mean data are presented.",
+ "assembly":"hg38",
+ "PLATFORM":"Affymetrix SNP 6.0",
+ "type":"genomicSegment",
+ "wrangler":"Xena GDC ETL script",
+ "version":"{{ date }}",
+ "unit":"log2(copy-number/2)"{% if notes %},
+ "notes":"{{ notes }}"{% endif %}
+}

@@ -10,5 +10,6 @@
  "type":"genomicMatrix",
  "wrangler":"Xena GDC ETL script",
  "version":"{{ date }}",
- "unit":"log2(RPM+1)",
-{% if notes %} "notes":"{{ notes }}",{% endif %}}
+ "unit":"log2(RPM+1)"{% if notes %},
+ "notes":"{{ notes }}"{% endif %}
+}
