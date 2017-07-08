@@ -495,7 +495,7 @@ def import_gdc(project, dataset_type, work_path='.', matrix_dir=None,
         trans_args = dataset_map[dataset_type]['trans_args']
         xena_matrix = xena_matrix_merge(file_list, **trans_args)
         if matrix_dir is None:
-            matrix_dir = work_dir
+            matrix_dir = os.path.dirname(file_list[0])
             while project in os.path.dirname(matrix_dir):
                 matrix_dir = os.path.dirname(matrix_dir)
         matrix_dir = os.path.join(matrix_dir, 'Xena_Matrices')
