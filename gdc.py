@@ -73,9 +73,9 @@ def get_file_dict(query_filter, label_field=None):
             https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query
         label_field: A single GDC available file field whose value will be 
             used for renaming downloaded files. Default is None which makes 
-            the final file name become "UUID.file_extension". If provided, 
-            the final file name will be "label.UUID.file_extension". GDC 
-            available file fields can be found at 
+            the final file name become "UUID.UUID.file_extension". If 
+            provided, the final file name will be "label.UUID.file_extension". 
+            GDC available file fields can be found at 
             https://docs.gdc.cancer.gov/API/Users_Guide/Appendix_A_Available_Fields/
             File_extensions supported by this module are defined by the 
             constant set _SUPPORTED_FILE_TYPES.
