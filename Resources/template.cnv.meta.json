@@ -1,6 +1,6 @@
 {"start_index":1,
  "cohort":"{{ xena_cohort }}",
- "url":"https://api.gdc.cancer.gov/data",
+ "url":"https://api.gdc.cancer.gov/data/",
  "dataSubType":"copy number",
  "dataProducer":"Genomic Data Commons",
  "label":"{{ project_id }} {{ gdc_type }}",

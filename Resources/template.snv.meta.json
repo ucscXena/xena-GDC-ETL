@@ -1,6 +1,6 @@
 {"start_index":1,
  "cohort":"{{ xena_cohort }}",
- "url":"{{ maf_url|default('https://api.gdc.cancer.gov/data') }}",
+ "url":"https://api.gdc.cancer.gov/data/{{ maf_uuid }}",
  "dataSubType":"somatic mutation (SNPs and small INDELs)",
  "dataProducer":"Genomic Data Commons",
  "label":"{{ project_id }} {{ gdc_type }}",

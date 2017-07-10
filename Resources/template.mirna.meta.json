@@ -1,6 +1,7 @@
 {"cohort":"{{ xena_cohort }}",
- "url":"https://api.gdc.cancer.gov/data",
+ "url":"https://api.gdc.cancer.gov/data/",
  "dataSubType":"miRNA gene expression RNAseq",
+ ":probeMap":"{{ probemap_url|default('../../probeMaps/miRNA_HiSeq.probeMap') }}",
  "dataProducer":"Genomic Data Commons",
  "label":"{{ project_id }} {{ gdc_type }}",
  "colNormalization":true,
