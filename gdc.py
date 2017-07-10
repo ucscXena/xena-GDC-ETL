@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""This module provides basic and minimum necessary functions for carrying out 
+data query and download for Xena GDC ETL pipelines
+"""
+
 # Ensure Python 2 and 3 compatibility
 from __future__ import division
 from __future__ import print_function
@@ -31,18 +35,23 @@ def and_in_filter_constructor(filter_dict):
     """A simple constructor converting a query dictionary into GDC API 
     specific filters.
     
-    Convert a diction of query condition into a diction conforming to GDC 
-    API's format. Conditions in the input dict will be combined together with 
-    an AND relation. Every (key, value) pair will be joined together with "=" 
-    operator.
+    Convert a dict of query condition into a diction conforming to GDC 
+    API's format. Conditions in the input dict will be combined together by 
+    an AND relation. Every (key, value) pair will be joined together with "in" 
+    operator. If value is not a list, it will be converted to a list first. 
+    See details at 
+    https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query
     
     Args:
-        filter_dict: A dict describing query conditions. Each (key, value) 
-            pair represents for one condition. Operator between conditions is 
+        filter_dict: dict
+            A dict describing query conditions. Each (key, value) pair 
+            represents for one condition. Operator between conditions is 
             "AND". Within a condition, the "key" is the 'field' operand. 
-            Operator between "key" and "value" is "=".
-    Return: A diction of filter conforming to GDC API's format. It should then 
-        be converted to JSON format and used in the following http request.
+            Operator between "key" and "value" is "in".
+    Returns: 
+        query_dict: A dict of filter conforming to GDC API's format. It should 
+        then be converted to JSON format and used in the following http 
+        request.
     """
     
     operands_list = []
@@ -58,17 +67,23 @@ def get_file_dict(query_filter, label_field=None):
     """Get a dictionary of files matching query conditions.
     
     Args:
-        query_filter: A dict of query conditions searching for files of 
-            interest. It should follow GDC API's query format. See:
+        query_filter: dict
+            A dict of query conditions which will be used to search for files 
+            of interest. It should follow GDC API's query format. See:
             https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query
         label_field: A single GDC available file field whose value will be 
             used for renaming downloaded files. Default is None which makes 
             the final file name become "UUID.file_extension". If provided, 
-            the final file name will be "label.UUID.file_extension".
+            the final file name will be "label.UUID.file_extension". GDC 
+            available file fields can be found at 
+            https://docs.gdc.cancer.gov/API/Users_Guide/Appendix_A_Available_Fields/
+            File_extensions supported by this module are defined by the 
+            constant set _SUPPORTED_FILE_TYPES.
         
-    Return: A dict of files matching query conditions. The key will be a 
-        file's UUID, while the value is the file name which can be used during
-        downloading
+    Returns: 
+        file_dict: A dict of files matching query conditions. The key will be 
+        a file's UUID, while the value is the file name formatted accordingly, 
+        which can be used during downloading.
     """
     
     files_endpt = '{}/files'.format(_GDC_API_BASE)
@@ -111,7 +126,7 @@ def download_data(uuid, path=None):
         uuid: str
             UUID for the target file.
         path: str, default None.
-            Path for saving the download file. If None, the download file 
+            Path for saving the downloaded file. If None, the downloaded file 
             will be saved under current python work directory with the 
             original filename from GDC.
     
@@ -145,7 +160,9 @@ def get_all_project_info():
     """Get project info for all projects on GDC.
     
     Returns:
-        project_dict: A dict of project info for all projects in GDC
+        project_dict: A dict of project info for all projects in GDC. The key 
+        will be project_id and the corresponding value is a dict contains 
+        "project name", "primary_site" and "program name" info.
     """
     
     projects_endpt = '{}/projects'.format(_GDC_API_BASE)
@@ -162,8 +179,7 @@ def get_all_project_info():
     return project_dict
 
 def main():
-    print('A simple python module for GDC API functionality.')
-    print(get_all_project_info())
+    print('A simple python module providing selected GDC API functionality.')
 
 if __name__ == '__main__':
     main()

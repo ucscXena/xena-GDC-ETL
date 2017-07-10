@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""A test module for ETL pipelines importing GDC data into Xena
+"""
+
 # Ensure Python 2 and 3 compatibility
 from __future__ import division
 from __future__ import print_function
@@ -14,23 +17,23 @@ def main():
     start_time = timeit.default_timer()
     script_dir = os.path.dirname(os.path.abspath(__file__))
     work_dir = os.path.join(script_dir, 'gitignore', 'test')
-    matrix_dir = None
-#    work_dir = os.path.join(matrix_dir, 'TCGA-BRCA', 'HTSeq-Counts')
+    matrix_path = None
+#    work_dir = os.path.join(matrix_path, 'TCGA-BRCA', 'HTSeq-Counts')
     mode = 'all'
 #    xena.import_gdc(project='TCGA-BRCA', dataset_type='rna_counts', 
-#                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+#                    work_path=work_dir, mode=mode, matrix_path=matrix_path)
 #    test_size_mb = 310.76 # TCGA-BRCA rna_couts
 #    xena.import_gdc(project='TCGA-BRCA', dataset_type='muse', 
-#                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+#                    work_path=work_dir, mode=mode, matrix_path=matrix_path)
 #    xena.import_gdc(project='TCGA-BRCA', dataset_type='mutect2', 
-#                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+#                    work_path=work_dir, mode=mode, matrix_path=matrix_path)
 #    xena.import_gdc(project='TCGA-BRCA', dataset_type='somaticsniper', 
-#                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+#                    work_path=work_dir, mode=mode, matrix_path=matrix_path)
 #    xena.import_gdc(project='TCGA-BRCA', dataset_type='varscan2', 
-#                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+#                    work_path=work_dir, mode=mode, matrix_path=matrix_path)
 #    test_size_mb = 81.33 # TCGA-BRCA muse, mutect2, somaticsniper and varscan2
     xena.import_gdc(project='TCGA-CHOL', dataset_type='rna_counts', 
-                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+                    work_path=work_dir, mode=mode, matrix_path=matrix_path)
 #    test_size_mb = 11.22 # TCGA-CHOL rna_counts
     xena.import_gdc(project='TCGA-CHOL', dataset_type='rna_fpkm', 
                     work_path=work_dir, mode=mode)
@@ -44,16 +47,16 @@ def main():
                     work_path=work_dir, mode=mode)
 #    test_size_mb = 75.18 # TCGA-CHOL 6 types
 #    xena.import_gdc(project='TCGA-DLBC', dataset_type='muse', 
-#                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+#                    work_path=work_dir, mode=mode, matrix_path=matrix_path)
 #    test_size_mb = 1.29 # TCGA-DLBC muse
     xena.import_gdc(project='TCGA-CHOL', dataset_type='muse', 
-                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+                    work_path=work_dir, mode=mode, matrix_path=matrix_path)
     xena.import_gdc(project='TCGA-CHOL', dataset_type='mutect2', 
-                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+                    work_path=work_dir, mode=mode, matrix_path=matrix_path)
     xena.import_gdc(project='TCGA-CHOL', dataset_type='somaticsniper', 
-                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+                    work_path=work_dir, mode=mode, matrix_path=matrix_path)
     xena.import_gdc(project='TCGA-CHOL', dataset_type='varscan2', 
-                    work_path=work_dir, mode=mode, matrix_dir=matrix_dir)
+                    work_path=work_dir, mode=mode, matrix_path=matrix_path)
     test_size_mb = 62.42 # TCGA-CHOL 8 types
     end_time = timeit.default_timer()
     print('Finish in {} sec.'.format(end_time - start_time))
