@@ -90,11 +90,11 @@ def download_dataset(dataset_type, projects=None, download_dir='.',
     query_filter = gdc.and_in_filter_constructor(query_dict)
     file_dict = gdc.get_file_dict(query_filter, label_field=label_field)
     if not file_dict:
-        message = 'No {} data for project {}.'
+        message = 'No {} data found for project {}.'
         dataset_description = ' - '.join(sorted(dataset_type.values()))
-        print(message.format(dataset_description, projects))
-        return
         # raise ValueError(message.format(dataset_description, projects))
+        print(message.format(dataset_description, projects))
+        return {}
     data_dict = {download_dir: []}
     total_files = len(file_dict)
     file_count = 0
@@ -145,11 +145,7 @@ def process_average_log(df):
     """
     
     print('Averaging duplicated samples ...')
-    df_avg = (
-            df.rename(columns=lambda x: x[:-1])
-              .groupby(df.columns, axis=1)
-              .mean()
-        )
+    df_avg = df.groupby(df.columns, axis=1).mean()
     print('Log transforming data ...')
     return np.log2(df_avg + 1)
 
@@ -169,6 +165,10 @@ def process_maf(df):
     """
     print('Calculating "dna_vaf" ...')
     df['dna_vaf'] = df['t_alt_count'] / df['t_depth']
+    print('Trim "Tumor_Sample_Barcode" into Xena sample ID ...')
+    trim_func = lambda x: '-'.join(x.split('-', 4)[0:4])
+    df['Tumor_Sample_Barcode'] = df['Tumor_Sample_Barcode'].apply(trim_func)
+    print('Re-organizing matrix ...')
     rename_dict = {'Hugo_Symbol': 'gene', 
                    'Chromosome': 'chrom', 
                    'Start_Position': 'chromstart', 
@@ -179,7 +179,6 @@ def process_maf(df):
                    'HGVSp_Short': 'Amino_Acid_Change', 
                    'Consequence': 'effect',
                    'FILTER': 'filter'}
-    print('Re-organizing matrix ...')
     return (
             df.drop(['t_alt_count', 't_depth'], axis=1)
               .rename(columns=rename_dict)
@@ -254,7 +253,7 @@ def xena_matrix_merge(file_list, read_table_kwargs={}, merge_axis=1,
     return xena_matrix
 
 def render_metadata(matrix_path, project=None, dataset_type=None, 
-                    keywords={}):
+                    probemap=None, keywords={}):
     """Make "metadata.json" for Xena importing
     
     Args:
@@ -270,31 +269,25 @@ def render_metadata(matrix_path, project=None, dataset_type=None,
         dataset_type: str in ['rna_counts', 'rna_fpkm', 'rna_fpkmuq', 'mirna', 
             'mirna_isoform', 'cnv', 'masked_cnv', 'muse', 'mutect2', 
             'somaticsniper', 'varscan2']
+        probemap: str or dict
+            A string of path pointing to the probeMap file corresponding to 
+            the dataset_type. A probeMap can be sepecified in metadata for 
+            'rna_counts', 'rna_fpkm', 'rna_fpkmuq', and 'mirna'. If a dict is 
+            provided, it can have 2 entries, 'rna' or 'mirna': probemap['rna'] 
+            is the path of probeMap for dataset_type 'rna_counts', 'rna_fpkm' 
+            and 'rna_fpkmuq'; probemap['mirna'] is the path of probeMap for 
+            dataset_type 'mirna'. The pointed probeMap file won't be verified.
         keywords: dict
             Optional keywords to be rendered from jinja2 templates. Keywords 
             set by this dict have priority and won't be override. Supported 
             keywords are "xena_cohort", "project_id", "gdc_type", 
-            "date", "notes", "maf_url".
+            "date", "notes", "probemap_url", "maf_uuid".
     
     Returns:
         metadata: JSON formatted string. ready to be written into a file.
     """
     
-    if os.path.isdir(matrix_path):
-        message = ('Require a real file; '
-                +  '"matrix_path" now points to a directory: {}')
-        raise ValueError(message.format(matrix_path))
-    elif os.path.islink(matrix_path):
-        message = ('Require a real file; '
-                +  '"matrix_path" now points to a symbolic link: {}')
-        raise ValueError(message.format(matrix_path))
-
-    print('Creating metadata file ...')
-    matrix_date = time.strftime("%m-%d-%Y", 
-                                time.gmtime(os.path.getmtime(matrix_path)))
-    matrix_dir, matrix_filename = os.path.split(matrix_path)
-    metadata_path = os.path.join(matrix_dir, matrix_filename + '.json')
-
+    # Map GDC project_id to Xena specific cohort name.
     cohort_map = {'TCGA-BRCA': 'TCGA Breast Cancer (BRCA)',
                   'TCGA-LUAD': 'TCGA Lung Adenocarcinoma (LUAD)',
                   'TCGA-UCEC': 'TCGA Endometrioid Cancer (UCEC)',
@@ -328,6 +321,7 @@ def render_metadata(matrix_path, project=None, dataset_type=None,
                   'TCGA-UCS': 'TCGA Uterine Carcinosarcoma (UCS)',
                   'TCGA-CHOL': 'TCGA Bile Duct Cancer (CHOL)',
                   'TCGA-DLBC': 'TCGA Large B-cell Lymphoma (DLBC)'}
+    # Map for inferring dataset_type from matrix filename.
     nominal_dtype_map = {'htseq.counts.tsv': 'rna_counts', 
                          'htseq.fpkm.tsv': 'rna_fpkm', 
                          'htseq.fpkm-uq.tsv': 'rna_fpkmuq', 
@@ -339,6 +333,7 @@ def render_metadata(matrix_path, project=None, dataset_type=None,
                          'mutect2.snv.tsv': 'mutect2', 
                          'somaticsniper.snv.tsv': 'somaticsniper', 
                          'varscan2.snv.tsv': 'varscan2'}
+    # Map dataset_map to GDC data type or GDC workflow type.
     gdc_type_map = {'rna_counts': 'HTSeq - Counts',  
                     'rna_fpkm': 'HTSeq - FPKM', 
                     'rna_fpkmuq': 'HTSeq - FPKM-UQ', 
@@ -351,6 +346,7 @@ def render_metadata(matrix_path, project=None, dataset_type=None,
                     'somaticsniper': 
                         'SomaticSniper Variant Aggregation and Masking', 
                     'varscan2': 'VarScan2 Variant Aggregation and Masking'}
+    # Map dataset_type to corresponding metadata template.
     template_map = {'rna_counts': 'template.rna.meta.json', 
                     'rna_fpkm': 'template.rna.meta.json', 
                     'rna_fpkmuq': 'template.rna.meta.json', 
@@ -362,7 +358,17 @@ def render_metadata(matrix_path, project=None, dataset_type=None,
                     'mutect2': 'template.snv.meta.json', 
                     'somaticsniper': 'template.snv.meta.json', 
                     'varscan2': 'template.snv.meta.json'}
-    # TODO: {{ maf_url}}
+
+    # Start to generate metadata.
+    if not os.path.isfile(matrix_path):
+        raise ValueError('{} is not a file.'.format(matrix_path))
+
+    print('Creating metadata file ...')
+    matrix_path = os.path.abspath(matrix_path)
+    matrix_date = time.strftime("%m-%d-%Y", 
+                                time.gmtime(os.path.getmtime(matrix_path)))
+    matrix_dir, matrix_filename = os.path.split(matrix_path)
+    metadata_path = os.path.join(matrix_dir, matrix_filename + '.json')
 
     if (project is None) or (dataset_type is None):
         nominal_project, nominal_dtype = matrix_filename.split('.', 1)
@@ -370,29 +376,53 @@ def render_metadata(matrix_path, project=None, dataset_type=None,
             project = nominal_project
         if dataset_type is None:
             dataset_type = nominal_dtype_map[nominal_dtype]
+
     if project in cohort_map:
         xena_cohort = cohort_map[project]
     else:
         xena_cohort = project
     gdc_type = gdc_type_map[dataset_type]
-    template_json = template_map[dataset_type]
     variables = {'xena_cohort': xena_cohort, 
                  'project_id': project, 
                  'gdc_type': gdc_type, 
                  'date': matrix_date}
+    if dataset_type in ['rna_counts', 'rna_fpkm', 'rna_fpkmuq', 'mirna']:
+        if isinstance(probemap, str):
+            probemap_url = os.path.relpath(probemap, 
+                                           matrix_dir).replace('\\', '/')
+            variables['probemap_url'] = probemap_url
+        elif isinstance(probemap, dict):
+            if dataset_type.startswith('rna') and 'rna' in probemap:
+                probemap_url = os.path.relpath(probemap['rna'], 
+                                               matrix_dir).replace('\\', '/')
+                variables['probemap_url'] = probemap_url
+            elif dataset_type.startswith('mirna') and 'mirna' in probemap:
+                probemap_url = os.path.relpath(probemap['mirna'], 
+                                               matrix_dir).replace('\\', '/')
+                variables['probemap_url'] = probemap_url
+    if dataset_type in ['muse', 'mutect2', 'somaticsniper', 'varscan2']:
+        query_dict = {'access': 'open',
+                      'cases.project.project_id': project,
+                      'analysis.workflow_type': gdc_type}
+        query_filter = gdc.and_in_filter_constructor(query_dict)
+        file_dict = gdc.get_file_dict(query_filter)
+        if len(file_dict) == 1:
+            variables['maf_uuid'] = file_dict.keys()[0]
     variables.update(keywords)
-    
-    template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
-                                 'Resources')
+
+    template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                'Resources')
     jinja2_env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(template_dir))
+    template_json = template_map[dataset_type]
     template = jinja2_env.get_template(template_json)
     with open(metadata_path, 'w') as f:
         f.write(template.render(**variables))
+    print('Metadata ready.')
     return metadata_path
 
-def import_gdc(project=None, dataset_type=None, work_path='.', 
-               matrix_path=None, mode='all'):
+def import_gdc(project, dataset_type, work_path='.', matrix_path=None, 
+               probemap_path=None, mode='all'):
     """An wrapper for building a main pipeline to import GDC RNA-seq data into 
     Xena.
     
@@ -416,11 +446,11 @@ def import_gdc(project=None, dataset_type=None, work_path='.',
                 └── project_id.dataset_type_stringN.tsv.json
     
     Args:
-        project: str, default None
+        project: str
             One GDC project_id.
         dataset_type: str in ['rna_counts', 'rna_fpkm', 'rna_fpkmuq', 'mirna', 
             'mirna_isoform', 'cnv', 'masked_cnv', 'muse', 'mutect2', 
-            'somaticsniper', 'varscan2'], default None
+            'somaticsniper', 'varscan2']
         work_path: str, default '.'
             For 'all' or 'download' mode, it will be used for building the 
             default directory structure shown above to save download files. 
@@ -449,14 +479,16 @@ def import_gdc(project=None, dataset_type=None, work_path='.',
             If "matrix_path" is a directory:
                 For 'all' and 'transform' mode, the Xena matrix will be saved 
                 under this "matrix_path" directory.
-                For 'metadata' mode, all files under this directory will be 
-                treated as Xena matrices and corresponding metadata will be 
-                generated.
+                For 'metadata' mode, "matrix_path" being a directory will 
+                trigger an error in this "import_gdc" wrapper.
             If "matrix_path" is not a directory:
                 For 'all' and 'transform' mode, the Xena matrix will be saved 
                 as "matrix_path". 
                 For 'metadata' mode, the "matrix_path" file will be treated as 
                 a Xena matrix and the corresponding metadata will be generated.
+        probemap_path: str, default None
+            Path to one probeMap file corresponding to the dataset_type. For 
+            'download' and 'transform' mode, "probemap_path" will be ignored.
         mode: str in ['all', 'download', 'transform', 'metadata'], default 
               'all'
             Action(s) to be taken for the data importing pipeline. 
@@ -467,8 +499,8 @@ def import_gdc(project=None, dataset_type=None, work_path='.',
             directory structure. Then the dataset will be transformed into one 
             Xena matrix and saved accordingly, depending on the "matrix_path". 
             Finally, one metadata will be generated for the Xena matrix.
-            For 'download' mode, a default directory structure (shown above) will 
-            be created under the "work_path". Both "project" and 
+            For 'download' mode, a default directory structure (shown above) 
+            will be created under the "work_path". Both "project" and 
             "dataset_type" are required for defining a single a dataset which 
             will be downloaded to one corresponding directory in the default 
             directory structure.
@@ -476,33 +508,11 @@ def import_gdc(project=None, dataset_type=None, work_path='.',
             "work_path" will be treated as one dataset, which will be 
             transformed into one Xena matrix and saved accordingly, depending 
             on the "matrix_path".
-            For 'metadata' mode, all Xena matrix(es) will first be identied 
-            according to the "matrix_path". Metadata will generated for each 
-            Xena matrix(es) and saved together with corresponding Xena 
-            matrix(es).
+            For 'metadata' mode, metadata will generated for the single Xena 
+            matrix defined by the "matrix_path".
     """
 
-    if mode != 'metadata' and (project is None or dataset_type is None):
-        message = ('"project" and "dataset_type" are required for '
-                +  '"all", "download" or "transform" mode.')
-        raise ValueError(message)
-    
-    work_path = os.path.abspath(work_path)
-    if os.path.isdir(work_path):
-        work_dir = work_path
-    else:
-        work_dir = os.path.dirname(work_path)
-    
-    if mode == 'transform':
-        if os.path.isdir(work_path):
-            file_list = []
-            for f in os.listdir(work_dir):
-                f_path = os.path.abspath(os.path.join(work_dir, f))
-                if os.path.isfile(f_path):
-                    file_list.append(f_path)
-        else:
-            file_list = [work_path]
-    
+    # Download settings for each type of dataset.
     download_args_rna_counts = {
             'dataset_type': {'analysis.workflow_type': 'HTSeq - Counts'}
         }
@@ -552,7 +562,7 @@ def import_gdc(project=None, dataset_type=None, work_path='.',
                 },
             'label_field': 'cases.project.project_id'
         }
-
+    # Xena transformation settings for each type of dataset.
     trans_args_rna = {'read_table_kwargs': {'header': None, 'comment': '_'},
                       'matrix_process': process_average_log,
                       'index_name': 'Ensembl_ID'}
@@ -572,7 +582,8 @@ def import_gdc(project=None, dataset_type=None, work_path='.',
                       'merge_axis': 0,
                       'matrix_process': process_maf,
                       'index_name': 'Sample_ID'}
-
+    # Map for dataset specific download settings, transformation settings, and 
+    # Xena matrix name boilerplates.
     dataset_map = {
             'rna_counts': {
                     'download_args': download_args_rna_counts,
@@ -631,9 +642,16 @@ def import_gdc(project=None, dataset_type=None, work_path='.',
                 }
         }
 
+    # Start importing process here.
     if dataset_type not in dataset_map:
         raise ValueError('Unrecognized dataset_type: {}.'.format(dataset_type))
 
+    work_path = os.path.abspath(work_path)
+    if os.path.isdir(work_path):
+        work_dir = work_path
+    else:
+        work_dir = os.path.dirname(work_path)
+    
     if mode == 'all' or mode == 'download':
         download_args = dataset_map[dataset_type]['download_args']
         gdc_type = download_args['dataset_type']
@@ -644,8 +662,20 @@ def import_gdc(project=None, dataset_type=None, work_path='.',
         mkdir_p(dataset_dir)
         dataset = download_dataset(projects=project, download_dir=dataset_dir, 
                                    **download_args)
+        if not dataset:
+            return
         file_list = dataset.values()[0]
 
+    if mode == 'transform':
+        if os.path.isdir(work_path):
+            file_list = []
+            for f in os.listdir(work_dir):
+                f_path = os.path.abspath(os.path.join(work_dir, f))
+                if os.path.isfile(f_path):
+                    file_list.append(f_path)
+        else:
+            file_list = [work_path]
+    
     if mode == 'all' or mode == 'transform':
         trans_args = dataset_map[dataset_type]['trans_args']
         xena_matrix = xena_matrix_merge(file_list, **trans_args)
@@ -666,18 +696,11 @@ def import_gdc(project=None, dataset_type=None, work_path='.',
         xena_matrix.to_csv(matrix_path, sep='\t')
     
     if mode == 'all' or mode == 'metadata':
-        metadata_kwargs = {}
-        if os.path.isdir(matrix_path):
-            for f in os.listdir(matrix_path):
-                f_path = os.path.join(matrix_path, f)
-                if os.path.isfile(f_path):
-                    render_metadata(f_path, project=project, 
-                                    dataset_type=dataset_type, 
-                                    keywords=metadata_kwargs)
+        if os.path.isfile(matrix_path):
+            render_metadata(matrix_path, project=project,
+                            dataset_type=dataset_type, probemap=probemap_path)
         else:
-            render_metadata(matrix_path, project=project, 
-                            dataset_type=dataset_type, 
-                            keywords=metadata_kwargs)
+            raise ValueError('{} is not a Xena matrix.'.format(matrix_path))
     
     print('Data transformation is finished.')
 
