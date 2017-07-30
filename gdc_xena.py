@@ -19,23 +19,20 @@ import requests
 
 _GDC_API_BASE = 'https://api.gdc.cancer.gov'
 _SUPPORTED_FILE_TYPES = {'xml', 'txt', 'tar', 'gz', 'md5', 'xlsx', 'xls'}
-_SUPPORTED_DATASETS = [
-        {'data_type': 'Copy Number Segment'},
-        {'data_type': 'Masked Copy Number Segment'},
-        {'data_type': 'Isoform Expression Quantification'},
-        {'data_type': 'miRNA Expression Quantification'},
-        {'data_type': 'Methylation Beta Value'},
-        {'analysis.workflow_type': 'HTSeq - Counts'},
-        {'analysis.workflow_type': 'HTSeq - FPKM'},
-        {'analysis.workflow_type': 'HTSeq - FPKM-UQ'},
-        {'analysis.workflow_type': 'MuSE Variant Aggregation and Masking'},
-        {'analysis.workflow_type': 'MuTect2 Variant Aggregation and Masking'},
-        {'analysis.workflow_type': 
-            'SomaticSniper Variant Aggregation and Masking'},
-        {'analysis.workflow_type': 'VarScan2 Variant Aggregation and Masking'},
-        {'data_type': 'Biospecimen Supplement'},
-        {'data_type': 'Clinical Supplement'}
-    ]
+_SUPPORTED_DATASETS = [{'data_type': 'Copy Number Segment'},
+                       {'data_type': 'Masked Copy Number Segment'},
+                       {'data_type': 'Isoform Expression Quantification'},
+                       {'data_type': 'miRNA Expression Quantification'},
+                       {'data_type': 'Methylation Beta Value'},
+                       {'analysis.workflow_type': 'HTSeq - Counts'},
+                       {'analysis.workflow_type': 'HTSeq - FPKM'},
+                       {'analysis.workflow_type': 'HTSeq - FPKM-UQ'},
+                       {'analysis.workflow_type': 'MuSE Variant Aggregation and Masking'},
+                       {'analysis.workflow_type': 'MuTect2 Variant Aggregation and Masking'},
+                       {'analysis.workflow_type': 'SomaticSniper Variant Aggregation and Masking'},
+                       {'analysis.workflow_type': 'VarScan2 Variant Aggregation and Masking'},
+                       {'data_type': 'Biospecimen Supplement'},
+                       {'data_type': 'Clinical Supplement'}]
 
 def and_in_filter_constructor(filter_dict):
     """A simple constructor converting a query dictionary into GDC API 
@@ -209,6 +206,87 @@ def get_ext(file_name):
         if name_list[i] in _SUPPORTED_FILE_TYPES:
             break
     return '.'.join(name_list[i:])
+
+def get_file_dict(filter_dict, label_field=None):
+    """Get a dictionary of files matching query conditions.
+    
+    Args:
+        filter_dict: dict
+            A dict of query conditions which will be used to search for files 
+            of interest. Each (key, value) pair represents for one condition. 
+            It will be passed to "and_in_filter_constructor" for making a 
+            query filter compatible with GDC API. Please check 
+            "and_in_filter_constructor" function for details.
+        label_field: str, default None
+            A single GDC available file field whose value will be 
+            used for renaming downloaded files. Default is None which makes 
+            the final file name become "UUID.file_extension". If provided, the 
+            final file name will be "label.UUID.file_extension". GDC available 
+            file fields can be found at 
+            https://docs.gdc.cancer.gov/API/Users_Guide/Appendix_A_Available_Fields/
+            File_extensions supported by this module are defined by the 
+            constant set _SUPPORTED_FILE_TYPES.
+        
+    Returns: 
+        file_dict: A dict of files matching query conditions. The key will be 
+        a file's UUID, while the value is the file name formatted accordingly, 
+        which can be used during downloading.
+    """
+    
+    fields = ['file_id', 'file_name']
+    if label_field is not None:
+        fields.append(label_field)
+    try:
+        file_df = search('files', filter_dict, fields)
+        file_df.set_index('file_id', drop=False, inplace=True)
+        if label_field is None:
+            file_s = (file_df['file_id'].astype(str) + '.' 
+                      + file_df['file_name'].apply(get_ext).astype(str))
+        else:
+            file_s = (file_df[label_field].astype(str) + '.' 
+                      + file_df['file_id'].astype(str) + '.' 
+                      + file_df['file_name'].apply(get_ext).astype(str))
+        file_dict = file_s.to_dict()
+    except:
+        file_dict = {}
+    return file_dict
+
+def download_data(uuid, path=None):
+    """ Download a single file from GDC.
+    
+    Args:
+        uuid: str
+            UUID for the target file.
+        path: str, default None.
+            Path for saving the downloaded file. If None, the downloaded file 
+            will be saved under current python work directory with the 
+            original filename from GDC.
+    
+    Returns:
+        status: boolean
+    """
+    
+    data_endpt = '{}/data/'.format(_GDC_API_BASE)
+    chunk_size = 4096
+    response = requests.get(data_endpt + uuid, stream=True)
+    if response.status_code == 200:
+        file_size = int(response.headers['Content-Length'])
+        if path is None:
+            content_disp = response.headers['Content-Disposition']
+            path = content_disp[content_disp.find('filename=') + 9:]
+        with open(path, 'wb') as f:
+            downloaded = 0
+            print('  0%', end='')
+            for chunk in response.iter_content(chunk_size):
+                f.write(chunk)
+                downloaded = downloaded + chunk_size
+                print('{}{:4.0%}'.format('\b' * 4, downloaded/file_size), 
+                      end='')
+                sys.stdout.flush()
+            print('\b\b\b\b100%')
+        return True
+    else:
+        return False
 
 def download(uuids, download_dir='.', chunk_size=4096):
     """Download GDC's open access data according to UUID(s).

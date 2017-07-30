@@ -218,39 +218,41 @@ class XenaDataset(object):
                            'somaticsniper.snv': 'template.snv.meta.json',
                            'varscan2.snv': 'template.snv.meta.json'}
     # Map GDC project_id to Xena specific cohort name.
-    __XENA_COHORT = {'TCGA-BRCA': 'TCGA Breast Cancer (BRCA)',
-                     'TCGA-LUAD': 'TCGA Lung Adenocarcinoma (LUAD)',
-                     'TCGA-UCEC': 'TCGA Endometrioid Cancer (UCEC)',
-                     'TCGA-LGG': 'TCGA Lower Grade Glioma (LGG)',
-                     'TCGA-HNSC': 'TCGA Head and Neck Cancer (HNSC)',
-                     'TCGA-PRAD': 'TCGA Prostate Cancer (PRAD)',
-                     'TCGA-LUSC': 'TCGA Lung Squamous Cell Carcinoma (LUSC)',
-                     'TCGA-THCA': 'TCGA Thyroid Cancer (THCA)',
-                     'TCGA-SKCM': 'TCGA Melanoma (SKCM)',
-                     'TCGA-OV': 'TCGA Ovarian Cancer (OV)',
-                     'TCGA-STAD': 'TCGA Stomach Cancer (STAD)',
-                     'TCGA-COAD': 'TCGA Colon Cancer (COAD)',
-                     'TCGA-BLCA': 'TCGA Bladder Cancer (BLCA)',
-                     'TCGA-GBM': 'TCGA Glioblastoma (GBM)',
-                     'TCGA-LIHC': 'TCGA Liver Cancer (LIHC)',
-                     'TCGA-KIRC': 'TCGA Kidney Clear Cell Carcinoma (KIRC)',
-                     'TCGA-CESC': 'TCGA Cervical Cancer (CESC)',
-                     'TCGA-KIRP': 'TCGA Kidney Papillary Cell Carcinoma (KIRP)',
-                     'TCGA-SARC': 'TCGA Sarcoma (SARC)',
-                     'TCGA-ESCA': 'TCGA Esophageal Cancer (ESCA)',
-                     'TCGA-PAAD': 'TCGA Pancreatic Cancer (PAAD)',
-                     'TCGA-PCPG': 'TCGA Pheochromocytoma & Paraganglioma (PCPG)',
-                     'TCGA-READ': 'TCGA Rectal Cancer (READ)',
-                     'TCGA-TGCT': 'TCGA Testicular Cancer (TGCT)',
-                     'TCGA-LAML': 'TCGA Acute Myeloid Leukemia (LAML)',
-                     'TCGA-THYM': 'TCGA Thymoma (THYM)',
-                     'TCGA-ACC': 'TCGA Adrenocortical Cancer (ACC)',
-                     'TCGA-MESO': 'TCGA Mesothelioma (MESO)',
-                     'TCGA-UVM': 'TCGA Ocular melanomas (UVM)',
-                     'TCGA-KICH': 'TCGA Kidney Chromophobe (KICH)',
-                     'TCGA-UCS': 'TCGA Uterine Carcinosarcoma (UCS)',
-                     'TCGA-CHOL': 'TCGA Bile Duct Cancer (CHOL)',
-                     'TCGA-DLBC': 'TCGA Large B-cell Lymphoma (DLBC)'}
+    __XENA_COHORT = {
+            'TCGA-BRCA': 'TCGA Breast Cancer (BRCA)',
+            'TCGA-LUAD': 'TCGA Lung Adenocarcinoma (LUAD)',
+            'TCGA-UCEC': 'TCGA Endometrioid Cancer (UCEC)',
+            'TCGA-LGG': 'TCGA Lower Grade Glioma (LGG)',
+            'TCGA-HNSC': 'TCGA Head and Neck Cancer (HNSC)',
+            'TCGA-PRAD': 'TCGA Prostate Cancer (PRAD)',
+            'TCGA-LUSC': 'TCGA Lung Squamous Cell Carcinoma (LUSC)',
+            'TCGA-THCA': 'TCGA Thyroid Cancer (THCA)',
+            'TCGA-SKCM': 'TCGA Melanoma (SKCM)',
+            'TCGA-OV': 'TCGA Ovarian Cancer (OV)',
+            'TCGA-STAD': 'TCGA Stomach Cancer (STAD)',
+            'TCGA-COAD': 'TCGA Colon Cancer (COAD)',
+            'TCGA-BLCA': 'TCGA Bladder Cancer (BLCA)',
+            'TCGA-GBM': 'TCGA Glioblastoma (GBM)',
+            'TCGA-LIHC': 'TCGA Liver Cancer (LIHC)',
+            'TCGA-KIRC': 'TCGA Kidney Clear Cell Carcinoma (KIRC)',
+            'TCGA-CESC': 'TCGA Cervical Cancer (CESC)',
+            'TCGA-KIRP': 'TCGA Kidney Papillary Cell Carcinoma (KIRP)',
+            'TCGA-SARC': 'TCGA Sarcoma (SARC)',
+            'TCGA-ESCA': 'TCGA Esophageal Cancer (ESCA)',
+            'TCGA-PAAD': 'TCGA Pancreatic Cancer (PAAD)',
+            'TCGA-PCPG': 'TCGA Pheochromocytoma & Paraganglioma (PCPG)',
+            'TCGA-READ': 'TCGA Rectal Cancer (READ)',
+            'TCGA-TGCT': 'TCGA Testicular Cancer (TGCT)',
+            'TCGA-LAML': 'TCGA Acute Myeloid Leukemia (LAML)',
+            'TCGA-THYM': 'TCGA Thymoma (THYM)',
+            'TCGA-ACC': 'TCGA Adrenocortical Cancer (ACC)',
+            'TCGA-MESO': 'TCGA Mesothelioma (MESO)',
+            'TCGA-UVM': 'TCGA Ocular melanomas (UVM)',
+            'TCGA-KICH': 'TCGA Kidney Chromophobe (KICH)',
+            'TCGA-UCS': 'TCGA Uterine Carcinosarcoma (UCS)',
+            'TCGA-CHOL': 'TCGA Bile Duct Cancer (CHOL)',
+            'TCGA-DLBC': 'TCGA Large B-cell Lymphoma (DLBC)'
+        }
     # Map dataset_map to (unique) GDC data type or GDC workflow type.
     __METADATA_GDC_TYPE = {
             'htseq.counts': 'HTSeq - Counts', 
@@ -311,8 +313,9 @@ class XenaDataset(object):
                               this class. To get a list of supported types, 
                               use "get_supported_dtype()".""")
     
-    def get_supported_dtype(self):
-        return self.__XENA_GDC_DTYPE.keys()
+    @classmethod
+    def get_supported_dtype(cls):
+        return cls.__XENA_GDC_DTYPE.keys()
     
     # Setup default directory structure from "root_dir"
     def __get_root_dir(self):
@@ -375,10 +378,57 @@ class XenaDataset(object):
     
     root_dir = property(__get_root_dir, set_default_dir_tree)
 
+    def get_raw_data_dict(self):
+        """Get a dictionary of GDC files belonging to this dataset.
+        
+        Files are selected based on "projects" and "gdc_dtype" properties. 
+        "gdc_dtype" can be assigned directly or set indirectly through 
+        "xena_dtype". All open access data matches the two criteria 
+        will be returned in the result. 
+        
+        Xena uses GDC's "cases.samples.submitter_id" for sample ID. Therefore, 
+        data files for each sample will be renamed to 
+        "<cases.samples.submitter_id>.<UUID>.<file extension>". However, for 
+        SNV datasets (['muse.snv', 'mutect2.snv', 'somaticsniper.snv', 
+        'varscan2.snv']), GDC's mutation data (MAF) is one single aggreated 
+        data for one project, not per sample based. Therefore, data file will 
+        only be renamed to "<UUID>.<file extension>". 
+        
+        Returns: 
+            file_dict: A dict of files matching query conditions. The key will 
+            be a file's UUID, while the value is the file name formatted 
+            accordingly, which can be used during downloading.
+        """
+        
+        assert self.projects is not None
+        assert hasattr(self, 'gdc_dtype') and isinstance(self.gdc_dtype, dict)
+        query_dict = {'access': 'open', 
+                      'cases.project.project_id': self.projects}
+        query_dict.update(self.gdc_dtype)
+        fields = ['file_id', 'file_name']
+        # GDC's mutation data (MAF) is one single aggreated data for one 
+        # project, not per sample based.
+        if 'snv' not in self.xena_dtype:
+            fields.append('cases.samples.submitter_id')
+        try:
+            file_df = gdc.search('files', query_dict, fields)
+            file_df.set_index('file_id', drop=False, inplace=True)
+            if 'snv' in self.xena_dtype:
+                file_s = (file_df['file_id'].astype(str) 
+                          + '.' + file_df['file_name'].apply(gdc.get_ext))
+            else:
+                file_s = (file_df['cases.samples.submitter_id'].astype(str) 
+                          + '.' + file_df['file_id'].astype(str) 
+                          + '.' + file_df['file_name'].apply(gdc.get_ext))
+            file_dict = file_s.to_dict()
+        except:
+            file_dict = {}
+        return file_dict
+    
     def download(self, label_field='cases.samples.submitter_id'):
         """Download GDC's open access data for this dataset.
         
-        Data was selected based on "projects" and "gdc_dtype" properties. 
+        Data is selected based on "projects" and "gdc_dtype" properties. 
         "gdc_dtype" can be assigned directly or set indirectly through 
         "xena_dtype". All open access data matches the two criteria 
         will be put together under one directory as a single dataset. Though 
@@ -387,8 +437,12 @@ class XenaDataset(object):
         
         By default, data files will be renamed to 
         "<cases.samples.submitter_id>.<UUID>.<file extension>" and saved under 
-        the directory defined by the "raw_data_dir" property. Check the 
-        "root_dir" property for details about the default directory structure. 
+        the directory defined by the "raw_data_dir" property. For SNV 
+        datasets, the file will be renamed to "<UUID>.<file extension>" 
+        because GDC's mutation data (MAF) is one single aggreated data for one 
+        project, not per sample based. Check the "get_raw_data_dict" method 
+        for details about file naming. Check the "root_dir" property for 
+        details about the default directory structure. 
         
         A list of paths for downloaded files will be assigned to the 
         "raw_data_list" property which can be used for Xena matrix "transform" 
@@ -406,13 +460,8 @@ class XenaDataset(object):
             self: allow method chaining.
         """
         
-        assert self.projects is not None
-        assert hasattr(self, 'gdc_dtype') and isinstance(self.gdc_dtype, dict)
-        query_dict = {'access': 'open', 
-                      'cases.project.project_id': self.projects}
-        query_dict.update(self.gdc_dtype)
         print('Searching for raw data ...', end='')
-        file_dict = gdc.get_file_dict(query_dict, label_field=label_field)
+        file_dict = self.get_raw_data_dict()
         if not file_dict:
             message = '\rNo {} data found for project {}.'
             dataset_description = ' - '.join(sorted(self.gdc_dtype.values()))
@@ -465,6 +514,8 @@ class XenaDataset(object):
             self: allow method chaining.
         """
         
+        message = 'Make Xena matrix for {} data of {}.'
+        print(message.format(self.xena_dtype, self.projects))
         if raw_data_list is not None:
             if isinstance(raw_data_list, str):
                 self.raw_data_list = [raw_data_list]
@@ -553,6 +604,8 @@ class XenaDataset(object):
             self: allow method chaining.
         """
         
+        message = 'Create metadata for {} data matrix of {}.'
+        print(message.format(self.xena_dtype, self.projects))
         if ((not hasattr(self, 'matrix')) or (self.matrix is None) 
             or (not os.path.isfile(self.matrix))):
             raise ValueError('Cannot find Xena matrix for this dataset; '
@@ -611,10 +664,6 @@ class XenaDataset(object):
     
 def main():
     print('A python module of Xena specific importing pipeline for GDC data.')
-    
-#    test = XenaDataset('TCGA-CHOL', 'htseq.fpkm', r'E:\test')
-#    test.download().transform().metadata()
-#    test.transform().metadata()
     
 if __name__ == '__main__':
     main()

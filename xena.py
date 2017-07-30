@@ -17,7 +17,7 @@ import jinja2
 import numpy as np
 import pandas as pd
 
-import gdc
+import gdc_xena as gdc
 
 def mkdir_p(dir_name):
     """Make the directory as needed: no error if existing.
