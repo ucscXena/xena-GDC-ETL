@@ -1,7 +1,7 @@
 {"cohort":"{{ xena_cohort }}",
  "url":"https://api.gdc.cancer.gov/data/",
  "dataSubType":"gene expression RNAseq",
- ":probeMap":"{{ probemap_url|default('../../probeMaps/gencode.v22.annotation.gene.probeMap') }}",
+ ":probeMap":"gencode.v22.annotation.gene.probeMap",
  "dataProducer":"Genomic Data Commons",
  "label":"{{ project_id }} {{ gdc_type }}",
  "colNormalization":true,
@@ -11,6 +11,6 @@
  "type":"genomicMatrix",
  "wrangler":"Xena GDC ETL script",
  "version":"{{ date }}",
- "unit":"{% if norm %}log2(normalized_count+1){% else %}log2(count+1){% endif %}"{% if notes %},
+ "unit":"{% if unit %}log2({{ unit }}+1){% else %}log2(count+1){% endif %}"{% if notes %},
  "notes":"{{ notes }}"{% endif %}
 }
