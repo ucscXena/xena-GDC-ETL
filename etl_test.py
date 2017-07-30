@@ -11,24 +11,27 @@ from __future__ import print_function
 import os
 import timeit
 
-import xena
+from xena_dataset import XenaDataset
 
 def main():
     start_time = timeit.default_timer()
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    work_dir = os.path.join(script_dir, 'gitignore', 'test')
+    root_dir = os.path.join(script_dir, 'gitignore', 'test')
     projects = ['TCGA-CHOL', 'TCGA-UCS']
-    dataset_types = ['rna_counts', 'rna_fpkm', 'rna_fpkmuq', 'mirna', 
-                     'masked_cnv', 'muse', 'mutect2', 'somaticsniper', 
-                     'varscan2']
-    probemap_dict = {
-            'rna': os.path.join(work_dir, 'probeMaps', 
-                                'gencode.v22.annotation.gene.probeMap')
-        }
+    xena_dtypes = ['htseq.counts', 'htseq.fpkm', 'htseq.fpkm-uq', 'mirna', 
+                   'masked.cnv', 'muse.snv', 'mutect2.snv', 
+                   'somaticsniper.snv', 'varscan2.snv']
+#    probemap_dict = {
+#            'rna': os.path.join(work_dir, 'probeMaps', 
+#                                'gencode.v22.annotation.gene.probeMap')
+#        }
     for project in projects:
-        for dtype in dataset_types:
-            xena.import_gdc(project, dtype, work_path=work_dir, 
-                            probemap_path=probemap_dict)
+        for dtype in xena_dtypes:
+            try:
+                cohort = XenaDataset(project, dtype, root_dir)
+                cohort.download().transform().metadata()
+            except:
+                print('No {} data for cohort {}.'.format(dtype, project))
     end_time = timeit.default_timer()
 
     print('Finish in {} sec.'.format(end_time - start_time))
