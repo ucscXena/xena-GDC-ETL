@@ -1,0 +1,17 @@
+xena-GDC-ETL
+============
+
+API
+---
+
+- **gdc module**
+
+  .. automodule:: gdc
+      :members:
+      :show-inheritance:
+
+- **xena_dataset module**
+
+  .. automodule:: xena_dataset
+      :members:
+      :show-inheritance:

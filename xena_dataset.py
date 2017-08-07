@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""This module provides functions/wrappers necessary for quickly assembling an 
-ETL pipeline importing GDC data into Xena.
+"""This module mainly provides a XenaDataset class representing one  Xena 
+matrix in a Xena cohort.
+
+The XenaDataset class contains 3 methods, ``download_gdc``, ``transform`` and 
+``metadata``, which can be used for quickly assembling an ETL pipeline 
+importing GDC data into Xena.
 """
 
 # Ensure Python 2 and 3 compatibility
@@ -24,11 +28,10 @@ def mkdir_p(dir_name):
     """Make the directory as needed: no error if existing.
     
     Args:
-        dir_name: str
-            directory name or path
+        dir_name (str): Directory name or path.
     
     Returns:
-        path: absolute path for the directory.
+        str: The absolute path for the directory.
     """
     
     dir_path = os.path.abspath(dir_name)
@@ -46,12 +49,15 @@ def read_by_ext(filename, mode='r'):
     module.
     
     Args:
-        filename: str
-            Must contain proper extension indicating the compression condition.
-        mode: str, default 'r'
+        filename (str): Must contain proper extension indicating the 
+            compression condition.
+        mode (str, optional): To specify the mode in which the file is opened. 
+            It will be passed to corresponding open function (``open``, 
+            ``gzip.open`` or ``bz2.BZ2File``); please check them for details. 
+            Defaults to 'r'.
     
     Returns:
-        A filehandle to be used with `with`.
+        file object: A filehandle to be used with `with`.
     """
     
     ext = os.path.splitext(filename)[1]
@@ -66,13 +72,13 @@ def read_by_ext(filename, mode='r'):
 
 def process_average_log(df):
     """Process Xena data matrix by first averaging columns having the same 
-    name and then transform it by log(x + 1)
+    name and then transform it by log(x + 1).
     
     Args:
-        df: pandas.DataFrame
+        df (pandas.core.frame.DataFrame): Input raw data matrix.
     
     Returns:
-        df_transformed: Transformed pandas.DataFrame
+        pandas.core.frame.DataFrame: Transformed pandas DataFrame.
     """
     
     print('\rAveraging duplicated samples ...', end='')
@@ -85,15 +91,17 @@ def process_maf(df):
     
     A new column of DNA variant allele frequencies named "dna_vaf" will 
     calculated by division "t_alt_count" / "t_depth". Columns "t_alt_count" 
-    and "t_depth" will then be dropped. At last column will be renamed 
+    and "t_depth" will then be dropped. In the end, columns will be renamed 
     accordingly and row index will be set as sample ID.
     
     Args:
-        df: pandas.DataFrame
+        df (pandas.core.frame.DataFrame): Input raw matrix for mutation data 
+           (from MAF file).
     
     Returns:
-        df_transformed: Transformed pandas.DataFrame
+        pandas.core.frame.DataFrame: Transformed pandas DataFrame.
     """
+
     print('\rCalculating "dna_vaf" ...', end='')
     df['dna_vaf'] = df['t_alt_count'] / df['t_depth']
     print('\rTrim "Tumor_Sample_Barcode" into Xena sample ID ...', end='')
@@ -117,6 +125,81 @@ def process_maf(df):
         )
 
 class XenaDataset(object):
+    """XenaDataset represents for one Xena matrix in a Xena cohort.
+
+    This class provides a set of method for downloading and transforming GDC 
+    data, as well as generating associated metadata for a transformed Xena 
+    matrix.
+
+    Attributes:
+        projects (str or list): One (string) or a list of GDC's 
+            "cases.project.project_id". All corresponding projects will be 
+            included in this dataset.
+        xena_dtype (str): A dataset type supported by this class. To get a 
+            list of supported types, use ``XenaDataset.get_supported_dtype()``.
+        root_dir (str, optional): Defines the root directory for this dataset.
+            By default, all files related to this class, such as raw data, 
+            Xena matrix, metadata, should and highly recommended to be 
+            organized and saved under this directory. The default directory 
+            structure is::
+            
+                root_dir
+                └── projects
+                    ├── "GDC_Raw_Data"
+                    │   └── xena_dtype with "." replaced by "_"
+                    │       ├── data1
+                    │       ├── data2
+                    │       ├── ...
+                    │       └── dataN
+                    └── "Xena_Matrices"
+                        ├── projects.xena_dtype(1).tsv
+                        ├── projects.xena_dtype(1).tsv.json
+                        ├── projects.xena_dtype(2).tsv
+                        ├── projects.xena_dtype(2).tsv.json
+                        ├── ...
+                        ├── projects.xena_dtype(N).tsv
+                        └── projects.xena_dtype(N).tsv.json
+            
+            Defaults to "." which points to current python work directory. 
+            Setting "root_dir" will not only set the "root_dir" property but 
+            also set "raw_data_dir" and/or "matrix_dir" properties if the 
+            directory for GDC data ("raw_data_dir") and/or Xena matrix 
+            ("matrix_dir") is not set yet. However, no actual directories will 
+            be made by just setting these properties. Directories will only be 
+            made when needed.
+        
+            If you want to reset the default directory structure while 
+            "raw_data_dir" and/or "matrix_dir" properties are set already, you 
+            can override it using the "set_default_dir_tree" method with 
+            "reset_default=True".
+        raw_data_dir (str, optional): A path for saving raw data downloaded 
+            from GDC. Defaults to None. By default, it will be set by the 
+            ``set_default_dir_tree`` method, based on the ``root_dir``.
+        raw_data_list (list): A list of file paths for all GDC raw data 
+            related to this dataset. It will be automatically set by the 
+            ``download_gdc`` method; or it can be assigned directly as a 
+            public attribute. This ``raw_data_list`` attribute will be used by 
+            ``transform`` method for making a Xena matrix from GDC raw data.
+        matrix_dir (str, optional): A path for saving the Xena matrix for this 
+            dataset. Defaults to None. By default, it will be set by the 
+            ``set_default_dir_tree`` method, based on the ``root_dir``.
+        matrix (str, optional): A path for the Xena matrix of this dataset. 
+            This attribute will be used but not validated (i.e. it can be any 
+            desired directory and filename) by the ``transform`` method for 
+            saving newly generated Xena matrix. This attribute will also be 
+            used and validated (i.e. it has to point to a valid file) by the 
+            ``metadata`` method for making metadata assciated with the Xena 
+            matrix and with this dataset.
+            
+            By default, when used by the ``transform`` method, this ``matrix`` 
+            attribute will adapte a pattern as "projects.xena_type.tsv". There
+            are two ways to pass custom matrix name: 1) you can set this 
+            ``matrix`` attribute before calling ``transform``. This allows you 
+            to customize both directory and filename for the Xena matrix. 
+            2) you can pass a ``matrix_name`` argument to the ``transform`` 
+            method. You can only customize the name (not its directory) of the 
+            Xena matrix.
+    """
     
     # Map Xena dtype code to GDC data query dict
     __XENA_GDC_DTYPE = {
@@ -157,33 +240,44 @@ class XenaDataset(object):
                         'VarScan2 Variant Aggregation and Masking'
                 }
         }
+    # Extra prefix in filenames for downloaded files
+    # GDC's mutation data (MAF) is one single aggreated data for one project, 
+    # not per sample based.
+    __GDC_DATA_LABEL = dict.fromkeys(
+            ['htseq.counts', 'htseq.fpkm', 'htseq.fpkm-uq', 'mirna', 
+             'mirna.isoform', 'cnv', 'masked.cnv'], 
+            'cases.samples.submitter_id'
+        )
 
-    # Settings for making Xena matrix from raw data
+    # Settings for making Xena matrix from GDC data
     __RNA_TRANSFORM_ARGS = {
-            'read_table_kwargs': {'header': None, 'comment': '_'},
+            'pandas_read_kwargs': {'header': None, 'index_col': 0, 
+                                   'usecols': [0, 1], 'comment': '_'},
             'merge_axis': 1,
             'matrix_process': process_average_log,
             'index_name': 'Ensembl_ID'
         }
     __MIRNA_TRANSFORM_ARGS = {
-            'read_table_kwargs': {'header': 0, 'usecols': [0, 2]},
+            'pandas_read_kwargs': {'header': 0, 'index_col': 0, 
+                                   'usecols': [0, 2]},
             'merge_axis': 1,
             'matrix_process': process_average_log
         }
     __MIRNA_ISOFORM_TRANSFORM_ARGS = {
-            'read_table_kwargs': {'header': 0, 'usecols': [1, 3]},
+            'pandas_read_kwargs': {'header': 0, 'index_col': 0, 
+                                   'usecols': [1, 3]},
             'merge_axis': 1,
             'matrix_process': process_average_log
         }
     __CNV_TRANSFORM_ARGS = {
-            'read_table_kwargs': {'header': 0, 'usecols': [1, 2, 3, 5]},
+            'pandas_read_kwargs': {'header': 0, 'usecols': [1, 2, 3, 5]},
             'merge_axis': 0
         }
     __SNV_TRANSFORM_ARGS = {
-            'read_table_kwargs': {'header': 0, 
-                                  'usecols': [12, 36, 4, 5, 6, 39, 41, 51, 0, 
-                                              10, 15, 110],
-                                  'comment': '#'},
+            'pandas_read_kwargs': {'header': 0,
+                                   'usecols': [12, 36, 4, 5, 6, 39, 41, 51, 0, 
+                                               10, 15, 110],
+                                   'comment': '#'},
             'merge_axis': 0,
             'matrix_process': process_maf,
             'index_name': 'Sample_ID'
@@ -253,20 +347,27 @@ class XenaDataset(object):
             'TCGA-CHOL': 'TCGA Bile Duct Cancer (CHOL)',
             'TCGA-DLBC': 'TCGA Large B-cell Lymphoma (DLBC)'
         }
-    # Map dataset_map to (unique) GDC data type or GDC workflow type.
-    __METADATA_GDC_TYPE = {
-            'htseq.counts': 'HTSeq - Counts', 
-            'htseq.fpkm': 'HTSeq - FPKM', 
-            'htseq.fpkm-uq': 'HTSeq - FPKM-UQ', 
-            'mirna': 'miRNA Expression Quantification', 
-            'mirna.isoform': 'Isoform Expression Quantification', 
-            'cnv': 'Copy Number Segment', 
-            'masked.cnv': 'Masked Copy Number Segment', 
-            'muse.snv': 'MuSE Variant Aggregation and Masking', 
-            'mutect2.snv': 'MuTect2 Variant Aggregation and Masking', 
-            'somaticsniper.snv': 
-                'SomaticSniper Variant Aggregation and Masking', 
-            'varscan2.snv': 'VarScan2 Variant Aggregation and Masking'
+    # Jinja2 template variables for corresponding "xena_dtype".
+    __METADATA_VARIABLES = {
+            'htseq.counts': {'gdc_type': 'HTSeq - Counts',}, 
+            'htseq.fpkm': {'gdc_type': 'HTSeq - FPKM',
+                           'unit': 'fpkm'}, 
+            'htseq.fpkm-uq': {'gdc_type': 'HTSeq - FPKM-UQ',
+                              'unit': 'fpkm-uq'}, 
+            'mirna': {'gdc_type': 'miRNA Expression Quantification'}, 
+            'mirna.isoform': {'gdc_type': 'Isoform Expression Quantification'},
+            'cnv': {'gdc_type': 'Copy Number Segment'}, 
+            'masked.cnv': {'gdc_type': 'Masked Copy Number Segment'}, 
+            'muse.snv': {'gdc_type': 'MuSE Variant Aggregation and Masking'}, 
+            'mutect2.snv': {
+                    'gdc_type': 'MuTect2 Variant Aggregation and Masking'
+                }, 
+            'somaticsniper.snv': {
+                    'gdc_type': 'SomaticSniper Variant Aggregation and Masking'
+                }, 
+            'varscan2.snv': {
+                    'gdc_type': 'VarScan2 Variant Aggregation and Masking'
+                }
         }
     
     def __init__(self, projects, xena_dtype, root_dir='.', 
@@ -291,9 +392,7 @@ class XenaDataset(object):
         else:
             raise ValueError('"projects" must be either str or list.')
     
-    projects = property(__get_projects, __set_projects,
-                        doc="""A list of GDC's project_id(s). Corresponding
-                            projects will be included in this dataset.""")
+    projects = property(__get_projects, __set_projects)
     
     # Define xena_dtype property
     def __get_xena_dtype(self):
@@ -302,64 +401,54 @@ class XenaDataset(object):
     def __set_xena_dtype(self, xena_dtype):
         if xena_dtype in self.__XENA_GDC_DTYPE:
             self.__xena_dtype = xena_dtype
-            self.gdc_dtype = self.__XENA_GDC_DTYPE[xena_dtype]
-            self.transform_args = self.__TRANSFORM_ARGS[xena_dtype]
-            self.metadata_template = self.__METADATA_TEMPLATE[xena_dtype]
         else:
             raise ValueError("Unsupported data type: {}".format(xena_dtype))
     
-    xena_dtype = property(__get_xena_dtype, __set_xena_dtype, 
-                          doc="""A string of one dataset type supported by 
-                              this class. To get a list of supported types, 
-                              use "get_supported_dtype()".""")
+    xena_dtype = property(__get_xena_dtype, __set_xena_dtype)
     
     @classmethod
     def get_supported_dtype(cls):
+        """Return a list of dataset type codes supported by this class."""
+        
         return cls.__XENA_GDC_DTYPE.keys()
     
     # Setup default directory structure from "root_dir"
-    def __get_root_dir(self):
-        """The "root_dir" property defines the root directory for this 
-        dataset.
+    def __get_root_dir(self):        
+        return self.__root_dir
+    
+    def set_default_dir_tree(self, root_dir, reset_default=False):
+        """Set the default directory structure for this dataset.
         
-        By default, all files related to this class, such as raw data, 
-        Xena matrix, metadata, should and highly recommended to be organized 
-        and saved under this directory. The default directory structure is:
-            work_dir
-            └── project
+        The default directory structure is::
+            
+            root_dir
+            └── projects
                 ├── "GDC_Raw_Data"
-                │   └── dataset_type value(s) joint by "_" with whitespace 
-                │       removed
+                │   └── xena_dtype with "." replaced by "_"
                 │       ├── data1
                 │       ├── data2
                 │       ├── ...
                 │       └── dataN
                 └── "Xena_Matrices"
-                    ├── project_id.dataset_type_string1.tsv
-                    ├── project_id.dataset_type_string1.tsv.json
-                    ├── project_id.dataset_type_string2.tsv
-                    ├── project_id.dataset_type_string2.tsv.json
+                    ├── projects.xena_dtype(1).tsv
+                    ├── projects.xena_dtype(1).tsv.json
+                    ├── projects.xena_dtype(2).tsv
+                    ├── projects.xena_dtype(2).tsv.json
                     ├── ...
-                    ├── project_id.dataset_type_stringN.tsv
-                    └── project_id.dataset_type_stringN.tsv.json
-
-        When instantiating this class, default "root_dir" points to current 
-        python work directory. Setting "root_dir" will not only set the 
-        "root_dir" property but also set "raw_data_dir" and/or "matrix_dir" 
-        properties if the directory for GDC data ("raw_data_dir") and/or Xena 
-        matrix ("matrix_dir") is not set yet. However, no actual directories 
-        will be made by just setting these properties. Directories will only 
-        be made when needed.
+                    ├── projects.xena_dtype(N).tsv
+                    └── projects.xena_dtype(N).tsv.json
         
-        If you want to reset the default directory structure while 
-        "raw_data_dir" and/or "matrix_dir" properties are set already, you can 
-        override it using the "set_default_dir_tree" method with 
-        "reset_default=True".
+        Args:
+            root_dir (str): The root directory for keep the new default 
+                directory structure of this dataset.
+            reset_default (bool): Whether to overide current settings for 
+                "raw_data_dir" and "matrix_dir" properties if they have 
+                already been set. Defaults to False.
+        
+        Returns:
+            self: allow method chaining.
         """
         
-        return self.__root_dir
-    
-    def set_default_dir_tree(self, root_dir, reset_default=False):
         if os.path.isdir(root_dir):
             self.__root_dir = os.path.abspath(root_dir)
             self.__dataset_dir = os.path.join(self.__root_dir,
@@ -375,16 +464,17 @@ class XenaDataset(object):
                                                'Xena_Matrices')
         else:
             raise OSError('{} is not a valid directory.'.format(root_dir))
+        return self
     
     root_dir = property(__get_root_dir, set_default_dir_tree)
 
-    def get_raw_data_dict(self):
+    def _get_gdc_data_dict(self):
         """Get a dictionary of GDC files belonging to this dataset.
         
-        Files are selected based on "projects" and "gdc_dtype" properties. 
-        "gdc_dtype" can be assigned directly or set indirectly through 
-        "xena_dtype". All open access data matches the two criteria 
-        will be returned in the result. 
+        Files are selected based on "projects" and "xena_dtype" properties. A 
+        correct GDC query dict will be mapped from "xena_dtype" using 
+        "__XENA_GDC_DTYPE". All open access data matches the criteria will be 
+        returned in the result. 
         
         Xena uses GDC's "cases.samples.submitter_id" for sample ID. Therefore, 
         data files for each sample will be renamed to 
@@ -395,76 +485,67 @@ class XenaDataset(object):
         only be renamed to "<UUID>.<file extension>". 
         
         Returns: 
-            file_dict: A dict of files matching query conditions. The key will 
+            dict: A dict of files matching query conditions. The key will 
             be a file's UUID, while the value is the file name formatted 
             accordingly, which can be used during downloading.
         """
         
-        assert self.projects is not None
-        assert hasattr(self, 'gdc_dtype') and isinstance(self.gdc_dtype, dict)
+        assert self.projects is not None and self.xena_dtype is not None
+        gdc_dtype = self.__XENA_GDC_DTYPE[self.xena_dtype]
         query_dict = {'access': 'open', 
                       'cases.project.project_id': self.projects}
-        query_dict.update(self.gdc_dtype)
+        query_dict.update(gdc_dtype)
         fields = ['file_id', 'file_name']
-        # GDC's mutation data (MAF) is one single aggreated data for one 
-        # project, not per sample based.
-        if 'snv' not in self.xena_dtype:
-            fields.append('cases.samples.submitter_id')
+        if self.xena_dtype in self.__GDC_DATA_LABEL:
+            fields.append(self.__GDC_DATA_LABEL[self.xena_dtype])
         try:
             file_df = gdc.search('files', query_dict, fields)
             file_df.set_index('file_id', drop=False, inplace=True)
-            if 'snv' in self.xena_dtype:
-                file_s = (file_df['file_id'].astype(str) 
-                          + '.' + file_df['file_name'].apply(gdc.get_ext))
-            else:
-                file_s = (file_df['cases.samples.submitter_id'].astype(str) 
+            if self.xena_dtype in self.__GDC_DATA_LABEL:
+                prefix_field = self.__GDC_DATA_LABEL[self.xena_dtype]
+                file_s = (file_df[prefix_field].astype(str) 
                           + '.' + file_df['file_id'].astype(str) 
                           + '.' + file_df['file_name'].apply(gdc.get_ext))
+            else:
+                file_s = (file_df['file_id'].astype(str) 
+                          + '.' + file_df['file_name'].apply(gdc.get_ext))
             file_dict = file_s.to_dict()
-        except:
+        except Exception:
             file_dict = {}
         return file_dict
     
-    def download(self, label_field='cases.samples.submitter_id'):
+    def download_gdc(self):
         """Download GDC's open access data for this dataset.
         
-        Data is selected based on "projects" and "gdc_dtype" properties. 
-        "gdc_dtype" can be assigned directly or set indirectly through 
-        "xena_dtype". All open access data matches the two criteria 
-        will be put together under one directory as a single dataset. Though 
-        this method won't check, putting different types of data into one 
-        dataset is NOT recommended. 
+        Data is selected based on "projects" and "xena_dtype" properties. A 
+        GDC query will be built from "xena_dtype" using "__XENA_GDC_DTYPE". 
+        All open access data matches the criteria will be put together under 
+        one directory as a single dataset. Though this method won't check, 
+        putting different types of data into one dataset is NOT recommended. 
         
         By default, data files will be renamed to 
         "<cases.samples.submitter_id>.<UUID>.<file extension>" and saved under 
         the directory defined by the "raw_data_dir" property. For SNV 
         datasets, the file will be renamed to "<UUID>.<file extension>" 
         because GDC's mutation data (MAF) is one single aggreated data for one 
-        project, not per sample based. Check the "get_raw_data_dict" method 
+        project, not per sample based. Check the "_get_gdc_data_dict" method 
         for details about file naming. Check the "root_dir" property for 
         details about the default directory structure. 
         
         A list of paths for downloaded files will be assigned to the 
         "raw_data_list" property which can be used for Xena matrix "transform" 
         processing. Check the "transform" method for details.
-        
-        Args:
-            label_field: str, default 'cases.samples.submitter_id'
-                A single GDC available file field whose value will be used for 
-                renaming downloaded files. By default, Xena uses 
-                'cases.samples.submitter_id' as sample ID. Therefore filenames 
-                for downloaded files will be 
-                "submitter_id.UUID.file_extension".
-        
+                
         Returns:
             self: allow method chaining.
         """
         
         print('Searching for raw data ...', end='')
-        file_dict = self.get_raw_data_dict()
+        file_dict = self._get_gdc_data_dict()
         if not file_dict:
             message = '\rNo {} data found for project {}.'
-            dataset_description = ' - '.join(sorted(self.gdc_dtype.values()))
+            gdc_dtype = self.__XENA_GDC_DTYPE[self.xena_dtype]
+            dataset_description = ' - '.join(sorted(gdc_dtype.values()))
             print(message.format(dataset_description, str(self.projects)))
             return self
         print('\r{} files found for {} data of {}.'.format(len(file_dict),
@@ -488,27 +569,27 @@ class XenaDataset(object):
         """Transform raw data in a dataset into Xena matrix
         
         Args:
-            raw_data_list: str or list, default None
-                One (str) or a list of raw data file(s) used for building Xena 
-                matrix. This "raw_data_list" argument has a higher priority 
-                than the "raw_data_list" property, i.e. if "raw_data_list" is 
-                not None, it will be used to define or overwrite the 
-                "raw_data_list" property. If this "raw_data_list" argument is 
-                None, the "raw_data_list" property will be checked first. If 
+            raw_data_list (str or list, optional): One (str) or a list of raw 
+                data file(s) used for building Xena matrix. This 
+                "raw_data_list" argument has a higher priority than the 
+                "raw_data_list" property, i.e. if "raw_data_list" is not None, 
+                it will be used to define or overwrite the "raw_data_list" 
+                property. If this "raw_data_list" argument is None, the 
+                "raw_data_list" property will be checked first. If 
                 "raw_data_list" property is defined and is not None, it will 
                 be used. The "raw_data_list" property can be assigned directly 
                 or be set by the "download" method. Check the "download" 
                 method for details. If the "raw_data_list" property is not 
                 usable, the "raw_data_dir" property will be checked. All files 
                 under this directory will be treated as data and used for 
-                building Xena matrix.
-            matrix_name: str, default None
-                File name of the Xena matrix. The matrix will be save under 
-                the directory defined by the "matrix_dir" property. If None, 
-                default filename will be used, which has a pattern as 
-                "projects.xena_type.tsv". Full path of this matrix will be 
-                assigned to the "matrix" property which can be used for making 
-                metadata. Check the "metadata" method for details.
+                building Xena matrix. Defaults to None.
+            matrix_name (str, optional): File name of the Xena matrix. The 
+                matrix will be save under the directory defined by the 
+                "matrix_dir" property. If None, default filename will be used, 
+                which has a pattern as "projects.xena_type.tsv". Full path of 
+                this matrix will be assigned to the "matrix" property which 
+                can be used for making metadata. Check the "metadata" method 
+                for details. Defaults to None.
         
         Returns:
             self: allow method chaining.
@@ -536,12 +617,13 @@ class XenaDataset(object):
                 if not raw_data_list:
                     raise ValueError
                 self.raw_data_list = raw_data_list
-            except:
+            except Exception:
                 raise ValueError('Cannot find raw data for Xena matrix '
                                  'transformation.')
 
         # Start transformation
-        merge_axis = self.transform_args['merge_axis']
+        self._transform_args = self.__TRANSFORM_ARGS[self.xena_dtype]
+        merge_axis = self._transform_args['merge_axis']
         total = len(self.raw_data_list)
         count = 0
         df_list = []
@@ -551,14 +633,7 @@ class XenaDataset(object):
             sys.stdout.flush()
             with read_by_ext(path) as f:
                 sample_id = os.path.basename(path).split('.', 1)[0]
-                if merge_axis == 1:
-                    pd_kwargs = {'index_col': 0, 'usecols': [0, 1]}
-                elif merge_axis == 0:
-                    pd_kwargs = {}
-                else:
-                    message = 'Invalid merge_axis: {}'.format(merge_axis)
-                    raise ValueError(message)
-                pd_kwargs.update(self.transform_args['read_table_kwargs'])
+                pd_kwargs = self._transform_args['pandas_read_kwargs']
                 df = pd.read_table(f, **pd_kwargs)
                 if merge_axis == 1:
                     df.columns = [sample_id]
@@ -568,16 +643,19 @@ class XenaDataset(object):
         print('\rAll {} files have been processed. '.format(total))
         print('Merging into one matrix ...', end='')
         xena_matrix = pd.concat(df_list, axis=merge_axis)
-        if 'matrix_process' in self.transform_args:
-            xena_matrix = self.transform_args['matrix_process'](xena_matrix)
-        if 'index_name' in self.transform_args:
-            xena_matrix.index.name = self.transform_args['index_name']
+        if 'matrix_process' in self._transform_args:
+            xena_matrix = self._transform_args['matrix_process'](xena_matrix)
+        if 'index_name' in self._transform_args:
+            xena_matrix.index.name = self._transform_args['index_name']
         # Transformation done
-        if matrix_name is None:
-            matrix_name = '{}.{}.tsv'.format('_'.join(self.projects),
-                                             self.xena_dtype)
-        self.matrix = os.path.join(os.path.abspath(self.matrix_dir), 
-                                   matrix_name)
+        if (not hasattr(self, 'matrix')) or (self.matrix is None):
+            if matrix_name is None:
+                matrix_name = '{}.{}.tsv'.format('_'.join(self.projects),
+                                                 self.xena_dtype)
+            self.matrix = os.path.join(os.path.abspath(self.matrix_dir), 
+                                       matrix_name)
+        else:
+            self.matrix_dir = os.path.dirname(os.path.abspath(self.matrix))
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(os.path.abspath(self.matrix_dir))
         xena_matrix.to_csv(self.matrix, sep='\t')
@@ -598,7 +676,7 @@ class XenaDataset(object):
         constant; data type labels in the metadata are defined by the 
         "__METADATA_GDC_TYPE" constant. Specific raw data (MAF) urls for 
         "Masked Somatic Mutation" data will be queried according to "projects" 
-        and "gdc_dtype" properties.
+        and "xena_dtype" properties.
         
         Returns:
             self: allow method chaining.
@@ -615,35 +693,31 @@ class XenaDataset(object):
             self.matrix = os.path.abspath(self.matrix)
 
         # Start to generate metadata.
-        # General jinja2 Expressions
+        # General jinja2 Variables
         print('Creating metadata file ...', end='')
         matrix_date = time.strftime("%m-%d-%Y", 
                                     time.gmtime(os.path.getmtime(self.matrix)))
         projects = ','.join(self.projects)
         variables = {'project_id': projects, 
-                     'gdc_type': self.__METADATA_GDC_TYPE[self.xena_dtype], 
                      'date': matrix_date}
         if projects in self.__XENA_COHORT:
             variables['xena_cohort'] = self.__XENA_COHORT[projects]
         else:
             variables['xena_cohort'] = projects
-        # Data type specific jinja2 Expression
-        if self.xena_dtype == 'htseq.fpkm':
-            variables['unit'] = 'fpkm'
-        if self.xena_dtype == 'htseq.fpkm-uq':
-            variables['unit'] = 'fpkm-uq'
+        variables.update(self.__METADATA_VARIABLES[self.xena_dtype])
+        # Data type specific jinja2 Variables
         if self.xena_dtype in ['muse.snv', 'mutect2.snv', 'somaticsniper.snv', 
                                'varscan2.snv']:
             query_dict = {'access': 'open',
                           'cases.project.project_id': self.projects}
-            query_dict.update(self.gdc_dtype)
+            query_dict.update(self.__XENA_GDC_DTYPE[self.xena_dtype])
             try:
                 print('\rSearching the specific URL for raw MAF data ...', 
                       end='')
                 res_df = gdc.search('files', query_dict, 'file_id')
                 if res_df['file_id'].shape == (1,):
                     variables['maf_uuid'] = str(res_df['file_id'][0])
-            except:
+            except Exception:
                 message = ('Fail to get a specific URL for the MAF file for: ' 
                            'matrix "{}"; "{}" data of cohort "{}".')
                 warnings.warn(message.format(self.matrix, 
@@ -656,10 +730,10 @@ class XenaDataset(object):
                 loader=jinja2.FileSystemLoader(self.__METADATA_TEMPLATE_DIR))
         template_json = self.__METADATA_TEMPLATE[self.xena_dtype]
         template = jinja2_env.get_template(template_json)
-        self.metadata = os.path.join(self.matrix + '.json')
-        with open(self.metadata, 'w') as f:
+        self._metadata = os.path.join(self.matrix + '.json')
+        with open(self._metadata, 'w') as f:
             f.write(template.render(**variables))
-        print('\rMetadata JSON is saved at {}.'.format(self.metadata))
+        print('\rMetadata JSON is saved at {}.'.format(self._metadata))
         return self
     
 def main():

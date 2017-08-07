@@ -29,7 +29,7 @@ def main():
         for dtype in xena_dtypes:
             try:
                 cohort = XenaDataset(project, dtype, root_dir)
-                cohort.download().transform().metadata()
+                cohort.download_gdc().transform().metadata()
             except:
                 print('No {} data for cohort {}.'.format(dtype, project))
     end_time = timeit.default_timer()

@@ -1,6 +1,7 @@
 # Repository specific files #
 #############################
 gitignore/
+.doctrees/
 
 # Compiled source #
 ###################
