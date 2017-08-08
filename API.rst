@@ -300,26 +300,8 @@ API
 
         Set the default directory structure for this dataset.
 
-        The default directory structure is:
-
-        ::
-
-           root_dir
-           └── projects
-               ├── "GDC_Raw_Data"
-               │   └── xena_dtype with "." replaced by "_"
-               │       ├── data1
-               │       ├── data2
-               │       ├── ...
-               │       └── dataN
-               └── "Xena_Matrices"
-                   ├── projects.xena_dtype(1).tsv
-                   ├── projects.xena_dtype(1).tsv.json
-                   ├── projects.xena_dtype(2).tsv
-                   ├── projects.xena_dtype(2).tsv.json
-                   ├── ...
-                   ├── projects.xena_dtype(N).tsv
-                   └── projects.xena_dtype(N).tsv.json
+        For default directory structure, please check the ``root_dir``
+        property.
 
         Args:
            root_dir (str): The root directory for keep the new default
