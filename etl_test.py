@@ -21,10 +21,6 @@ def main():
     xena_dtypes = ['htseq.counts', 'htseq.fpkm', 'htseq.fpkm-uq', 'mirna', 
                    'masked.cnv', 'muse.snv', 'mutect2.snv', 
                    'somaticsniper.snv', 'varscan2.snv']
-#    probemap_dict = {
-#            'rna': os.path.join(work_dir, 'probeMaps', 
-#                                'gencode.v22.annotation.gene.probeMap')
-#        }
     for project in projects:
         for dtype in xena_dtypes:
             try:

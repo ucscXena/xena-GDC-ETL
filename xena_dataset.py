@@ -108,20 +108,9 @@ def process_maf(df):
     trim_func = lambda x: '-'.join(x.split('-', 4)[0:4])
     df['Tumor_Sample_Barcode'] = df['Tumor_Sample_Barcode'].apply(trim_func)
     print('\rRe-organizing matrix ...', end='')
-    rename_dict = {'Hugo_Symbol': 'gene', 
-                   'Chromosome': 'chrom', 
-                   'Start_Position': 'chromstart', 
-                   'End_Position': 'chromend', 
-                   'Reference_Allele': 'ref', 
-                   'Tumor_Seq_Allele2': 'alt', 
-                   'Tumor_Sample_Barcode': 'sampleid', 
-                   'HGVSp_Short': 'Amino_Acid_Change', 
-                   'Consequence': 'effect',
-                   'FILTER': 'filter'}
     return (
             df.drop(['t_alt_count', 't_depth'], axis=1)
-              .rename(columns=rename_dict)
-              .set_index('sampleid')
+              .set_index('Tumor_Sample_Barcode')
         )
 
 class XenaDataset(object):
@@ -271,7 +260,10 @@ class XenaDataset(object):
         }
     __CNV_TRANSFORM_ARGS = {
             'pandas_read_kwargs': {'header': 0, 'usecols': [1, 2, 3, 5]},
-            'merge_axis': 0
+            'merge_axis': 0,
+            'index_name': 'sample',
+            'col_rename': {'Chromosome': 'Chrom',
+                           'Segment_Mean': 'value'}
         }
     __SNV_TRANSFORM_ARGS = {
             'pandas_read_kwargs': {'header': 0,
@@ -280,7 +272,17 @@ class XenaDataset(object):
                                    'comment': '#'},
             'merge_axis': 0,
             'matrix_process': process_maf,
-            'index_name': 'Sample_ID'
+            'index_name': 'Sample_ID',
+            'col_rename': {'Hugo_Symbol': 'gene', 
+                           'Chromosome': 'chrom', 
+                           'Start_Position': 'start', 
+                           'End_Position': 'end', 
+                           'Reference_Allele': 'ref', 
+                           'Tumor_Seq_Allele2': 'alt', 
+                           'Tumor_Sample_Barcode': 'sampleid', 
+                           'HGVSp_Short': 'Amino_Acid_Change', 
+                           'Consequence': 'effect',
+                           'FILTER': 'filter'}
         }
     __TRANSFORM_ARGS = {
             'htseq.counts': __RNA_TRANSFORM_ARGS,
@@ -631,6 +633,10 @@ class XenaDataset(object):
             xena_matrix = self._transform_args['matrix_process'](xena_matrix)
         if 'index_name' in self._transform_args:
             xena_matrix.index.name = self._transform_args['index_name']
+        if 'col_rename' in self._transform_args:
+            xena_matrix = xena_matrix.rename(
+                    columns=self._transform_args['col_rename']
+                )
         # Transformation done
         if (not hasattr(self, 'matrix')) or (self.matrix is None):
             if matrix_name is None:
