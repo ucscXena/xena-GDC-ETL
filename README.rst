@@ -50,7 +50,7 @@ Usage
        import gdc
        projects = gdc.get_all_project_info()
        print('List of GDC's project-ids:')
-       print(projects.keys())
+       print(projects.index.tolist())
 
      A "xena\_dtype" describes the specific type of data in this dataset. It is critical for downloading corresponding GDC data, for transforming raw GDC data into a valid Xena matrix and for generating metadata. You can get a list of "xena\_dtype" codes by 
 
