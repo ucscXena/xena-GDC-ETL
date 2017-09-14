@@ -18,6 +18,8 @@ def main():
     start_time = timeit.default_timer()
     root_dir = '/home/yunhai/gdc/imported_GDC'
     projects = gdc.get_all_project_info().index.tolist()
+    # Convert unicode to str for python 2
+    projects = [str(x) for x in projects]
     xena_dtypes = ['htseq.counts', 'htseq.fpkm', 'htseq.fpkm-uq', 'mirna', 
                    'masked.cnv', 'muse.snv', 'mutect2.snv', 
                    'somaticsniper.snv', 'varscan2.snv']
