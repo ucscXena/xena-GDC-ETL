@@ -4,7 +4,14 @@
 """A example script for importing GDC data into Xena
 
 For a simple complete import, the script can be adapted from this example by 
-modifying 3 variables: root_dir, projects and xena_dtypes
+modifying 3 variables: root_dir, projects and xena_dtypes. For example::
+
+    import os
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.join(script_dir, 'gitignore', 'test')
+    projects = ['TARGET-RT']
+    xena_dtypes = ['htseq.counts', 'htseq.fpkm', 'htseq.fpkm-uq', 'mirna']
+
 """
 
 # Ensure Python 2 and 3 compatibility
@@ -39,10 +46,9 @@ def main():
             try:
                 cohort = XenaDataset(project, dtype, root_dir)
                 cohort.download_gdc().transform().metadata()
-            except Exception as e:
-                print('No {} data for cohort {}.'.format(dtype, project), 
+            except Exception:
+                print('\nNo {} data for cohort {}.'.format(dtype, project), 
                       file=sys.stderr)
-                print(e, file=sys.stderr)
                 traceback.print_exc(file=sys.stderr)
 
     end_time = timeit.default_timer()
