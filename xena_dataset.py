@@ -19,6 +19,7 @@ import sys
 import warnings
 
 import jinja2
+from lxml import etree
 import numpy as np
 import pandas as pd
 
@@ -69,6 +70,71 @@ def read_by_ext(filename, mode='r'):
         return bz2.BZ2File(filename, mode)
     else:
         return open(filename, mode)
+
+def read_biospecimen(fileobj):
+    """Extract info from GDC's biospecimen supplement and re-organize them 
+    into a pandas DataFrame.
+    
+    Args:
+        fileobj (file or path): XML file of GDC's biospecimen supplement.
+    
+    Returns:
+        pandas.core.frame.DataFrame: Transformed pandas DataFrame.
+    """
+    
+    root = etree.parse(fileobj).getroot()
+    ns = root.nsmap
+    samples = {}
+    for sample in root.find('bio:patient/bio:samples', ns):
+        record = {}
+        for child in sample:
+            if child.text and child.text.strip():
+                record[child.tag.split('}', 1)[-1]] = child.text.strip()
+        samples[record['bcr_sample_barcode']] = record
+    df = pd.DataFrame(samples).T
+    df['bcr_patient_barcode'] = root.find(
+            'bio:patient/shared:bcr_patient_barcode', ns
+        ).text
+    return df
+
+def read_clinical(fileobj):
+    """Extract info from GDC's clinical supplement and re-organize them into a 
+    pandas DataFrame.
+    
+    Args:
+        fileobj (file or path): XML file of GDC's clinical supplement.
+    
+    Returns:
+        pandas.core.frame.DataFrame: Transformed pandas DataFrame.
+    """
+    
+    root = etree.parse(fileobj).getroot()
+    ns = root.nsmap
+    patient = {}
+    patient['disease_type'] = root.find(
+            'admin:admin/admin:disease_code', ns
+        ).text
+    for child in root.find('{}:patient'.format(root.prefix), ns):
+        if child.text and child.text.strip():
+            patient[child.tag.split('}', 1)[-1]] = child.text.strip()
+    patient['race'] = root.find('.//clin_shared:race', ns).text
+    for child in root.find('.//shared_stage:stage_event', ns):
+        if child.text and child.text.strip():
+            patient[child.tag.split('}', 1)[-1]] = child.text.strip()
+    # Find the most recent follow up and update the patient dict if there is 
+    # an overlapped key.
+    follow_ups = root.find(
+            '{}:patient/{}:follow_ups'.format(root.prefix, root.prefix), ns
+        )
+    if (follow_ups is not None) and len(follow_ups):
+        most_recent = follow_ups[0]
+        for follow_up in follow_ups:
+            if follow_up.attrib['version'] > most_recent.attrib['version']:
+                most_recent = follow_up
+        for child in most_recent:
+            if child.text and child.text.strip():
+                patient[child.tag.split('}', 1)[-1]] = child.text.strip()
+    return pd.DataFrame({patient['bcr_patient_barcode']: patient}).T
 
 def process_average_log(df):
     """Process Xena data matrix by first averaging columns having the same 
@@ -227,7 +293,9 @@ class XenaDataset(object):
                     'data_type': 'Masked Somatic Mutation',
                     'analysis.workflow_type': 
                         'VarScan2 Variant Aggregation and Masking'
-                }
+                },
+            'biospecimen': {'data_type': 'Biospecimen Supplement'},
+            'clinical': {'data_type': 'Clinical Supplement'}
         }
     # Extra prefix in filenames for downloaded files
     # GDC's mutation data (MAF) is one single aggreated data for one project, 
@@ -237,39 +305,47 @@ class XenaDataset(object):
              'mirna.isoform', 'cnv', 'masked.cnv'], 
             'cases.samples.submitter_id'
         )
+    __GDC_DATA_LABEL['biospecimen'] = 'cases.submitter_id'
+    __GDC_DATA_LABEL['clinical'] = 'cases.submitter_id'
 
     # Settings for making Xena matrix from GDC data
     __RNA_TRANSFORM_ARGS = {
-            'pandas_read_kwargs': {'header': None, 'index_col': 0, 
-                                   'usecols': [0, 1], 'comment': '_'},
+            'read_func': lambda x: pd.read_table(
+                    x, header=None, index_col=0, usecols=[0, 1], comment='_'
+                ),
             'merge_axis': 1,
             'matrix_process': process_average_log,
             'index_name': 'Ensembl_ID'
         }
     __MIRNA_TRANSFORM_ARGS = {
-            'pandas_read_kwargs': {'header': 0, 'index_col': 0, 
-                                   'usecols': [0, 2]},
+            'read_func': lambda x: pd.read_table(
+                    x, header=0, index_col=0, usecols=[0, 2]
+                ),
             'merge_axis': 1,
             'matrix_process': process_average_log
         }
     __MIRNA_ISOFORM_TRANSFORM_ARGS = {
-            'pandas_read_kwargs': {'header': 0, 'index_col': 0, 
-                                   'usecols': [1, 3]},
+            'read_func': lambda x: pd.read_table(
+                    x, header=0, index_col=0, usecols=[1, 3]
+                ),
             'merge_axis': 1,
             'matrix_process': process_average_log
         }
     __CNV_TRANSFORM_ARGS = {
-            'pandas_read_kwargs': {'header': 0, 'usecols': [1, 2, 3, 5]},
+            'read_func': lambda x: pd.read_table(
+                    x, header=0, usecols=[1, 2, 3, 5]
+                ),
             'merge_axis': 0,
             'index_name': 'sample',
             'col_rename': {'Chromosome': 'Chrom',
                            'Segment_Mean': 'value'}
         }
     __SNV_TRANSFORM_ARGS = {
-            'pandas_read_kwargs': {'header': 0,
-                                   'usecols': [12, 36, 4, 5, 6, 39, 41, 51, 0, 
-                                               10, 15, 110],
-                                   'comment': '#'},
+            'read_func': lambda x: pd.read_table(
+                    x, header=0, 
+                    usecols=[12, 36, 4, 5, 6, 39, 41, 51, 0, 10, 15, 110], 
+                    comment='#'
+                ),
             'merge_axis': 0,
             'matrix_process': process_maf,
             'index_name': 'Sample_ID',
@@ -284,6 +360,16 @@ class XenaDataset(object):
                            'Consequence': 'effect',
                            'FILTER': 'filter'}
         }
+    __BIOSPECIMEN_TRANSFORM_ARGS = {
+            'read_func': read_biospecimen,
+            'merge_axis': 0,
+            'matrix_process': lambda x: x.set_index('bcr_sample_barcode'),
+        }
+    __CLINICAL_TRANSFORM_ARGS = {
+            'read_func': read_clinical,
+            'merge_axis': 0,
+            'matrix_process': lambda x: x.set_index('bcr_patient_barcode'),
+        }
     __TRANSFORM_ARGS = {
             'htseq.counts': __RNA_TRANSFORM_ARGS,
             'htseq.fpkm': __RNA_TRANSFORM_ARGS,
@@ -295,7 +381,9 @@ class XenaDataset(object):
             'muse.snv': __SNV_TRANSFORM_ARGS,
             'mutect2.snv': __SNV_TRANSFORM_ARGS,
             'somaticsniper.snv': __SNV_TRANSFORM_ARGS,
-            'varscan2.snv': __SNV_TRANSFORM_ARGS
+            'varscan2.snv': __SNV_TRANSFORM_ARGS,
+            'biospecimen': __BIOSPECIMEN_TRANSFORM_ARGS,
+            'clinical': __CLINICAL_TRANSFORM_ARGS
         }
 
     # Map xena_dtype to corresponding metadata template.
@@ -493,7 +581,8 @@ class XenaDataset(object):
                           + '.' + file_df['file_id'].astype(str) 
                           + '.' + file_df['file_name'].apply(gdc.get_ext))
             else:
-                file_s = (file_df['file_id'].astype(str) 
+                file_s = ('_'.join(self.projects) + '.' + self.xena_dtype 
+                          + '.' + file_df['file_id'].astype(str) 
                           + '.' + file_df['file_name'].apply(gdc.get_ext))
             file_dict = file_s.to_dict()
         except Exception:
@@ -539,7 +628,6 @@ class XenaDataset(object):
                                                            self.projects))
         assert hasattr(self, 'raw_data_dir')
         self.raw_data_dir = os.path.abspath(self.raw_data_dir)
-        mkdir_p(self.raw_data_dir)
         print('Datasets will be downloaded to')
         print(self.raw_data_dir)
         file_dict = {
@@ -619,13 +707,12 @@ class XenaDataset(object):
             sys.stdout.flush()
             with read_by_ext(path) as f:
                 sample_id = os.path.basename(path).split('.', 1)[0]
-                pd_kwargs = self._transform_args['pandas_read_kwargs']
-                df = pd.read_table(f, **pd_kwargs)
-                if merge_axis == 1:
-                    df.columns = [sample_id]
-                elif merge_axis == 0:
-                    df.set_index([[sample_id] * df.shape[0]], inplace=True)
-                df_list.append(df)
+                df = self._transform_args['read_func'](f)
+            if merge_axis == 1:
+                df.columns = [sample_id]
+            elif merge_axis == 0:
+                df.set_index([[sample_id] * df.shape[0]], inplace=True)
+            df_list.append(df)
         print('\rAll {} files have been processed. '.format(total))
         print('Merging into one matrix ...', end='')
         xena_matrix = pd.concat(df_list, axis=merge_axis)

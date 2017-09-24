@@ -18,7 +18,8 @@ import pandas as pd
 import requests
 
 _GDC_API_BASE = 'https://api.gdc.cancer.gov'
-_SUPPORTED_FILE_TYPES = {'xml', 'txt', 'tar', 'gz', 'md5', 'xlsx', 'xls'}
+_SUPPORTED_FILE_TYPES = {'txt', 'vcf', 'bam', 'tsv', 'xml', 'maf', 'xlsx', 
+                         'tar', 'gz', 'md5', 'xls'}
 _SUPPORTED_DATASETS = [
         {'data_type': 'Copy Number Segment'},
         {'data_type': 'Masked Copy Number Segment'},
@@ -206,6 +207,24 @@ def get_ext(file_name):
             break
     return '.'.join(name_list[i:])
 
+def mkdir_p(dir_name):
+    """Make the directory as needed: no error if existing.
+    
+    Args:
+        dir_name (str): Directory name or path.
+    
+    Returns:
+        str: The absolute path for the directory.
+    """
+    
+    dir_path = os.path.abspath(dir_name)
+    try:
+        os.makedirs(dir_path)
+    except OSError:
+        if not os.path.isdir(dir_path):
+            raise
+    return dir_path
+
 def download(uuids, download_dir='.', chunk_size=4096):
     """Download GDC's open access data according to UUID(s).
     
@@ -255,6 +274,7 @@ def download(uuids, download_dir='.', chunk_size=4096):
             else:
                 path = os.path.abspath(uuids[uuid])
             status = '\r[{:d}/{:d}] Download to "{}": {:4.0%}'
+            mkdir_p(os.path.dirname(path))
             with open(path, 'wb') as f:
                 downloaded = 0
                 print(status.format(count, total, path, 0), end='')
