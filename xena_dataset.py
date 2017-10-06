@@ -148,13 +148,41 @@ def read_clinical(fileobj):
             'UVM': 'Uveal Melanoma',
         }
     root = etree.parse(fileobj).getroot()
+    ns = root.nsmap
     patient = {}
+    # "Dirty" extraction
     for child in root.xpath('.//*[not(*)]'):
         try:
             patient[child.tag.split('}', 1)[-1]] = child.text.strip()
         except AttributeError:
             patient[child.tag.split('}', 1)[-1]] = ''
+    # Add 'primary_diagnosis' according to
+    # https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tcga-study-abbreviations
     patient['primary_diagnosis'] = disease_dict[patient['disease_code']]
+    # Redo 'race'
+    if 'race_list' in patient:
+        del patient['race_list']
+    try:
+        patient['race'] = ','.join(
+                [child.text.strip()
+                 for child in root.find('.//clin_shared:race_list', ns) 
+                 if child.text and child.text.strip()]
+            )
+    except:
+        patient['race'] = ''
+    # Redo the most recent "follow_up" and update the patient dict if there is 
+    # an overlapped key.
+    follow_ups = root.xpath('.//*[local-name()="follow_up"]')
+    if follow_ups:
+        most_recent = follow_ups[0]
+        for follow_up in follow_ups:
+            if follow_up.attrib['version'] > most_recent.attrib['version']:
+                most_recent = follow_up
+        for child in most_recent:
+            try:
+                patient[child.tag.split('}', 1)[-1]] = child.text.strip()
+            except AttributeError:
+                patient[child.tag.split('}', 1)[-1]] = ''
     return pd.DataFrame({patient['bcr_patient_barcode']: patient}).T
 
 def _read_clinical(fileobj):
