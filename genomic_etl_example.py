@@ -55,7 +55,8 @@ def main():
                 msg = 'No {} data for cohort {}.'.format(dtype, project)
                 logger.warning(msg, exc_info=True)
                 print(msg)
-
+    logging.shutdown()
+    
     end_time = timeit.default_timer()
     print('Finish in {} hours.'.format((end_time - start_time) / 60 / 60))
 

@@ -60,7 +60,8 @@ def main():
             msg = 'No phenotype data for cohort {}.'.format(project)
             logger.warning(msg, exc_info=True)
             print(msg)
-
+    logging.shutdown()
+    
     end_time = timeit.default_timer()
     print('Finish in {} hours.'.format((end_time - start_time) / 60 / 60))
 
