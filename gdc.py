@@ -38,37 +38,48 @@ _SUPPORTED_DATASETS = [
         {'data_type': 'Clinical Supplement'}
     ]
 
-def and_in_filter_constructor(filter_dict):
-    """A simple constructor converting a query dictionary into GDC API 
-    specific filters.
+def simple_and_filter(in_dict={}, exclude_dict={}):
+    """Make a simple GDC API compatible query filter from a dict, in which 
+    individual conditions are joint by the "and" logic.
     
-    Convert a dict of query condition into a diction conforming to GDC 
-    API's format. Conditions in the input dict will be combined together by 
-    an AND relation. Every (key, value) pair will be joined together with "in" 
-    operator. If value is not a list, it will be converted to a list first. 
+    In the return filter, individual conditions in the ``in_dict`` and 
+    ``exclude_dict`` will be joint by the "and" operator, meaning a hit has to 
+    match all conditions. Here, a condition can use either a "in" operator 
+    (specified in the ``in_dict``) or a "exclude" operator (specified in the 
+    ``exclude_dict``).
     See details at 
     https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query
     
     Args:
-        filter_dict (dict): A dict describing query conditions. Each (key, 
-            value) pair represents for one condition. Operator between 
-            conditions is "AND". Within a condition, the "key" is the 'field' 
-            operand. Operator between "key" and "value" is "in".
+        in_dict (dict): A dict describing query conditions with the "in" 
+            operator. Each (key, value) pair represents for one condition. The 
+            "key" is the 'field' operand. Operator between "key" and "value" 
+            is "in".
+        exclude_dict (dict): A dict describing query conditions with the 
+            "exclude" operator. Each (key, value) pair represents for one 
+            condition. The "key" is the 'field' operand. Operator between 
+            "key" and "value" is "exclude_dict".
     Returns: 
         dict: A dict of filter conforming to GDC API's format. It should then 
         be converted to JSON format and used in the following http request.
     """
     
-    if not filter_dict:
-        return filter_dict
-    operands_list = []
-    for key in filter_dict:
-        value = filter_dict[key]
+    if not in_dict and not exclude_dict:
+        return in_dict
+    operation_list = []
+    for key in in_dict:
+        value = in_dict[key]
         if not isinstance(value, list):
             value = [value]
-        operands_list.append({"op":"in", 
-                              "content":{"field":key, "value":value}})
-    return {"op":"and", "content":operands_list}
+        operation_list.append({"op":"in", 
+                               "content":{"field":key, "value":value}})
+    for key in exclude_dict:
+        value = exclude_dict[key]
+        if not isinstance(value, list):
+            value = [value]
+        operation_list.append({"op":"exclude", 
+                               "content":{"field":key, "value":value}})
+    return {"op":"and", "content":operation_list}
 
 def traverse_field_json(data, field=None):
     """Assuming the nested JSON having a single (set of) data, walk into/down 
@@ -127,7 +138,7 @@ def traverse_field_json(data, field=None):
             data = data[k]
     return data
 
-def search(endpoint, filter_dict, fields):
+def search(endpoint, in_filter, fields):
     """Search one GDC endpoints and return searching results in a pandas 
     DataFrame if possible.
     
@@ -138,11 +149,11 @@ def search(endpoint, filter_dict, fields):
     Args:
         endpoint (str): One string of GDC API supported endpoint. See:
             https://docs.gdc.cancer.gov/API/Users_Guide/Getting_Started/#api-endpoints
-        filter_dict (str): A dict of query conditions which will be used to 
+        in_filter (str): A dict of query conditions which will be used to 
             perform the query. Each (key, value) pair represents for one 
-            condition. It will be passed to "and_in_filter_constructor" for 
-            making a query filter compatible with GDC API. Please check 
-            "and_in_filter_constructor" function for details.
+            condition. It will be passed to ``simple_and_filter`` for making a 
+            query filter compatible with GDC API. Please check 
+            ``simple_and_filter`` function for details.
         fields (list or str): One or more fields to be queried. Each field 
             will be used as a column name in the returned DataFrame. It can be 
             a comma separated string or a list of field strings or a 
@@ -154,7 +165,7 @@ def search(endpoint, filter_dict, fields):
     """
     
     url = '{}/{}'.format(_GDC_API_BASE, endpoint)
-    filters =  and_in_filter_constructor(filter_dict)
+    filters =  simple_and_filter(in_dict=in_filter)
     if isinstance(fields, str):
         fields = [fields]
     params = {'filters':json.dumps(filters), 
@@ -306,6 +317,9 @@ def get_all_project_info():
 
 def main():
     print('A simple python module providing selected GDC API functionalities.')
+    
+    # Simple test
+    print(get_all_project_info().head())
     
 if __name__ == '__main__':
     main()
