@@ -108,6 +108,66 @@ def read_clinical(fileobj):
         pandas.core.frame.DataFrame: Transformed pandas DataFrame.
     """
     
+    disease_dict = {
+            'LAML': 'Acute Myeloid Leukemia',
+            'ACC': 'Adrenocortical carcinoma',
+            'BLCA': 'Bladder Urothelial Carcinoma',
+            'LGG': 'Brain Lower Grade Glioma',
+            'BRCA': 'Breast invasive carcinoma',
+            'CESC': 'Cervical squamous cell carcinoma and endocervical adenocarcinoma',
+            'CHOL': 'Cholangiocarcinoma',
+            'LCML': 'Chronic Myelogenous Leukemia',
+            'COAD': 'Colon adenocarcinoma',
+            'CNTL': 'Controls',
+            'ESCA': 'Esophageal carcinoma',
+            'FPPP': 'FFPE Pilot Phase II',
+            'GBM': 'Glioblastoma multiforme',
+            'HNSC': 'Head and Neck squamous cell carcinoma',
+            'KICH': 'Kidney Chromophobe',
+            'KIRC': 'Kidney renal clear cell carcinoma',
+            'KIRP': 'Kidney renal papillary cell carcinoma',
+            'LIHC': 'Liver hepatocellular carcinoma',
+            'LUAD': 'Lung adenocarcinoma',
+            'LUSC': 'Lung squamous cell carcinoma',
+            'DLBC': 'Lymphoid Neoplasm Diffuse Large B-cell Lymphoma',
+            'MESO': 'Mesothelioma',
+            'MISC': 'Miscellaneous',
+            'OV': 'Ovarian serous cystadenocarcinoma',
+            'PAAD': 'Pancreatic adenocarcinoma',
+            'PCPG': 'Pheochromocytoma and Paraganglioma',
+            'PRAD': 'Prostate adenocarcinoma',
+            'READ': 'Rectum adenocarcinoma',
+            'SARC': 'Sarcoma',
+            'SKCM': 'Skin Cutaneous Melanoma',
+            'STAD': 'Stomach adenocarcinoma',
+            'TGCT': 'Testicular Germ Cell Tumors',
+            'THYM': 'Thymoma',
+            'THCA': 'Thyroid carcinoma',
+            'UCS': 'Uterine Carcinosarcoma',
+            'UCEC': 'Uterine Corpus Endometrial Carcinoma',
+            'UVM': 'Uveal Melanoma',
+        }
+    root = etree.parse(fileobj).getroot()
+    patient = {}
+    for child in root.xpath('.//*[not(*)]'):
+        try:
+            patient[child.tag.split('}', 1)[-1]] = child.text.strip()
+        except AttributeError:
+            patient[child.tag.split('}', 1)[-1]] = ''
+    patient['primary_diagnosis'] = disease_dict[patient['disease_code']]
+    return pd.DataFrame({patient['bcr_patient_barcode']: patient}).T
+
+def _read_clinical(fileobj):
+    """Extract info from GDC's clinical supplement and re-organize them into a 
+    pandas DataFrame.
+    
+    Args:
+        fileobj (file or path): XML file of GDC's clinical supplement.
+    
+    Returns:
+        pandas.core.frame.DataFrame: Transformed pandas DataFrame.
+    """
+    
     root = etree.parse(fileobj).getroot()
     ns = root.nsmap
     patient = {}
@@ -115,9 +175,18 @@ def read_clinical(fileobj):
             'admin:admin/admin:disease_code', ns
         ).text
     for child in root.find('{}:patient'.format(root.prefix), ns):
-        if child.text and child.text.strip():
+        if child.tag == '{}race_list'.format(ns['clin_shared']):
+            patient['race'] = ','.join(
+                    [e.text for e in child if e.text and e.text.strip()]
+                )
+        elif child.getchildren():
+            for e in child.xpath(
+                    './/*[namespace-uri()="{}"]'.format(ns['clin_shared'])
+                ):
+                if e.text and e.text.strip():
+                    patient[e.tag.split('}', 1)[-1]] = e.text.strip()
+        elif child.text and child.text.strip():
             patient[child.tag.split('}', 1)[-1]] = child.text.strip()
-    patient['race'] = root.find('.//clin_shared:race', ns).text
     for child in root.find('.//shared_stage:stage_event', ns):
         if child.text and child.text.strip():
             patient[child.tag.split('}', 1)[-1]] = child.text.strip()
@@ -192,6 +261,9 @@ class XenaDataset(object):
             included in this dataset.
         xena_dtype (str): A dataset type supported by this class. To get a 
             list of supported types, use ``XenaDataset.get_supported_dtype()``.
+        gdc_filter (dict): A filter dict specifying GDC files relevant to this 
+            dataset. Its key is one GDC API available field and the 
+            corresponding value should be a string or a list of strings.
         root_dir (str, optional): Defines the root directory for this dataset.
             By default, all files related to this class, such as raw data, 
             Xena matrix, metadata, should and highly recommended to be 
@@ -230,11 +302,15 @@ class XenaDataset(object):
         raw_data_dir (str, optional): A path for saving raw data downloaded 
             from GDC. Defaults to None. By default, it will be set by the 
             ``set_default_dir_tree`` method, based on the ``root_dir``.
-        raw_data_list (list): A list of file paths for all GDC raw data 
+        raw_data_list (list): A list of file path(s) for all GDC raw data 
             related to this dataset. It will be automatically set by the 
             ``download_gdc`` method; or it can be assigned directly as a 
             public attribute. This ``raw_data_list`` attribute will be used by 
-            ``transform`` method for making a Xena matrix from GDC raw data.
+            ``transform`` method for making a Xena matrix from GDC raw data. 
+            If the ``raw_data_list`` is not usable when trying to get this 
+            attribute, the ``raw_data_dir`` property will be checked. All 
+            files under ``raw_data_dir`` will be treated as data and used for 
+            creating a ``raw_data_list``. 
         matrix_dir (str, optional): A path for saving the Xena matrix for this 
             dataset. Defaults to None. By default, it will be set by the 
             ``set_default_dir_tree`` method, based on the ``root_dir``.
@@ -273,7 +349,11 @@ class XenaDataset(object):
             'cnv': {'data_type': 'Copy Number Segment',
                     'analysis.workflow_type': 'DNAcopy'},
             'masked.cnv': {'data_type': 'Masked Copy Number Segment',
-                           'analysis.workflow_type': 'DNAcopy'},
+                           'analysis.workflow_type': 'DNAcopy',
+                           'cases.samples.sample_type_id': 
+                               (['01', '02', '03', '04', '05', '06', '07', 
+                                 '08', '09', '15', '16', '20', '40', '50', 
+                                 '60', '61', '99'])},
             'muse.snv': {
                     'data_type': 'Masked Somatic Mutation',
                     'analysis.workflow_type': 
@@ -297,16 +377,22 @@ class XenaDataset(object):
             'biospecimen': {'data_type': 'Biospecimen Supplement'},
             'clinical': {'data_type': 'Clinical Supplement'}
         }
-    # Extra prefix in filenames for downloaded files
-    # GDC's mutation data (MAF) is one single aggreated data for one project, 
-    # not per sample based.
-    __GDC_DATA_LABEL = dict.fromkeys(
-            ['htseq.counts', 'htseq.fpkm', 'htseq.fpkm-uq', 'mirna', 
-             'mirna.isoform', 'cnv', 'masked.cnv'], 
-            'cases.samples.submitter_id'
-        )
-    __GDC_DATA_LABEL['biospecimen'] = 'cases.submitter_id'
-    __GDC_DATA_LABEL['clinical'] = 'cases.submitter_id'
+    # Prefix in filenames for downloaded files
+    __GDC_DATA_LABEL = {
+            'htseq.counts': 'cases.samples.submitter_id', 
+            'htseq.fpkm': 'cases.samples.submitter_id', 
+            'htseq.fpkm-uq': 'cases.samples.submitter_id', 
+            'mirna': 'cases.samples.submitter_id', 
+            'mirna.isoform': 'cases.samples.submitter_id', 
+            'cnv': 'cases.samples.submitter_id', 
+            'masked.cnv': 'cases.samples.submitter_id', 
+            'muse.snv': 'submitter_id', 
+            'mutect2.snv': 'submitter_id', 
+            'somaticsniper.snv': 'submitter_id', 
+            'varscan2.snv': 'submitter_id', 
+            'biospecimen': 'cases.submitter_id', 
+            'clinical': 'cases.submitter_id'
+        }
 
     # Settings for making Xena matrix from GDC data
     __RNA_TRANSFORM_ARGS = {
@@ -502,6 +588,21 @@ class XenaDataset(object):
         
         return cls.__XENA_GDC_DTYPE.keys()
     
+    # Set default query filter dict for GDC API if it hasn't been set yet.
+    def __get_gdc_filter(self):
+        if ((not hasattr(self, '_XenaDataset__gdc_filter')) 
+            or (not self.__gdc_filter)):
+            assert self.projects is not None and self.xena_dtype is not None
+            self.__gdc_filter = {'access': 'open', 
+                                 'cases.project.project_id': self.projects}
+            self.__gdc_filter.update(self.__XENA_GDC_DTYPE[self.xena_dtype])
+        return self.__gdc_filter
+    
+    def __set_gdc_filter(self, filter_dict):
+        self.__gdc_filter = filter_dict
+    
+    gdc_filter = property(__get_gdc_filter, __set_gdc_filter)
+    
     # Setup default directory structure from "root_dir"
     def __get_root_dir(self):        
         return self.__root_dir
@@ -541,7 +642,30 @@ class XenaDataset(object):
         return self
     
     root_dir = property(__get_root_dir, set_default_dir_tree)
-
+    
+    # Raw data list
+    def __get_raw_data_list(self):
+        if ((not hasattr(self, '_XenaDataset__raw_data_list')) 
+            or (not self.__raw_data_list)):
+            try:
+                raw_data_dir = os.path.abspath(self.raw_data_dir)
+                raw_data = []
+                for f in os.listdir(raw_data_dir):
+                    f_path = os.path.join(raw_data_dir, f)
+                    if os.path.isfile(f_path):
+                        raw_data.append(f_path)
+                if not raw_data:
+                    raise ValueError
+                self.__raw_data_list = raw_data
+            except Exception:
+                raise ValueError('Cannot find raw data.')
+        return self.__raw_data_list
+    
+    def __set_raw_data_list(self, raw_data):
+        self.__raw_data_list = raw_data
+    
+    raw_data_list = property(__get_raw_data_list, __set_raw_data_list)
+    
     def _get_gdc_data_dict(self):
         """Get a dictionary of GDC files belonging to this dataset.
         
@@ -564,29 +688,20 @@ class XenaDataset(object):
             accordingly, which can be used during downloading.
         """
         
-        assert self.projects is not None and self.xena_dtype is not None
-        gdc_dtype = self.__XENA_GDC_DTYPE[self.xena_dtype]
-        query_dict = {'access': 'open', 
-                      'cases.project.project_id': self.projects}
-        query_dict.update(gdc_dtype)
         fields = ['file_id', 'file_name']
-        if self.xena_dtype in self.__GDC_DATA_LABEL:
-            fields.append(self.__GDC_DATA_LABEL[self.xena_dtype])
+        fields.append(self.__GDC_DATA_LABEL[self.xena_dtype])
         try:
-            file_df = gdc.search('files', query_dict, fields)
-            file_df.set_index('file_id', drop=False, inplace=True)
-            if self.xena_dtype in self.__GDC_DATA_LABEL:
-                prefix_field = self.__GDC_DATA_LABEL[self.xena_dtype]
-                file_s = (file_df[prefix_field].astype(str) 
-                          + '.' + file_df['file_id'].astype(str) 
-                          + '.' + file_df['file_name'].apply(gdc.get_ext))
-            else:
-                file_s = ('_'.join(self.projects) + '.' + self.xena_dtype 
-                          + '.' + file_df['file_id'].astype(str) 
-                          + '.' + file_df['file_name'].apply(gdc.get_ext))
-            file_dict = file_s.to_dict()
+            file_df = gdc.search('files', self.gdc_filter, fields)
         except Exception:
             file_dict = {}
+        else:
+            file_df.set_index('file_id', drop=False, inplace=True)
+            prefix_field = self.__GDC_DATA_LABEL[self.xena_dtype]
+            file_dict = (
+                    file_df[prefix_field].astype(str)
+                    + '.' + file_df['file_id'].astype(str)
+                    + '.' + file_df['file_name'].apply(gdc.get_ext)
+                ).to_dict()
         return file_dict
     
     def download_gdc(self):
@@ -639,24 +754,10 @@ class XenaDataset(object):
                                                     self.xena_dtype))
         return self
 
-    def transform(self, raw_data_list=None, matrix_name=None):
+    def transform(self, matrix_name=None):
         """Transform raw data in a dataset into Xena matrix
         
         Args:
-            raw_data_list (str or list, optional): One (str) or a list of raw 
-                data file(s) used for building Xena matrix. This 
-                "raw_data_list" argument has a higher priority than the 
-                "raw_data_list" property, i.e. if "raw_data_list" is not None, 
-                it will be used to define or overwrite the "raw_data_list" 
-                property. If this "raw_data_list" argument is None, the 
-                "raw_data_list" property will be checked first. If 
-                "raw_data_list" property is defined and is not None, it will 
-                be used. The "raw_data_list" property can be assigned directly 
-                or be set by the "download" method. Check the "download" 
-                method for details. If the "raw_data_list" property is not 
-                usable, the "raw_data_dir" property will be checked. All files 
-                under this directory will be treated as data and used for 
-                building Xena matrix. Defaults to None.
             matrix_name (str, optional): File name of the Xena matrix. The 
                 matrix will be save under the directory defined by the 
                 "matrix_dir" property. If None, default filename will be used, 
@@ -671,31 +772,6 @@ class XenaDataset(object):
         
         message = 'Make Xena matrix for {} data of {}.'
         print(message.format(self.xena_dtype, self.projects))
-        if raw_data_list is not None:
-            if isinstance(raw_data_list, str):
-                self.raw_data_list = [raw_data_list]
-            elif isinstance(raw_data_list, list):
-                self.raw_data_list = raw_data_list
-            else:
-                message = '"raw_data_list" should be str or list, not {}.'
-                raise TypeError(message.format(type(raw_data_list)))
-        if ((not hasattr(self, 'raw_data_list')) 
-            or (self.raw_data_list is None)):
-            try:
-                raw_data_dir = os.path.abspath(self.raw_data_dir)
-                raw_data_list = []
-                for f in os.listdir(raw_data_dir):
-                    f_path = os.path.join(raw_data_dir, f)
-                    if os.path.isfile(f_path):
-                        raw_data_list.append(f_path)
-                if not raw_data_list:
-                    raise ValueError
-                self.raw_data_list = raw_data_list
-            except Exception:
-                raise ValueError('Cannot find raw data for Xena matrix '
-                                 'transformation.')
-
-        # Start transformation
         self._transform_args = self.__TRANSFORM_ARGS[self.xena_dtype]
         merge_axis = self._transform_args['merge_axis']
         total = len(self.raw_data_list)
@@ -706,8 +782,8 @@ class XenaDataset(object):
             print('\rProcessing {}/{} file...'.format(count, total), end='')
             sys.stdout.flush()
             with read_by_ext(path) as f:
-                sample_id = os.path.basename(path).split('.', 1)[0]
                 df = self._transform_args['read_func'](f)
+            sample_id = os.path.basename(path).split('.', 1)[0]
             if merge_axis == 1:
                 df.columns = [sample_id]
             elif merge_axis == 0:
@@ -785,13 +861,10 @@ class XenaDataset(object):
         # Data type specific jinja2 Variables
         if self.xena_dtype in ['muse.snv', 'mutect2.snv', 'somaticsniper.snv', 
                                'varscan2.snv']:
-            query_dict = {'access': 'open',
-                          'cases.project.project_id': self.projects}
-            query_dict.update(self.__XENA_GDC_DTYPE[self.xena_dtype])
             try:
                 print('\rSearching the specific URL for raw MAF data ...', 
                       end='')
-                res_df = gdc.search('files', query_dict, 'file_id')
+                res_df = gdc.search('files', self.gdc_filter, 'file_id')
                 if res_df['file_id'].shape == (1,):
                     variables['maf_uuid'] = str(res_df['file_id'][0])
             except Exception:
