@@ -138,7 +138,7 @@ def traverse_field_json(data, field=None):
             data = data[k]
     return data
 
-def search(endpoint, in_filter, fields):
+def search(endpoint, fields, in_filter, exclude_filter={}):
     """Search one GDC endpoints and return searching results in a pandas 
     DataFrame if possible.
     
@@ -165,7 +165,8 @@ def search(endpoint, in_filter, fields):
     """
     
     url = '{}/{}'.format(_GDC_API_BASE, endpoint)
-    filters =  simple_and_filter(in_dict=in_filter)
+    filters =  simple_and_filter(in_dict=in_filter, 
+                                 exclude_dict=exclude_filter)
     if isinstance(fields, str):
         fields = [fields]
     params = {'filters':json.dumps(filters), 
