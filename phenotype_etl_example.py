@@ -21,6 +21,7 @@ import logging
 import os
 import timeit
 
+import numpy as np
 import pandas as pd
 
 from xena_dataset import XenaDataset
@@ -47,11 +48,20 @@ def main():
         try:
             biospecimen = XenaDataset(project, 'biospecimen', root_dir)
             clinical = XenaDataset(project, 'clinical', root_dir)
-            biospecimen_matrix = biospecimen.download_gdc().transform().matrix
-            clinical_matrix = clinical.download_gdc().transform().matrix
-            phenotype = pd.merge(pd.read_table(biospecimen_matrix),
-                                 pd.read_table(clinical_matrix),
-                                 how='outer', on='bcr_patient_barcode')
+            bio_df = pd.read_table(
+                    biospecimen.download_gdc().transform().matrix
+                )
+            clin_df = pd.read_table(
+                    clinical.download_gdc().transform().matrix
+                )
+            bio_uniq_col = bio_df.columns.difference(clin_df.columns)
+            phenotype = pd.merge(
+                    clin_df, 
+                    bio_df[bio_uniq_col.insert(0, 'bcr_patient_barcode')],
+                    how='outer', on='bcr_patient_barcode'
+                )
+            phenotype.replace(r'^\s*$', np.nan, regex=True, inplace=True)
+            phenotype.fillna(bio_df, inplace=True)
             phenotype.set_index('bcr_sample_barcode', inplace=True)
             phenotype.to_csv(os.path.join(root_dir, project, 'Xena_Matrices', 
                                           '{}.phenotype.tsv'.format(project)), 

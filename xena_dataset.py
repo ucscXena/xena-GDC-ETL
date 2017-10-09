@@ -82,31 +82,15 @@ def read_biospecimen(fileobj):
         pandas.core.frame.DataFrame: Transformed pandas DataFrame.
     """
     
-    root = etree.parse(fileobj).getroot()
-    ns = root.nsmap
-    samples = {}
-    for sample in root.find('bio:patient/bio:samples', ns):
-        record = {}
-        for child in sample:
-            if child.text and child.text.strip():
-                record[child.tag.split('}', 1)[-1]] = child.text.strip()
-        samples[record['bcr_sample_barcode']] = record
-    df = pd.DataFrame(samples).T
-    df['bcr_patient_barcode'] = root.find(
-            'bio:patient/shared:bcr_patient_barcode', ns
-        ).text
-    return df
-
-def read_clinical(fileobj):
-    """Extract info from GDC's clinical supplement and re-organize them into a 
-    pandas DataFrame.
-    
-    Args:
-        fileobj (file or path): XML file of GDC's clinical supplement.
-    
-    Returns:
-        pandas.core.frame.DataFrame: Transformed pandas DataFrame.
-    """
+    if isinstance(fileobj, file):
+        filename = fileobj.name
+    else:
+        filename = os.path.basename(fileobj)
+    ext = os.path.splitext(filename)[1]
+    if ext == '.xlsx':
+        return pd.read_excel(filename, index_col=0)
+    elif ext != '.xml':
+        raise IOError('Unknown file type for biospecimen data: {}'.format(ext))
     
     disease_dict = {
             'LAML': 'Acute Myeloid Leukemia',
@@ -149,6 +133,64 @@ def read_clinical(fileobj):
         }
     root = etree.parse(fileobj).getroot()
     ns = root.nsmap
+    samples_common = {}
+    for child in root.find('admin:admin', ns):
+        try:
+            samples_common[child.tag.split('}', 1)[-1]] = child.text.strip()
+        except AttributeError:
+            samples_common[child.tag.split('}', 1)[-1]] = ''
+    for child in root.find('bio:patient', ns):
+        try:
+            samples_common[child.tag.split('}', 1)[-1]] = child.text.strip()
+        except AttributeError:
+            samples_common[child.tag.split('}', 1)[-1]] = ''
+    # Add 'primary_diagnosis' according to
+    # https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tcga-study-abbreviations
+    samples_common['primary_diagnosis'] = disease_dict[
+            samples_common['disease_code']
+        ]
+    
+    samples = {}
+    for sample in root.find('bio:patient/bio:samples', ns):
+        record = {}
+        for child in sample:
+            if child.text and child.text.strip():
+                record[child.tag.split('}', 1)[-1]] = child.text.strip()
+        record.update(samples_common)
+        samples[record['bcr_sample_barcode']] = record
+    df = pd.DataFrame(samples).T
+    sample_mask = df.bcr_sample_barcode.map(
+            lambda s: s[-3:-1] not in ['10', '11', '12', '13', '14']
+        )
+    df = df[sample_mask]
+    df['bcr_patient_barcode'] = root.find(
+            'bio:patient/shared:bcr_patient_barcode', ns
+        ).text
+    return df
+
+def read_clinical(fileobj):
+    """Extract info from GDC's clinical supplement and re-organize them into a 
+    pandas DataFrame.
+    
+    Args:
+        fileobj (file or path): XML file of GDC's clinical supplement.
+    
+    Returns:
+        pandas.core.frame.DataFrame: Transformed pandas DataFrame.
+    """
+    
+    if isinstance(fileobj, file):
+        filename = fileobj.name
+    else:
+        filename = os.path.basename(fileobj)
+    ext = os.path.splitext(filename)[1]
+    if ext == '.xlsx':
+        return pd.read_excel(filename, index_col=0)
+    elif ext != '.xml':
+        raise IOError('Unknown file type for clinical data: {}'.format(ext))
+    
+    root = etree.parse(fileobj).getroot()
+    ns = root.nsmap
     patient = {}
     # "Dirty" extraction
     for child in root.xpath('.//*[not(*)]'):
@@ -156,9 +198,6 @@ def read_clinical(fileobj):
             patient[child.tag.split('}', 1)[-1]] = child.text.strip()
         except AttributeError:
             patient[child.tag.split('}', 1)[-1]] = ''
-    # Add 'primary_diagnosis' according to
-    # https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tcga-study-abbreviations
-    patient['primary_diagnosis'] = disease_dict[patient['disease_code']]
     # Redo 'race'
     if 'race_list' in patient:
         del patient['race_list']
@@ -183,54 +222,6 @@ def read_clinical(fileobj):
                 patient[child.tag.split('}', 1)[-1]] = child.text.strip()
             except AttributeError:
                 patient[child.tag.split('}', 1)[-1]] = ''
-    return pd.DataFrame({patient['bcr_patient_barcode']: patient}).T
-
-def _read_clinical(fileobj):
-    """Extract info from GDC's clinical supplement and re-organize them into a 
-    pandas DataFrame.
-    
-    Args:
-        fileobj (file or path): XML file of GDC's clinical supplement.
-    
-    Returns:
-        pandas.core.frame.DataFrame: Transformed pandas DataFrame.
-    """
-    
-    root = etree.parse(fileobj).getroot()
-    ns = root.nsmap
-    patient = {}
-    patient['disease_type'] = root.find(
-            'admin:admin/admin:disease_code', ns
-        ).text
-    for child in root.find('{}:patient'.format(root.prefix), ns):
-        if child.tag == '{}race_list'.format(ns['clin_shared']):
-            patient['race'] = ','.join(
-                    [e.text for e in child if e.text and e.text.strip()]
-                )
-        elif child.getchildren():
-            for e in child.xpath(
-                    './/*[namespace-uri()="{}"]'.format(ns['clin_shared'])
-                ):
-                if e.text and e.text.strip():
-                    patient[e.tag.split('}', 1)[-1]] = e.text.strip()
-        elif child.text and child.text.strip():
-            patient[child.tag.split('}', 1)[-1]] = child.text.strip()
-    for child in root.find('.//shared_stage:stage_event', ns):
-        if child.text and child.text.strip():
-            patient[child.tag.split('}', 1)[-1]] = child.text.strip()
-    # Find the most recent follow up and update the patient dict if there is 
-    # an overlapped key.
-    follow_ups = root.find(
-            '{}:patient/{}:follow_ups'.format(root.prefix, root.prefix), ns
-        )
-    if (follow_ups is not None) and len(follow_ups):
-        most_recent = follow_ups[0]
-        for follow_up in follow_ups:
-            if follow_up.attrib['version'] > most_recent.attrib['version']:
-                most_recent = follow_up
-        for child in most_recent:
-            if child.text and child.text.strip():
-                patient[child.tag.split('}', 1)[-1]] = child.text.strip()
     return pd.DataFrame({patient['bcr_patient_barcode']: patient}).T
 
 def process_average_log(df):
@@ -477,12 +468,18 @@ class XenaDataset(object):
     __BIOSPECIMEN_TRANSFORM_ARGS = {
             'read_func': read_biospecimen,
             'merge_axis': 0,
-            'matrix_process': lambda x: x.set_index('bcr_sample_barcode'),
+            'matrix_process': 
+                lambda x: (x.replace(r'^\s*$', np.nan, regex=True)
+                            .dropna(axis=1, how='all')
+                            .set_index('bcr_sample_barcode')),
         }
     __CLINICAL_TRANSFORM_ARGS = {
             'read_func': read_clinical,
             'merge_axis': 0,
-            'matrix_process': lambda x: x.set_index('bcr_patient_barcode'),
+            'matrix_process': 
+                lambda x: (x.replace(r'^\s*$', np.nan, regex=True)
+                            .dropna(axis=1, how='all')
+                            .set_index('bcr_patient_barcode')),
         }
     __TRANSFORM_ARGS = {
             'htseq.counts': __RNA_TRANSFORM_ARGS,
@@ -719,7 +716,7 @@ class XenaDataset(object):
         fields = ['file_id', 'file_name']
         fields.append(self.__GDC_DATA_LABEL[self.xena_dtype])
         try:
-            file_df = gdc.search('files', self.gdc_filter, fields)
+            file_df = gdc.search('files', fields, self.gdc_filter)
         except Exception:
             file_dict = {}
         else:
@@ -892,7 +889,7 @@ class XenaDataset(object):
             try:
                 print('\rSearching the specific URL for raw MAF data ...', 
                       end='')
-                res_df = gdc.search('files', self.gdc_filter, 'file_id')
+                res_df = gdc.search('files', 'file_id', self.gdc_filter)
                 if res_df['file_id'].shape == (1,):
                     variables['maf_uuid'] = str(res_df['file_id'][0])
             except Exception:
@@ -916,6 +913,6 @@ class XenaDataset(object):
     
 def main():
     print('A python module of Xena specific importing pipeline for GDC data.')
-    
+
 if __name__ == '__main__':
     main()
