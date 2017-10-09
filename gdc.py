@@ -295,7 +295,7 @@ def download(uuids, download_dir='.', chunk_size=4096):
                     f.write(chunk)
                     downloaded = downloaded + chunk_size
                     print(status.format(count, total, path, 
-                                        downloaded/file_size), end='')
+                                        min(1, downloaded/file_size)), end='')
                     sys.stdout.flush()
             download_list.append(path)
         else:
