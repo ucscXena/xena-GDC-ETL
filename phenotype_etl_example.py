@@ -21,17 +21,14 @@ import logging
 import os
 import timeit
 
-import numpy as np
-import pandas as pd
-
-from xena_dataset import XenaDataset
+from xena_dataset import XenaTCGAPhenoset, XenaTARGETPhenoset
 
 def main():
     start_time = timeit.default_timer()
     
     script_dir = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(script_dir, 'gitignore', 'test')
-    projects = ['TCGA-CHOL']
+    projects = ['TCGA-CHOL', 'TARGET-AML']
     
     counts = 0
     total_projects = len(projects)
@@ -46,26 +43,12 @@ def main():
         msg = '[{}/{}] Importing phenotype data for projects: {}'
         print(msg.format(counts, total_projects, project))
         try:
-            biospecimen = XenaDataset(project, 'biospecimen', root_dir)
-            clinical = XenaDataset(project, 'clinical', root_dir)
-            bio_df = pd.read_table(
-                    biospecimen.download_gdc().transform().matrix
-                )
-            clin_df = pd.read_table(
-                    clinical.download_gdc().transform().matrix
-                )
-            bio_uniq_col = bio_df.columns.difference(clin_df.columns)
-            phenotype = pd.merge(
-                    clin_df, 
-                    bio_df[bio_uniq_col.insert(0, 'bcr_patient_barcode')],
-                    how='outer', on='bcr_patient_barcode'
-                )
-            phenotype.replace(r'^\s*$', np.nan, regex=True, inplace=True)
-            phenotype.fillna(bio_df, inplace=True)
-            phenotype.set_index('bcr_sample_barcode', inplace=True)
-            phenotype.to_csv(os.path.join(root_dir, project, 'Xena_Matrices', 
-                                          '{}.phenotype.tsv'.format(project)), 
-                             sep='\t')
+            if project.startswith('TCGA'):
+                phenoset = XenaTCGAPhenoset(project, root_dir)
+            if project.startswith('TARGET'):
+                phenoset = XenaTARGETPhenoset(project, root_dir)
+                print(phenoset.gdc_download_dict)
+            phenoset.download_gdc().transform().metadata()
         except Exception:
             msg = 'No phenotype data for cohort {}.'.format(project)
             logger.warning(msg, exc_info=True)
