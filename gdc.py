@@ -138,7 +138,7 @@ def traverse_field_json(data, field=None):
             data = data[k]
     return data
 
-def search(endpoint, fields, in_filter, exclude_filter={}):
+def search(endpoint, fields, in_filter, exclude_filter={}, expand=[]):
     """Search one GDC endpoints and return searching results in a pandas 
     DataFrame if possible.
     
@@ -149,14 +149,22 @@ def search(endpoint, fields, in_filter, exclude_filter={}):
     Args:
         endpoint (str): One string of GDC API supported endpoint. See:
             https://docs.gdc.cancer.gov/API/Users_Guide/Getting_Started/#api-endpoints
-        in_filter (str): A dict of query conditions which will be used to 
+        fields (list or str): One or more fields to be queried. Each field 
+            will be used as a column name in the returned DataFrame. It can be 
+            a comma separated string or a list of field strings or a 
+            combination of both.
+        in_filter (dict): A dict of query conditions which will be used to 
             perform the query. Each (key, value) pair represents for one 
             condition. It will be passed to ``simple_and_filter`` for making a 
             query filter compatible with GDC API. Please check 
             ``simple_and_filter`` function for details.
-        fields (list or str): One or more fields to be queried. Each field 
-            will be used as a column name in the returned DataFrame. It can be 
-            a comma separated string or a list of field strings or a 
+        exclude_filter (dict): An optional dict of query conditions which will 
+            be used to perform the query. Each (key, value) pair represents 
+            for one condition. It will be passed to ``simple_and_filter`` for 
+            making a query filter compatible with GDC API. Please check 
+            ``simple_and_filter`` function for details.
+        expand (list or str): One or more field groups to be queried. It can 
+            be a comma separated string or a list of field strings or a 
             combination of both.
     
     Returns:
@@ -169,9 +177,12 @@ def search(endpoint, fields, in_filter, exclude_filter={}):
                                  exclude_dict=exclude_filter)
     if isinstance(fields, str):
         fields = [fields]
+    if isinstance(expand, str):
+        expand = [expand]
     params = {'filters':json.dumps(filters), 
               'size':1, 
-              'fields':','.join(fields)}
+              'fields':','.join(fields),
+              'expand':','.join(expand)}
     response = requests.post(url, data=params)
     params['size'] = response.json()['data']['pagination']['total']
     response = requests.get(url, params=params)
@@ -313,7 +324,7 @@ def get_all_project_info():
     """
     
     fields = ['name', 'primary_site', 'project_id', 'program.name']
-    project_df = search('projects', {}, fields)
+    project_df = search('projects', fields, {})
     return project_df.set_index('id')
 
 def main():
