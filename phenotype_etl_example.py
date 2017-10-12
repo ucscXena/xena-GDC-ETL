@@ -47,7 +47,6 @@ def main():
                 phenoset = XenaTCGAPhenoset(project, root_dir)
             if project.startswith('TARGET'):
                 phenoset = XenaTARGETPhenoset(project, root_dir)
-                print(phenoset.gdc_download_dict)
             phenoset.download_gdc().transform().metadata()
         except Exception:
             msg = 'No phenotype data for cohort {}.'.format(project)

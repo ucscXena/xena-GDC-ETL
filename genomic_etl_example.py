@@ -9,7 +9,7 @@ modifying 3 variables: root_dir, projects and xena_dtypes. For example::
     script_dir = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(script_dir, 'gitignore', 'test')
     projects = ['TARGET-RT']
-    xena_dtypes = ['htseq.counts', 'htseq.fpkm', 'htseq.fpkm-uq', 'mirna']
+    xena_dtypes = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna']
 
 """
 
@@ -31,9 +31,9 @@ def main():
     # Get all project_ids on GDC, and convert unicode to str for python 2
     projects = [str(x) for x in gdc.get_all_project_info().index]
     # Selected types of datasets for Xena
-    xena_dtypes = ['htseq.counts', 'htseq.fpkm', 'htseq.fpkm-uq', 'mirna', 
-                   'masked.cnv', 'muse.snv', 'mutect2.snv', 
-                   'somaticsniper.snv', 'varscan2.snv']
+    xena_dtypes = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna', 
+                   'masked_cnv', 'muse_snv', 'mutect2_snv', 
+                   'somaticsniper_snv', 'varscan2_snv']
     
     counts = 0
     total_projects = len(projects)
