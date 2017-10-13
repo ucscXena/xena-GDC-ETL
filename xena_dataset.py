@@ -739,7 +739,8 @@ class XenaDataset(object):
             fields = ['file_id', 'file_name', self.gdc_prefix]
             try:
                 print('Searching for raw data ...', end='')
-                file_df = gdc.search('files', fields, self.gdc_filter)
+                file_df = gdc.search('files', in_filter=self.gdc_filter, 
+                                     fields=fields)
             except Exception:
                 file_dict = {}
             else:
@@ -958,7 +959,8 @@ class XenaDataset(object):
             try:
                 print('\rSearching the specific URL for raw MAF data ...', 
                       end='')
-                res_df = gdc.search('files', 'file_id', self.gdc_filter)
+                res_df = gdc.search('files', in_filter=self.gdc_filter, 
+                                    fields='file_id')
                 if res_df['file_id'].shape == (1,):
                     variables['maf_uuid'] = str(res_df['file_id'][0])
             except Exception:
@@ -1082,70 +1084,38 @@ class XenaTARGETPhenoset(XenaDataset):
     """
     
     # Prefix in filenames for downloaded files
-    _GDC_PREFIX = {
-            'clinical': 'file_name'
-        }
+    _GDC_PREFIX = {'clinical': 'file_name'}
     
-    # Settings for making Xena phenotype matrix from GDC's TARGET data
-    _TRANSFORM_ARGS = {
-            'clinical': {'read_func': read_clinical}
-        }
     # Map xena_dtype to corresponding metadata template.
     _METADATA_TEMPLATE = {'clinical': 'template.phenotype.meta.json'}
     
-    def __init__(self, projects, root_dir='.', raw_data_dir=None, 
-                 matrix_dir=None):
-        self.xena_dtype = 'clinical'
-        super(XenaTARGETPhenoset, self).__init__(projects, 'clinical', 
-                                                 root_dir, raw_data_dir, 
-                                                 matrix_dir)
-    
-    def transform(self):
-        """Transform raw data in a dataset into Xena matrix
-        
-        Returns:
-            self: allow method chaining.
-        """
-        
-        message = 'Make Xena matrix for {} data of {}.'
-        print(message.format(self.xena_dtype, self.projects))
-        self._transform_args = self._TRANSFORM_ARGS[self.xena_dtype]
-        total = len(self.raw_data_list)
-        count = 0
-        df_list = []
-        for path in self.raw_data_list:
-            count = count + 1
-            print('\rProcessing {}/{} file...'.format(count, total), end='')
-            sys.stdout.flush()
-            with read_by_ext(path) as f:
-                df = self._transform_args['read_func'](f)
-            df_list.append(df)
-        print('\rAll {} files have been processed. '.format(total))
-
+    def __target_clin_dfs2matrix(self, df_list):
         print('Merging into one matrix ...', end='')
         clin_df = pd.concat(df_list)
         print('\rMapping clinical info to individual samples...', end='')
-        cases_samples = gdc.search('cases',
-                                   ['submitter_id', 'samples.submitter_id'], 
-                                   {'project.project_id': self.projects})
+        cases_samples = gdc.search(
+                'cases', in_filter={'project.project_id': self.projects}, 
+                fields=['submitter_id', 'samples.submitter_id']
+            )
         from pandas.io.json import json_normalize
         cases_samples_map = json_normalize(
                 cases_samples, 'samples', ['submitter_id'], 
                 meta_prefix='cases.'
             ).rename(columns={'submitter_id': 'sample_id', 
                               'cases.submitter_id': 'TARGET USI'})
-        xena_matrix = pd.merge(
-                clin_df.reset_index(), 
-                cases_samples_map,
-                how='inner', on='TARGET USI'
-            ).set_index('sample_id')
-        
-        # Transformation done
-        print('\rSaving matrix to {} ...'.format(self.matrix), end='')
-        mkdir_p(self.matrix_dir)
-        xena_matrix.to_csv(self.matrix, sep='\t', encoding='utf-8')
-        print('\rXena matrix is saved at {}.'.format(self.matrix))
-        return self
+        return pd.merge(clin_df.reset_index(), cases_samples_map, how='inner', 
+                        on='TARGET USI').set_index('sample_id')
+    
+    def __init__(self, projects, root_dir='.', raw_data_dir=None, 
+                 matrix_dir=None):
+        self.xena_dtype = 'clinical'
+        self._TRANSFORM_ARGS = {
+            'clinical': {'read_func': read_clinical,
+                         'dfs2matrix': self.__target_clin_dfs2matrix}
+        }
+        super(XenaTARGETPhenoset, self).__init__(projects, 'clinical', 
+                                                 root_dir, raw_data_dir, 
+                                                 matrix_dir)
 
 
 def main():

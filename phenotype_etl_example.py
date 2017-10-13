@@ -9,7 +9,6 @@ modifying 3 variables: root_dir, projects and xena_dtypes. For example::
     script_dir = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(script_dir, 'gitignore', 'test')
     projects = ['TARGET-RT']
-    xena_dtypes = ['htseq.counts', 'htseq.fpkm', 'htseq.fpkm-uq', 'mirna']
 
 """
 
@@ -21,13 +20,15 @@ import logging
 import os
 import timeit
 
+import gdc
 from xena_dataset import XenaTCGAPhenoset, XenaTARGETPhenoset
 
 def main():
     start_time = timeit.default_timer()
     
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    root_dir = os.path.join(script_dir, 'gitignore', 'test')
+    root_dir = os.path.abspath('/home/yunhai/gdc/xena/files')
+    # Get all project_ids on GDC, and convert unicode to str for python 2
+    projects = [str(x) for x in gdc.get_all_project_info().index]
     projects = ['TCGA-CHOL', 'TARGET-AML']
     
     counts = 0
