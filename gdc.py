@@ -138,7 +138,8 @@ def traverse_field_json(data, field=None):
             data = data[k]
     return data
 
-def search(endpoint, fields, in_filter, exclude_filter={}, expand=[]):
+def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[], 
+           typ='dataframe'):
     """Search one GDC endpoints and return searching results in a pandas 
     DataFrame if possible.
     
@@ -149,45 +150,58 @@ def search(endpoint, fields, in_filter, exclude_filter={}, expand=[]):
     Args:
         endpoint (str): One string of GDC API supported endpoint. See:
             https://docs.gdc.cancer.gov/API/Users_Guide/Getting_Started/#api-endpoints
-        fields (list or str): One or more fields to be queried. Each field 
-            will be used as a column name in the returned DataFrame. It can be 
-            a comma separated string or a list of field strings or a 
-            combination of both.
-        in_filter (dict): A dict of query conditions which will be used to 
-            perform the query. Each (key, value) pair represents for one 
-            condition. It will be passed to ``simple_and_filter`` for making a 
-            query filter compatible with GDC API. Please check 
-            ``simple_and_filter`` function for details.
-        exclude_filter (dict): An optional dict of query conditions which will 
-            be used to perform the query. Each (key, value) pair represents 
-            for one condition. It will be passed to ``simple_and_filter`` for 
+        in_filter (dict, optional): A dict of query conditions which will be 
+            used to perform the query. Each (key, value) pair represents for 
+            one ondition. It will be passed to ``simple_and_filter`` for 
             making a query filter compatible with GDC API. Please check 
             ``simple_and_filter`` function for details.
-        expand (list or str): One or more field groups to be queried. It can 
-            be a comma separated string or a list of field strings or a 
+        exclude_filter (dict, optional): An optional dict of query conditions 
+            which will be used to perform the query. Each (key, value) pair 
+            represents for one condition. It will be passed to 
+            ``simple_and_filter`` for making a query filter compatible with 
+            GDC API. Please check ``simple_and_filter`` function for details.
+        fields (list or str, optional): One or more fields to be queried. Each 
+            field will be used as a column name in the returned DataFrame. It 
+            can be a comma separated string or a list of field strings or a 
             combination of both.
+        expand (list or str, optional): One or more field groups to be 
+            queried. It can be a comma separated string or a list of field 
+            strings or a combination of both.
+        typ (str): type of search result to return (JSON or dataframe). 
+            Defaults to 'dataframe'.
     
     Returns:
         pandas.core.frame.DataFrame or str: A search result in form of a 
-            pandas DataFrame or a JSON formatted string.
+            pandas DataFrame or a JSON formatted string, depending on the 
+            value of ``typ`` and the DataFrame convertibility of JSON.
     """
     
-    url = '{}/{}'.format(_GDC_API_BASE, endpoint)
+    try:
+        assert typ.lower() in ['json', 'dataframe']
+    except (AttributeError, AssertionError):
+        raise ValueError('typ should be a string of either JSON or dataframe, '
+                         'not {}'.format(typ))
     filters =  simple_and_filter(in_dict=in_filter, 
                                  exclude_dict=exclude_filter)
     if isinstance(fields, str):
         fields = [fields]
     if isinstance(expand, str):
         expand = [expand]
-    params = {'filters':json.dumps(filters), 
-              'size':1, 
-              'fields':','.join(fields),
-              'expand':','.join(expand)}
+    params = {'size': 1}
+    if filters:
+        params['filters'] = json.dumps(filters)
+    if fields:
+        params['fields'] = ','.join(fields)
+    if expand:
+        params['expand'] = ','.join(expand)
+    url = '{}/{}'.format(_GDC_API_BASE, endpoint)
     response = requests.post(url, data=params)
     params['size'] = response.json()['data']['pagination']['total']
     response = requests.get(url, params=params)
     if response.status_code == 200:
         results = response.json()['data']['hits']
+        if typ.lower() == 'json':
+            return results
         try:
             df = pd.read_json(json.dumps(results), orient='records', 
                               typ='frame')
@@ -200,13 +214,13 @@ def search(endpoint, fields, in_filter, exclude_filter={}, expand=[]):
                 col_to_del.append(col)
             for col in set(col_to_del):
                 df = df.drop(col, axis=1)
-            results = df
+            return df
         except Exception:
             warnings.warn('Fail to convert searching results into table. '
                           'JSON will be returned.', stacklevel=2)
+            return results
     else:
-        results = None
-    return results
+        return None
 
 def get_ext(file_name):
     """Get all extensions supported by this module in the file name.
@@ -323,8 +337,8 @@ def get_all_project_info():
         "project name", "primary_site" and "program name" info.
     """
     
-    fields = ['name', 'primary_site', 'project_id', 'program.name']
-    project_df = search('projects', fields, {})
+    project_df = search('projects', fields=['name', 'primary_site', 
+                                            'project_id', 'program.name'])
     return project_df.set_index('id')
 
 def main():
