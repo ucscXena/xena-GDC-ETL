@@ -21,7 +21,7 @@ import os
 import timeit
 
 import gdc
-from xena_dataset import XenaTCGAPhenoset, XenaTARGETPhenoset
+from xena_dataset import TCGAPhenoset, TARGETPhenoset
 
 def main():
     start_time = timeit.default_timer()
@@ -29,7 +29,9 @@ def main():
     root_dir = os.path.abspath('/home/yunhai/gdc/xena/files')
     # Get all project_ids on GDC, and convert unicode to str for python 2
     projects = [str(x) for x in gdc.get_all_project_info().index]
-    projects = ['TCGA-CHOL', 'TARGET-AML']
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.join(script_dir, 'gitignore', 'test')
+    projects = ['TARGET-NBL']
     
     counts = 0
     total_projects = len(projects)
@@ -45,10 +47,10 @@ def main():
         print(msg.format(counts, total_projects, project))
         try:
             if project.startswith('TCGA'):
-                phenoset = XenaTCGAPhenoset(project, root_dir)
+                phenoset = TCGAPhenoset(project, root_dir)
             if project.startswith('TARGET'):
-                phenoset = XenaTARGETPhenoset(project, root_dir)
-            phenoset.download_gdc().transform().metadata()
+                phenoset = TARGETPhenoset(project, root_dir)
+            phenoset.download().transform().metadata()
         except Exception:
             msg = 'No phenotype data for cohort {}.'.format(project)
             logger.warning(msg, exc_info=True)

@@ -22,7 +22,7 @@ import os
 import timeit
 
 import gdc
-from xena_dataset import XenaDataset
+from xena_dataset import GDCOmicset
 
 def main():
     start_time = timeit.default_timer()
@@ -49,8 +49,8 @@ def main():
                                                       project))
         for dtype in xena_dtypes:
             try:
-                dataset = XenaDataset(project, dtype, root_dir)
-                dataset.download_gdc().transform().metadata()
+                dataset = GDCOmicset(project, dtype, root_dir)
+                dataset.download().transform().metadata()
             except Exception:
                 msg = 'No {} data for cohort {}.'.format(dtype, project)
                 logger.warning(msg, exc_info=True)
