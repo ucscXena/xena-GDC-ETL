@@ -20,6 +20,8 @@ import logging
 import os
 import timeit
 
+import numpy as np
+
 import gdc
 
 def main():
@@ -52,6 +54,12 @@ def main():
                     lambda s: s[-3:-1] not in ['10']
                 )
             df = df[sample_mask].set_index('samples.submitter_id')
+            df['TCGA_study'] = df['project.project_id'].apply(
+                    lambda x: x[5:]
+                ).map(gdc.TCGA_STUDY_ABBR)
+            df['year_at_diagnosis'] = df['diagnoses.age_at_diagnosis'].apply(
+                    lambda x: x if np.isnan(x) else int(round(x/365))
+                )
             gdc.mkdir_p(os.path.dirname(matrix))
             df.to_csv(matrix, sep='\t', encoding='utf-8')
         except Exception:

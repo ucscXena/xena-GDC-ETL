@@ -37,6 +37,47 @@ _SUPPORTED_DATASETS = [
         {'data_type': 'Biospecimen Supplement'},
         {'data_type': 'Clinical Supplement'}
     ]
+TCGA_STUDY_ABBR = {
+        'LAML': 'Acute Myeloid Leukemia',
+        'ACC': 'Adrenocortical carcinoma',
+        'BLCA': 'Bladder Urothelial Carcinoma',
+        'LGG': 'Brain Lower Grade Glioma',
+        'BRCA': 'Breast invasive carcinoma',
+        'CESC': ('Cervical squamous cell carcinoma and endocervical '
+                 'adenocarcinoma'),
+        'CHOL': 'Cholangiocarcinoma',
+        'LCML': 'Chronic Myelogenous Leukemia',
+        'COAD': 'Colon adenocarcinoma',
+        'CNTL': 'Controls',
+        'ESCA': 'Esophageal carcinoma',
+        'FPPP': 'FFPE Pilot Phase II',
+        'GBM': 'Glioblastoma multiforme',
+        'HNSC': 'Head and Neck squamous cell carcinoma',
+        'KICH': 'Kidney Chromophobe',
+        'KIRC': 'Kidney renal clear cell carcinoma',
+        'KIRP': 'Kidney renal papillary cell carcinoma',
+        'LIHC': 'Liver hepatocellular carcinoma',
+        'LUAD': 'Lung adenocarcinoma',
+        'LUSC': 'Lung squamous cell carcinoma',
+        'DLBC': 'Lymphoid Neoplasm Diffuse Large B-cell Lymphoma',
+        'MESO': 'Mesothelioma',
+        'MISC': 'Miscellaneous',
+        'OV': 'Ovarian serous cystadenocarcinoma',
+        'PAAD': 'Pancreatic adenocarcinoma',
+        'PCPG': 'Pheochromocytoma and Paraganglioma',
+        'PRAD': 'Prostate adenocarcinoma',
+        'READ': 'Rectum adenocarcinoma',
+        'SARC': 'Sarcoma',
+        'SKCM': 'Skin Cutaneous Melanoma',
+        'STAD': 'Stomach adenocarcinoma',
+        'TGCT': 'Testicular Germ Cell Tumors',
+        'THYM': 'Thymoma',
+        'THCA': 'Thyroid carcinoma',
+        'UCS': 'Uterine Carcinosarcoma',
+        'UCEC': 'Uterine Corpus Endometrial Carcinoma',
+        'UVM': 'Uveal Melanoma',
+    }
+
 
 def simple_and_filter(in_dict={}, exclude_dict={}):
     """Make a simple GDC API compatible query filter from a dict, in which 
@@ -81,6 +122,7 @@ def simple_and_filter(in_dict={}, exclude_dict={}):
                                "content":{"field":key, "value":value}})
     return {"op":"and", "content":operation_list}
 
+
 def reduce_json_array(j):
     """Recursively go over a JSON and unpack arrays which have only one item, 
     i.e. remove unnecessary arrays (brackets).
@@ -103,62 +145,64 @@ def reduce_json_array(j):
         reduced = j
     return reduced
 
-def traverse_field_json(data, field=None):
-    """Assuming the nested JSON having a single (set of) data, walk into/down 
-    this nested JSON and return the value.
-    
-    A lot of times, a single GDC data is kept in a highly nested JSON objects. 
-    For example, in a search of the files endpoint, a sample's submitter ID 
-    "TCGA-C8-A133-01A" is kept as::
-    
-        "cases": [
-          {
-            "samples": [
-              {
-                "submitter_id": "TCGA-C8-A133-01A"
-              }
-            ]
-          }
-        ]
-    
-    If multiple sets of data are found in the nested JSON, a "ValueError" will 
-    be raised.
-    
-    Args:
-        data (str): A string of nested JSON. This JSON should contain only one 
-            set of data, meaning arrays nested in this JSON should be size 1. 
-            Otherwise, a "ValueError" will be raised.
-        field (str, optional): A string representing the structure of the 
-            nested JSON. Keys for each level are separated by ".". If None, 
-            the nested JSON must contain only one data (rather than one set of 
-            data),  i.e. only one key at each level of nesting. Otherwise, a 
-            "ValueError" will be raised. Defaults to None.
-        
-    Returns: 
-        str or else: One data specified by the "field" or the only data 
-        contained in the nested JSON. It should be str most of the time but 
-        can be any types except list and dict.
 
-    """
-    
-    if field is None:
-        while isinstance(data, list) or isinstance(data, dict):
-            if len(data) > 1:
-                raise ValueError('Multiple data found in a list!')
-            elif isinstance(data, list):
-                data = data[0]
-            else:
-                data = data.values()[0]
-    else:
-        keys = field.split('.')
-        for k in keys:
-            if isinstance(data, list):
-                if len(data) > 1:
-                    raise ValueError('Multiple data found in a list!')
-                else:
-                    data = data[0]
-            data = data[k]
-    return data
+#def traverse_field_json(data, field=None):
+#    """Assuming the nested JSON having a single (set of) data, walk into/down 
+#    this nested JSON and return the value.
+#    
+#    A lot of times, a single GDC data is kept in a highly nested JSON objects. 
+#    For example, in a search of the files endpoint, a sample's submitter ID 
+#    "TCGA-C8-A133-01A" is kept as::
+#    
+#        "cases": [
+#          {
+#            "samples": [
+#              {
+#                "submitter_id": "TCGA-C8-A133-01A"
+#              }
+#            ]
+#          }
+#        ]
+#    
+#    If multiple sets of data are found in the nested JSON, a "ValueError" will 
+#    be raised.
+#    
+#    Args:
+#        data (str): A string of nested JSON. This JSON should contain only one 
+#            set of data, meaning arrays nested in this JSON should be size 1. 
+#            Otherwise, a "ValueError" will be raised.
+#        field (str, optional): A string representing the structure of the 
+#            nested JSON. Keys for each level are separated by ".". If None, 
+#            the nested JSON must contain only one data (rather than one set of 
+#            data),  i.e. only one key at each level of nesting. Otherwise, a 
+#            "ValueError" will be raised. Defaults to None.
+#        
+#    Returns: 
+#        str or else: One data specified by the "field" or the only data 
+#        contained in the nested JSON. It should be str most of the time but 
+#        can be any types except list and dict.
+#
+#    """
+#    
+#    if field is None:
+#        while isinstance(data, list) or isinstance(data, dict):
+#            if len(data) > 1:
+#                raise ValueError('Multiple data found in a list!')
+#            elif isinstance(data, list):
+#                data = data[0]
+#            else:
+#                data = data.values()[0]
+#    else:
+#        keys = field.split('.')
+#        for k in keys:
+#            if isinstance(data, list):
+#                if len(data) > 1:
+#                    raise ValueError('Multiple data found in a list!')
+#                else:
+#                    data = data[0]
+#            data = data[k]
+#    return data
+
 
 def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[], 
            typ='dataframe'):
@@ -226,18 +270,18 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
             return results
         try:
             return pd.io.json.json_normalize(reduce_json_array(results))
-            df = pd.read_json(json.dumps(results), orient='records', 
-                              typ='frame')
-            col_to_del = []
-            for field in [f for f in fields if '.' in f]:
-                col, keys = field.split('.', 1)
-                df[field] = df[col].apply(
-                        lambda x: traverse_field_json(x, keys)
-                    )
-                col_to_del.append(col)
-            for col in set(col_to_del):
-                df = df.drop(col, axis=1)
-            return df
+#            df = pd.read_json(json.dumps(results), orient='records', 
+#                              typ='frame')
+#            col_to_del = []
+#            for field in [f for f in fields if '.' in f]:
+#                col, keys = field.split('.', 1)
+#                df[field] = df[col].apply(
+#                        lambda x: traverse_field_json(x, keys)
+#                    )
+#                col_to_del.append(col)
+#            for col in set(col_to_del):
+#                df = df.drop(col, axis=1)
+#            return df
         except Exception:
             warnings.warn('Fail to convert searching results into table. '
                           'JSON will be returned.', stacklevel=2)
@@ -246,6 +290,7 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
         warnings.warn('Searching failed with HTTP status code: '
                       '{}'.format(response.status_code), stacklevel=2)
         return None
+
 
 def get_ext(file_name):
     """Get all extensions supported by this module in the file name.
@@ -269,6 +314,7 @@ def get_ext(file_name):
             break
     return '.'.join(name_list[i:])
 
+
 def mkdir_p(dir_name):
     """Make the directory as needed: no error if existing.
     
@@ -286,6 +332,7 @@ def mkdir_p(dir_name):
         if not os.path.isdir(dir_path):
             raise
     return dir_path
+
 
 def download(uuids, download_dir='.', chunk_size=4096):
     """Download GDC's open access data according to UUID(s).
@@ -353,6 +400,7 @@ def download(uuids, download_dir='.', chunk_size=4096):
     print('')
     return download_list
 
+
 def get_project_info(projects=None):
     """Get info for project(s) of interest through GDC API.
     
@@ -377,6 +425,7 @@ def get_project_info(projects=None):
                         fields=['name', 'primary_site', 'project_id', 
                                 'program.name'])
     return project_df.set_index('id')
+
 
 def get_clinical_samples(projects=None):
     """Get info for all samples of ``projects`` and clinical info for all 
@@ -411,6 +460,7 @@ def get_clinical_samples(projects=None):
     samples_df = pd.io.json.json_normalize(reduced_json, 'samples', 'id', 
                                            record_prefix='samples.')
     return pd.merge(cases_df, samples_df, how='inner', on='id')
+
 
 def main():
     print('A simple python module providing selected GDC API functionalities.')

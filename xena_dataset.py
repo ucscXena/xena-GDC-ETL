@@ -101,46 +101,6 @@ def read_biospecimen(fileobj):
     elif ext != '.xml':
         raise IOError('Unknown file type for biospecimen data: {}'.format(ext))
     
-    disease_dict = {
-            'LAML': 'Acute Myeloid Leukemia',
-            'ACC': 'Adrenocortical carcinoma',
-            'BLCA': 'Bladder Urothelial Carcinoma',
-            'LGG': 'Brain Lower Grade Glioma',
-            'BRCA': 'Breast invasive carcinoma',
-            'CESC': ('Cervical squamous cell carcinoma and endocervical '
-                     'adenocarcinoma'),
-            'CHOL': 'Cholangiocarcinoma',
-            'LCML': 'Chronic Myelogenous Leukemia',
-            'COAD': 'Colon adenocarcinoma',
-            'CNTL': 'Controls',
-            'ESCA': 'Esophageal carcinoma',
-            'FPPP': 'FFPE Pilot Phase II',
-            'GBM': 'Glioblastoma multiforme',
-            'HNSC': 'Head and Neck squamous cell carcinoma',
-            'KICH': 'Kidney Chromophobe',
-            'KIRC': 'Kidney renal clear cell carcinoma',
-            'KIRP': 'Kidney renal papillary cell carcinoma',
-            'LIHC': 'Liver hepatocellular carcinoma',
-            'LUAD': 'Lung adenocarcinoma',
-            'LUSC': 'Lung squamous cell carcinoma',
-            'DLBC': 'Lymphoid Neoplasm Diffuse Large B-cell Lymphoma',
-            'MESO': 'Mesothelioma',
-            'MISC': 'Miscellaneous',
-            'OV': 'Ovarian serous cystadenocarcinoma',
-            'PAAD': 'Pancreatic adenocarcinoma',
-            'PCPG': 'Pheochromocytoma and Paraganglioma',
-            'PRAD': 'Prostate adenocarcinoma',
-            'READ': 'Rectum adenocarcinoma',
-            'SARC': 'Sarcoma',
-            'SKCM': 'Skin Cutaneous Melanoma',
-            'STAD': 'Stomach adenocarcinoma',
-            'TGCT': 'Testicular Germ Cell Tumors',
-            'THYM': 'Thymoma',
-            'THCA': 'Thyroid carcinoma',
-            'UCS': 'Uterine Carcinosarcoma',
-            'UCEC': 'Uterine Corpus Endometrial Carcinoma',
-            'UVM': 'Uveal Melanoma',
-        }
     root = etree.parse(fileobj).getroot()
     ns = root.nsmap
     samples_common = {}
@@ -156,7 +116,7 @@ def read_biospecimen(fileobj):
             samples_common[child.tag.split('}', 1)[-1]] = ''
     # Add 'primary_diagnosis' according to
     # https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tcga-study-abbreviations
-    samples_common['primary_diagnosis'] = disease_dict[
+    samples_common['primary_diagnosis'] = gdc.TCGA_STUDY_ABBR[
             samples_common['disease_code']
         ]
     
