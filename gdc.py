@@ -17,7 +17,7 @@ import warnings
 import pandas as pd
 import requests
 
-_GDC_API_BASE = 'https://api.gdc.cancer.gov'
+GDC_API_BASE = 'https://api.gdc.cancer.gov'
 _SUPPORTED_FILE_TYPES = {'txt', 'vcf', 'bam', 'tsv', 'xml', 'maf', 'xlsx', 
                          'tar', 'gz', 'md5', 'xls'}
 _SUPPORTED_DATASETS = [
@@ -80,6 +80,28 @@ def simple_and_filter(in_dict={}, exclude_dict={}):
         operation_list.append({"op":"exclude", 
                                "content":{"field":key, "value":value}})
     return {"op":"and", "content":operation_list}
+
+def reduce_json_array(j):
+    """Recursively go over a JSON and unpack arrays which have only one item, 
+    i.e. remove unnecessary arrays (brackets).
+    
+    Args:
+        j (list of dict): A JSON to be reduced.
+        
+    Returns: 
+        list or dict: a reduced JSON with unnecessary array removed.
+    """
+    
+    if isinstance(j, list):
+        if len(j) == 1:
+            reduced = reduce_json_array(j[0])
+        else:
+            reduced = [reduce_json_array(e) for e in j]
+    elif isinstance(j, dict):
+        reduced = {k:reduce_json_array(v) for k, v in j.items()}
+    else:
+        reduced = j
+    return reduced
 
 def traverse_field_json(data, field=None):
     """Assuming the nested JSON having a single (set of) data, walk into/down 
@@ -194,7 +216,7 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
         params['fields'] = ','.join(fields)
     if expand:
         params['expand'] = ','.join(expand)
-    url = '{}/{}'.format(_GDC_API_BASE, endpoint)
+    url = '{}/{}'.format(GDC_API_BASE, endpoint)
     response = requests.post(url, data=params)
     params['size'] = response.json()['data']['pagination']['total']
     response = requests.get(url, params=params)
@@ -203,6 +225,7 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
         if typ.lower() == 'json':
             return results
         try:
+            return pd.io.json.json_normalize(reduce_json_array(results))
             df = pd.read_json(json.dumps(results), orient='records', 
                               typ='frame')
             col_to_del = []
@@ -220,6 +243,8 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
                           'JSON will be returned.', stacklevel=2)
             return results
     else:
+        warnings.warn('Searching failed with HTTP status code: '
+                      '{}'.format(response.status_code), stacklevel=2)
         return None
 
 def get_ext(file_name):
@@ -296,7 +321,7 @@ def download(uuids, download_dir='.', chunk_size=4096):
     total = len(uuids)
     count = 0
     download_list = []
-    data_endpt = '{}/data/'.format(_GDC_API_BASE)
+    data_endpt = '{}/data/'.format(GDC_API_BASE)
     for uuid in uuids:
         count += 1
         response = requests.get(data_endpt + uuid, stream=True)        
@@ -328,24 +353,70 @@ def download(uuids, download_dir='.', chunk_size=4096):
     print('')
     return download_list
 
-def get_all_project_info():
-    """Get project info for all projects on GDC.
+def get_project_info(projects=None):
+    """Get info for project(s) of interest through GDC API.
+    
+    Args:
+        projects (list or str): one (str) or a list of GDC "project_id"(s),
+            whose info will be returned. If None, projects will not be 
+            filtered, i.e. info for all GDC projects will be returned. 
+            Defaults to None.
     
     Returns:
-        dict: A dict of project info for all projects in GDC. The key 
-        will be project_id and the corresponding value is a dict contains 
-        "project name", "primary_site" and "program name" info.
+        pandas.core.frame.DataFrame: A DataFrame of project info including 
+        "project ID", "project name", "primary site" and "program name".
     """
     
-    project_df = search('projects', fields=['name', 'primary_site', 
-                                            'project_id', 'program.name'])
+    in_filter = {}
+    if projects is not None:
+        if isinstance(projects, list):
+            in_filter = {'project.project_id': projects}
+        else:
+            in_filter = {'project.project_id': [projects]}
+    project_df = search('projects', in_filter=in_filter, 
+                        fields=['name', 'primary_site', 'project_id', 
+                                'program.name'])
     return project_df.set_index('id')
+
+def get_clinical_samples(projects=None):
+    """Get info for all samples of ``projects`` and clinical info for all 
+    cases of ``projects`` through GDC API.
+    
+    Args:
+        projects (list or str): one (str) or a list of GDC "project_id"(s),
+            whose info will be returned. If None, projects will not be 
+            filtered, i.e. info for all GDC projects will be returned. 
+            Defaults to None.
+    
+    Returns:
+        pandas.core.frame.DataFrame: A DataFrame organized by samples, having 
+        info for all samples of ``projects``, as well as corresponding 
+        clinical info.
+    """
+    
+    in_filter = {}
+    if projects is not None:
+        if isinstance(projects, list):
+            in_filter = {'project.project_id': projects}
+        else:
+            in_filter = {'project.project_id': [projects]}
+    fields = ['case_id', 'created_datetime', 'disease_type', 'id', 
+              'primary_site', 'state', 'submitter_id', 'updated_datetime']
+    expand = ['demographic', 'diagnoses', 'diagnoses.treatments', 'exposures', 
+              'family_histories', 'project', 'samples', 'tissue_source_site']
+    res = search('cases', in_filter=in_filter, fields=fields, expand=expand, 
+                typ='json')
+    reduced_json = reduce_json_array(res)
+    cases_df = pd.io.json.json_normalize(reduced_json).drop('samples', axis=1)
+    samples_df = pd.io.json.json_normalize(reduced_json, 'samples', 'id', 
+                                           record_prefix='samples.')
+    return pd.merge(cases_df, samples_df, how='inner', on='id')
 
 def main():
     print('A simple python module providing selected GDC API functionalities.')
     
     # Simple test
-    print(get_all_project_info().head())
+    print(get_project_info().head())
     
 if __name__ == '__main__':
     main()

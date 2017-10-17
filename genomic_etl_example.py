@@ -29,7 +29,7 @@ def main():
     
     root_dir = os.path.abspath('/home/yunhai/gdc/imported_GDC')
     # Get all project_ids on GDC, and convert unicode to str for python 2
-    projects = [str(x) for x in gdc.get_all_project_info().index]
+    projects = [str(x) for x in gdc.get_project_info().index]
     # Selected types of datasets for Xena
     xena_dtypes = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna', 
                    'masked_cnv', 'muse_snv', 'mutect2_snv', 

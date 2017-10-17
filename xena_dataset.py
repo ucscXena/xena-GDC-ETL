@@ -1072,7 +1072,7 @@ class GDCOmicset(XenaDataset):
                                  str(self.projects)))
                 return None
             file_dict = {
-                    '{}/data/{}'.format(gdc._GDC_API_BASE, uuid): 
+                    '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): 
                         os.path.join(self.raw_data_dir, name) 
                     for uuid, name in file_dict.items()
                 }
@@ -1330,7 +1330,7 @@ class TARGETPhenoset(XenaDataset):
                                  str(self.projects)))
                 return None
             file_dict = {
-                    '{}/data/{}'.format(gdc._GDC_API_BASE, uuid): 
+                    '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): 
                         os.path.join(self.raw_data_dir, name) 
                     for uuid, name in file_dict.items()
                 }
@@ -1395,18 +1395,6 @@ class TARGETPhenoset(XenaDataset):
 
 def main():
     print('A python module of Xena specific importing pipeline for GDC data.')
-    
-#    in_filter = {'project.project_id': 'TCGA-CHOL',}
-#    fields = ['submitter_id', 'submitter_sample_ids']
-#    expand=['demographic', 'diagnoses', 'diagnoses.treatments', 'exposures', 
-#            'family_histories', 'project', 'samples', 'tissue_source_site']
-#    df = gdc.search('cases', fields, in_filter, 
-#                    expand=expand).set_index('submitter_id')
-#    for field in ['demographic', 'project', 'tissue_source_site']:
-#        df = pd.concat([df, pd.DataFrame(df[field].to_dict()).T], 
-#                       axis=1).drop(field, axis=1)
-#    df.drop(['created_datetime', 'updated_datetime', 'state'], axis=1)
-#    df.to_csv('test.tsv', sep='\t')
 
 
 if __name__ == '__main__':
