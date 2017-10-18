@@ -11,7 +11,8 @@ gitignore/
 *.exe
 *.o
 *.so
-*.pyc
+*.py[cod]
+__pycache__/
 
 # Packages #
 ############

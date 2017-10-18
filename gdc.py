@@ -146,64 +146,6 @@ def reduce_json_array(j):
     return reduced
 
 
-#def traverse_field_json(data, field=None):
-#    """Assuming the nested JSON having a single (set of) data, walk into/down 
-#    this nested JSON and return the value.
-#    
-#    A lot of times, a single GDC data is kept in a highly nested JSON objects. 
-#    For example, in a search of the files endpoint, a sample's submitter ID 
-#    "TCGA-C8-A133-01A" is kept as::
-#    
-#        "cases": [
-#          {
-#            "samples": [
-#              {
-#                "submitter_id": "TCGA-C8-A133-01A"
-#              }
-#            ]
-#          }
-#        ]
-#    
-#    If multiple sets of data are found in the nested JSON, a "ValueError" will 
-#    be raised.
-#    
-#    Args:
-#        data (str): A string of nested JSON. This JSON should contain only one 
-#            set of data, meaning arrays nested in this JSON should be size 1. 
-#            Otherwise, a "ValueError" will be raised.
-#        field (str, optional): A string representing the structure of the 
-#            nested JSON. Keys for each level are separated by ".". If None, 
-#            the nested JSON must contain only one data (rather than one set of 
-#            data),  i.e. only one key at each level of nesting. Otherwise, a 
-#            "ValueError" will be raised. Defaults to None.
-#        
-#    Returns: 
-#        str or else: One data specified by the "field" or the only data 
-#        contained in the nested JSON. It should be str most of the time but 
-#        can be any types except list and dict.
-#
-#    """
-#    
-#    if field is None:
-#        while isinstance(data, list) or isinstance(data, dict):
-#            if len(data) > 1:
-#                raise ValueError('Multiple data found in a list!')
-#            elif isinstance(data, list):
-#                data = data[0]
-#            else:
-#                data = data.values()[0]
-#    else:
-#        keys = field.split('.')
-#        for k in keys:
-#            if isinstance(data, list):
-#                if len(data) > 1:
-#                    raise ValueError('Multiple data found in a list!')
-#                else:
-#                    data = data[0]
-#            data = data[k]
-#    return data
-
-
 def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[], 
            typ='dataframe'):
     """Search one GDC endpoints and return searching results in a pandas 
@@ -270,18 +212,6 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
             return results
         try:
             return pd.io.json.json_normalize(reduce_json_array(results))
-#            df = pd.read_json(json.dumps(results), orient='records', 
-#                              typ='frame')
-#            col_to_del = []
-#            for field in [f for f in fields if '.' in f]:
-#                col, keys = field.split('.', 1)
-#                df[field] = df[col].apply(
-#                        lambda x: traverse_field_json(x, keys)
-#                    )
-#                col_to_del.append(col)
-#            for col in set(col_to_del):
-#                df = df.drop(col, axis=1)
-#            return df
         except Exception:
             warnings.warn('Fail to convert searching results into table. '
                           'JSON will be returned.', stacklevel=2)
