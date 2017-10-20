@@ -1,8 +1,8 @@
 {"cohort":"{{ xena_cohort }}",
  "url":"https://api.gdc.cancer.gov/data/",
- "dataSubType":"miRNA stem loop expression RNAseq",
+ "dataSubType":"stem loop expression",
  "dataProducer":"Genomic Data Commons",
- "label":"{{ project_id }} {{ gdc_type }}",
+ "label":"{{ gdc_type }}",
  "colNormalization":true,
  "wrangling_procedure":
  "RPM Data from the same sample but from different vials/portions/analytes/aliquotes is averaged; data from different samples is combined into genomicMatrix; all data is then log2(x+1) transformed.",

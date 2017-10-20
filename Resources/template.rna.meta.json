@@ -3,7 +3,7 @@
  "dataSubType":"gene expression RNAseq",
  ":probeMap":"gencode.v22.annotation.gene.probeMap",
  "dataProducer":"Genomic Data Commons",
- "label":"{{ project_id }} {{ gdc_type }}",
+ "label":"{{ gdc_type }}",
  "colNormalization":true,
  "wrangling_procedure":
  "Data from the same sample but from different vials/portions/analytes/aliquotes is averaged; data from different samples is combined into genomicMatrix; all data is then log2(x+1) transformed.",

@@ -3,7 +3,7 @@
  "url":"https://api.gdc.cancer.gov/data/",
  "dataSubType":"copy number",
  "dataProducer":"Genomic Data Commons",
- "label":"{{ project_id }} {{ gdc_type }}",
+ "label":"{{ gdc_type }}",
  "wrangling_procedure":
  "Data from different samples is combined into genomicSegment; chromosome location and segment mean data are presented.",
  "assembly":"hg38",

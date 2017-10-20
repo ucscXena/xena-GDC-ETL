@@ -2,7 +2,7 @@
  "url":"https://api.gdc.cancer.gov/data/",
  "dataSubType":"phenotype",
  "dataProducer":"Genomic Data Commons",
- "label":"{{ project_id }} Phenotype",
+ "label":"Phenotype",
  "type":"clinicalMatrix",
  "wrangler":"Xena GDC ETL script",
  "version":"{{ date }}"{% if notes %},
