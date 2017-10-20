@@ -1326,7 +1326,7 @@ class TARGETPhenoset(XenaDataset):
         print('\rMapping clinical info to individual samples...', end='')
         cases = gdc.search(
                 'cases', in_filter={'project.project_id': self.projects}, 
-                fields=['submitter_id', 'samples.submitter_id']
+                fields=['submitter_id', 'samples.submitter_id'], typ='json'
             )
         cases_samples = [c for c in cases if 'samples' in c]
         from pandas.io.json import json_normalize
