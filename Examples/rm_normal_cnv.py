@@ -16,10 +16,6 @@ import os
 import shutil
 import timeit
 
-import gdc
-from xena_dataset import XenaDataset
-from xena_dataset import mkdir_p
-
 def main():
     start_time = timeit.default_timer()
     
@@ -44,7 +40,7 @@ def main():
         print('Processing [{}/{}] projects: {}'.format(counts, total_projects, 
                                                        project))
         try:
-            dataset = XenaDataset(project, 'masked.cnv', root_dir)
+            dataset = GDCOmicset(project, 'masked.cnv', root_dir)
             raw_data_dir = os.path.join(root_dir, project, 'GDC_Raw_Data', 
                                         'masked_cnv')
             normal_data_dir = os.path.join('/home/yunhai/gdc/TCGA_normal', 
@@ -68,4 +64,14 @@ def main():
     print('Finish in {} hours.'.format((end_time - start_time) / 60 / 60))
 
 if __name__ == '__main__':
+    if __package__ is None:
+        import sys
+        sys.path.insert(
+            0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        )
+        import gdc
+        from xena_dataset import GDCOmicset, mkdir_p
+    else:
+        from .. import gdc
+        from ..xena_dataset import GDCOmicset, mkdir_p
     main()

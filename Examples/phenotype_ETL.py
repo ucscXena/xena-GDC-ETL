@@ -6,9 +6,9 @@
 For a simple complete import, the script can be adapted from this example by 
 modifying 3 variables: root_dir, projects and xena_dtypes. For example::
 
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     root_dir = os.path.join(script_dir, 'gitignore', 'test')
-    projects = ['TARGET-RT']
+    projects = ['TCGA-CHOL', 'TARGET-RT']
 
 """
 
@@ -20,15 +20,15 @@ import logging
 import os
 import timeit
 
-import gdc
-from xena_dataset import TCGAPhenoset, TARGETPhenoset
-
 def main():
     start_time = timeit.default_timer()
     
     root_dir = os.path.abspath('/home/yunhai/gdc/xena/files')
     # Get all project_ids on GDC, and convert unicode to str for python 2
     projects = [str(x) for x in gdc.get_project_info().index]
+    script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root_dir = os.path.join(script_dir, 'gitignore', 'test')
+    projects = ['TARGET-CCSK']
     
     counts = 0
     total_projects = len(projects)
@@ -58,4 +58,14 @@ def main():
     print('Finish in {} hours.'.format((end_time - start_time) / 60 / 60))
 
 if __name__ == '__main__':
+    if __package__ is None:
+        import sys
+        sys.path.insert(
+            0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        )
+        import gdc
+        from xena_dataset import TCGAPhenoset, TARGETPhenoset
+    else:
+        from .. import gdc
+        from ..xena_dataset import TCGAPhenoset, TARGETPhenoset
     main()
