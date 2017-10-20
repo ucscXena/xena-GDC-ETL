@@ -26,9 +26,6 @@ def main():
     root_dir = os.path.abspath('/home/yunhai/gdc/xena/files')
     # Get all project_ids on GDC, and convert unicode to str for python 2
     projects = [str(x) for x in gdc.get_project_info().index]
-    script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    root_dir = os.path.join(script_dir, 'gitignore', 'test')
-    projects = ['TARGET-CCSK']
     
     counts = 0
     total_projects = len(projects)
