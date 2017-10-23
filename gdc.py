@@ -204,7 +204,15 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
         params['expand'] = ','.join(expand)
     url = '{}/{}'.format(GDC_API_BASE, endpoint)
     response = requests.post(url, data=params)
-    params['size'] = response.json()['data']['pagination']['total']
+    try:
+        params['size'] = response.json()['data']['pagination']['total']
+    except KeyError:
+        if typ.lower() == 'json':
+            return response.json()
+        else:
+            warnings.warn('Fail to get a table of results. JSON returned. '
+                          'Please check the result carefully.', stacklevel=2)
+            return response.json()
     response = requests.get(url, params=params)
     if response.status_code == 200:
         results = response.json()['data']['hits']
