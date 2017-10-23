@@ -1,5 +1,5 @@
 {"cohort":"{{ xena_cohort }}",
- "url":"https://api.gdc.cancer.gov/data/",
+ "url":"{% if gdc_release %}{{ gdc_release }}, {% endif %}https://api.gdc.cancer.gov/data/",
  "dataSubType":"phenotype",
  "dataProducer":"Genomic Data Commons",
  "label":"Phenotype",

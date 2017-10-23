@@ -17,6 +17,7 @@ from __future__ import print_function
 
 import time
 import os
+import re
 import sys
 import warnings
 
@@ -863,39 +864,39 @@ class GDCOmicset(XenaDataset):
         }
     # Map GDC project_id to Xena specific cohort name.
     _XENA_COHORT = {
-            'TCGA-BRCA': 'TCGA Breast Cancer (BRCA)',
-            'TCGA-LUAD': 'TCGA Lung Adenocarcinoma (LUAD)',
-            'TCGA-UCEC': 'TCGA Endometrioid Cancer (UCEC)',
-            'TCGA-LGG': 'TCGA Lower Grade Glioma (LGG)',
-            'TCGA-HNSC': 'TCGA Head and Neck Cancer (HNSC)',
-            'TCGA-PRAD': 'TCGA Prostate Cancer (PRAD)',
-            'TCGA-LUSC': 'TCGA Lung Squamous Cell Carcinoma (LUSC)',
-            'TCGA-THCA': 'TCGA Thyroid Cancer (THCA)',
-            'TCGA-SKCM': 'TCGA Melanoma (SKCM)',
-            'TCGA-OV': 'TCGA Ovarian Cancer (OV)',
-            'TCGA-STAD': 'TCGA Stomach Cancer (STAD)',
-            'TCGA-COAD': 'TCGA Colon Cancer (COAD)',
-            'TCGA-BLCA': 'TCGA Bladder Cancer (BLCA)',
-            'TCGA-GBM': 'TCGA Glioblastoma (GBM)',
-            'TCGA-LIHC': 'TCGA Liver Cancer (LIHC)',
-            'TCGA-KIRC': 'TCGA Kidney Clear Cell Carcinoma (KIRC)',
-            'TCGA-CESC': 'TCGA Cervical Cancer (CESC)',
-            'TCGA-KIRP': 'TCGA Kidney Papillary Cell Carcinoma (KIRP)',
-            'TCGA-SARC': 'TCGA Sarcoma (SARC)',
-            'TCGA-ESCA': 'TCGA Esophageal Cancer (ESCA)',
-            'TCGA-PAAD': 'TCGA Pancreatic Cancer (PAAD)',
-            'TCGA-PCPG': 'TCGA Pheochromocytoma & Paraganglioma (PCPG)',
-            'TCGA-READ': 'TCGA Rectal Cancer (READ)',
-            'TCGA-TGCT': 'TCGA Testicular Cancer (TGCT)',
-            'TCGA-LAML': 'TCGA Acute Myeloid Leukemia (LAML)',
-            'TCGA-THYM': 'TCGA Thymoma (THYM)',
-            'TCGA-ACC': 'TCGA Adrenocortical Cancer (ACC)',
-            'TCGA-MESO': 'TCGA Mesothelioma (MESO)',
-            'TCGA-UVM': 'TCGA Ocular melanomas (UVM)',
-            'TCGA-KICH': 'TCGA Kidney Chromophobe (KICH)',
-            'TCGA-UCS': 'TCGA Uterine Carcinosarcoma (UCS)',
-            'TCGA-CHOL': 'TCGA Bile Duct Cancer (CHOL)',
-            'TCGA-DLBC': 'TCGA Large B-cell Lymphoma (DLBC)'
+            'TCGA-BRCA': 'GDC TCGA Breast Cancer (BRCA)',
+            'TCGA-LUAD': 'GDC TCGA Lung Adenocarcinoma (LUAD)',
+            'TCGA-UCEC': 'GDC TCGA Endometrioid Cancer (UCEC)',
+            'TCGA-LGG': 'GDC TCGA Lower Grade Glioma (LGG)',
+            'TCGA-HNSC': 'GDC TCGA Head and Neck Cancer (HNSC)',
+            'TCGA-PRAD': 'GDC TCGA Prostate Cancer (PRAD)',
+            'TCGA-LUSC': 'GDC TCGA Lung Squamous Cell Carcinoma (LUSC)',
+            'TCGA-THCA': 'GDC TCGA Thyroid Cancer (THCA)',
+            'TCGA-SKCM': 'GDC TCGA Melanoma (SKCM)',
+            'TCGA-OV': 'GDC TCGA Ovarian Cancer (OV)',
+            'TCGA-STAD': 'GDC TCGA Stomach Cancer (STAD)',
+            'TCGA-COAD': 'GDC TCGA Colon Cancer (COAD)',
+            'TCGA-BLCA': 'GDC TCGA Bladder Cancer (BLCA)',
+            'TCGA-GBM': 'GDC TCGA Glioblastoma (GBM)',
+            'TCGA-LIHC': 'GDC TCGA Liver Cancer (LIHC)',
+            'TCGA-KIRC': 'GDC TCGA Kidney Clear Cell Carcinoma (KIRC)',
+            'TCGA-CESC': 'GDC TCGA Cervical Cancer (CESC)',
+            'TCGA-KIRP': 'GDC TCGA Kidney Papillary Cell Carcinoma (KIRP)',
+            'TCGA-SARC': 'GDC TCGA Sarcoma (SARC)',
+            'TCGA-ESCA': 'GDC TCGA Esophageal Cancer (ESCA)',
+            'TCGA-PAAD': 'GDC TCGA Pancreatic Cancer (PAAD)',
+            'TCGA-PCPG': 'GDC TCGA Pheochromocytoma & Paraganglioma (PCPG)',
+            'TCGA-READ': 'GDC TCGA Rectal Cancer (READ)',
+            'TCGA-TGCT': 'GDC TCGA Testicular Cancer (TGCT)',
+            'TCGA-LAML': 'GDC TCGA Acute Myeloid Leukemia (LAML)',
+            'TCGA-THYM': 'GDC TCGA Thymoma (THYM)',
+            'TCGA-ACC': 'GDC TCGA Adrenocortical Cancer (ACC)',
+            'TCGA-MESO': 'GDC TCGA Mesothelioma (MESO)',
+            'TCGA-UVM': 'GDC TCGA Ocular melanomas (UVM)',
+            'TCGA-KICH': 'GDC TCGA Kidney Chromophobe (KICH)',
+            'TCGA-UCS': 'GDC TCGA Uterine Carcinosarcoma (UCS)',
+            'TCGA-CHOL': 'GDC TCGA Bile Duct Cancer (CHOL)',
+            'TCGA-DLBC': 'GDC TCGA Large B-cell Lymphoma (DLBC)'
         }
     # Jinja2 template variables for corresponding "xena_dtype".
     _METADATA_VARIABLES = {
@@ -937,6 +938,27 @@ class GDCOmicset(XenaDataset):
         
         return cls._XENA_GDC_DTYPE.keys()
     
+    @property
+    def gdc_release(self):
+        try:
+            return self.__gdc_release
+        except AttributeError:
+            data_release = requests.get(
+                    gdc.GDC_API_BASE + '/status'
+                ).json()['data_release']
+            anchor = re.match(
+                    r'(Data Release [^\s]+)\s', data_release
+                ).group(1).replace(' ', '-').replace('.', '').lower()
+            self.__gdc_release = (
+                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#' 
+                    + anchor
+                )
+            return self.__gdc_release
+    
+    @gdc_release.setter
+    def gdc_release(self, url):
+        self.__gdc_release = url
+        
     # Set default query filter dict for GDC API if it hasn't been set yet.
     @property
     def gdc_filter(self):
@@ -1093,11 +1115,12 @@ class GDCOmicset(XenaDataset):
                 )
             projects = ','.join(self.projects)
             variables = {'project_id': projects, 
-                         'date': matrix_date}
+                         'date': matrix_date, 
+                         'gdc_release': self.gdc_release}
             if projects in self._XENA_COHORT:
                 variables['xena_cohort'] = self._XENA_COHORT[projects]
             else:
-                variables['xena_cohort'] = projects
+                variables['xena_cohort'] = 'GDC ' + projects
             try:
                 variables.update(self._METADATA_VARIABLES[self.xena_dtype])
             except KeyError:
@@ -1137,6 +1160,27 @@ class TCGAPhenoset(XenaDataset):
     """
     
     @property
+    def gdc_release(self):
+        try:
+            return self.__gdc_release
+        except AttributeError:
+            data_release = requests.get(
+                    gdc.GDC_API_BASE + '/status'
+                ).json()['data_release']
+            anchor = re.match(
+                    r'(Data Release [^\s]+)\s', data_release
+                ).group(1).replace(' ', '-').replace('.', '').lower()
+            self.__gdc_release = (
+                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#' 
+                    + anchor
+                )
+            return self.__gdc_release
+    
+    @gdc_release.setter
+    def gdc_release(self, url):
+        self.__gdc_release = url
+        
+    @property
     def metadata_vars(self):
         try:
             assert (self.__metadata_vars 
@@ -1148,11 +1192,12 @@ class TCGAPhenoset(XenaDataset):
                 )
             projects = ','.join(self.projects)
             variables = {'project_id': projects, 
-                         'date': matrix_date}
+                         'date': matrix_date, 
+                         'gdc_release': self.gdc_release}
             if projects in GDCOmicset._XENA_COHORT:
                 variables['xena_cohort'] = GDCOmicset._XENA_COHORT[projects]
             else:
-                variables['xena_cohort'] = projects
+                variables['xena_cohort'] = 'GDC ' + projects
             self.__metadata_vars = variables
             return self.__metadata_vars
     
@@ -1239,6 +1284,27 @@ class TARGETPhenoset(XenaDataset):
     for the transformed Xena matrix.
     """
     
+    @property
+    def gdc_release(self):
+        try:
+            return self.__gdc_release
+        except AttributeError:
+            data_release = requests.get(
+                    gdc.GDC_API_BASE + '/status'
+                ).json()['data_release']
+            anchor = re.match(
+                    r'(Data Release [^\s]+)\s', data_release
+                ).group(1).replace(' ', '-').replace('.', '').lower()
+            self.__gdc_release = (
+                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#' 
+                    + anchor
+                )
+            return self.__gdc_release
+    
+    @gdc_release.setter
+    def gdc_release(self, url):
+        self.__gdc_release = url
+        
     @XenaDataset.download_map.getter
     def download_map(self):
         """Get a dictionary of GDC files to be downloaded for this dataset.
@@ -1311,8 +1377,9 @@ class TARGETPhenoset(XenaDataset):
                 )
             projects = ','.join(self.projects)
             variables = {'project_id': projects, 
-                         'date': matrix_date,
-                         'xena_cohort': projects}
+                         'date': matrix_date, 
+                         'gdc_release': self.gdc_release,
+                         'xena_cohort': 'GDC ' + projects}
             self.__metadata_vars = variables
             return self.__metadata_vars
     

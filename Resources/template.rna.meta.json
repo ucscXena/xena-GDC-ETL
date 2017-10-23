@@ -1,5 +1,5 @@
 {"cohort":"{{ xena_cohort }}",
- "url":"https://api.gdc.cancer.gov/data/",
+ "url":"{% if gdc_release %}{{ gdc_release }}, {% endif %}https://api.gdc.cancer.gov/data/",
  "dataSubType":"gene expression RNAseq",
  ":probeMap":"gencode.v22.annotation.gene.probeMap",
  "dataProducer":"Genomic Data Commons",
