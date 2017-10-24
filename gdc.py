@@ -195,25 +195,27 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
         fields = [fields]
     if isinstance(expand, str):
         expand = [expand]
-    params = {'size': 1}
+    payload = {'size': 1}
     if filters:
-        params['filters'] = json.dumps(filters)
+        payload['filters'] = json.dumps(filters)
     if fields:
-        params['fields'] = ','.join(fields)
+        payload['fields'] = ','.join(fields)
     if expand:
-        params['expand'] = ','.join(expand)
+        payload['expand'] = ','.join(expand)
     url = '{}/{}'.format(GDC_API_BASE, endpoint)
-    response = requests.post(url, data=params)
+    response = requests.get(url, params=payload)
     try:
-        params['size'] = response.json()['data']['pagination']['total']
+        payload['size'] = response.json()['data']['pagination']['total']
     except KeyError:
+        payload.pop('size')
+        response = requests.get(url, params=payload)
         if typ.lower() == 'json':
             return response.json()
         else:
             warnings.warn('Fail to get a table of results. JSON returned. '
                           'Please check the result carefully.', stacklevel=2)
             return response.json()
-    response = requests.get(url, params=params)
+    response = requests.get(url, params=payload)
     if response.status_code == 200:
         results = response.json()['data']['hits']
         if typ.lower() == 'json':
@@ -392,7 +394,7 @@ def get_clinical_samples(projects=None):
     expand = ['demographic', 'diagnoses', 'diagnoses.treatments', 'exposures', 
               'family_histories', 'project', 'samples', 'tissue_source_site']
     res = search('cases', in_filter=in_filter, fields=fields, expand=expand, 
-                typ='json')
+                 typ='json')
     reduced_json = reduce_json_array(res)
     cases_df = pd.io.json.json_normalize(reduced_json).drop('samples', axis=1)
     samples_df = pd.io.json.json_normalize(reduced_json, 'samples', 'id', 

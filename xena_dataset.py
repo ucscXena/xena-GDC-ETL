@@ -943,9 +943,7 @@ class GDCOmicset(XenaDataset):
         try:
             return self.__gdc_release
         except AttributeError:
-            data_release = requests.get(
-                    gdc.GDC_API_BASE + '/status'
-                ).json()['data_release']
+            data_release = gdc.search('status', typ='json')['data_release']
             anchor = re.match(
                     r'(Data Release [^\s]+)\s', data_release
                 ).group(1).replace(' ', '-').replace('.', '').lower()
@@ -1164,9 +1162,7 @@ class TCGAPhenoset(XenaDataset):
         try:
             return self.__gdc_release
         except AttributeError:
-            data_release = requests.get(
-                    gdc.GDC_API_BASE + '/status'
-                ).json()['data_release']
+            data_release = gdc.search('status', typ='json')['data_release']
             anchor = re.match(
                     r'(Data Release [^\s]+)\s', data_release
                 ).group(1).replace(' ', '-').replace('.', '').lower()
@@ -1289,9 +1285,7 @@ class TARGETPhenoset(XenaDataset):
         try:
             return self.__gdc_release
         except AttributeError:
-            data_release = requests.get(
-                    gdc.GDC_API_BASE + '/status'
-                ).json()['data_release']
+            data_release = gdc.search('status', typ='json')['data_release']
             anchor = re.match(
                     r'(Data Release [^\s]+)\s', data_release
                 ).group(1).replace(' ', '-').replace('.', '').lower()
