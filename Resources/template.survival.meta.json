@@ -1,0 +1,10 @@
+{"cohort":"{{ xena_cohort }}",
+ "url":"{% if gdc_release %}{{ gdc_release }}, {% endif %}https://api.gdc.cancer.gov/data/",
+ "dataSubType":"phenotype",
+ "dataProducer":"Genomic Data Commons",
+ "label":"survival data",
+ "type":"clinicalMatrix",
+ "wrangler":"Xena GDC ETL script",
+ "version":"{{ date }}"{% if notes %},
+ "notes":"{{ notes }}"{% endif %}
+}

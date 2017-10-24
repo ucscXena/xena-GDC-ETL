@@ -1414,6 +1414,114 @@ class TARGETPhenoset(XenaDataset):
             )
 
 
+class GDCSurvivalset(XenaDataset):
+    """GDCSurvivalset is derived from the ``XenaDataset`` class and represents 
+    for a Xena matrix of GDC survival data for project(s) of interest.
+
+    This class provides a set of default configurations for downloading and 
+    transforming GDC survival data, as well as generating associated metadata 
+    for the transformed Xena matrix.
+    """
+    
+    @property
+    def gdc_release(self):
+        try:
+            return self.__gdc_release
+        except AttributeError:
+            data_release = gdc.search('status', typ='json')['data_release']
+            anchor = re.match(
+                    r'(Data Release [^\s]+)\s', data_release
+                ).group(1).replace(' ', '-').replace('.', '').lower()
+            self.__gdc_release = (
+                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#' 
+                    + anchor
+                )
+            return self.__gdc_release
+    
+    @gdc_release.setter
+    def gdc_release(self, url):
+        self.__gdc_release = url
+    
+    @property
+    def metadata_vars(self):
+        try:
+            assert (self.__metadata_vars 
+                    and isinstance(self.__metadata_vars, dict))
+            return self.__metadata_vars
+        except (AttributeError, AssertionError):
+            matrix_date = time.strftime(
+                    "%m-%d-%Y", time.gmtime(os.path.getmtime(self.matrix))
+                )
+            projects = ','.join(self.projects)
+            variables = {'project_id': projects, 
+                         'date': matrix_date, 
+                         'gdc_release': self.gdc_release}
+            if projects in GDCOmicset._XENA_COHORT:
+                variables['xena_cohort'] = GDCOmicset._XENA_COHORT[projects]
+            else:
+                variables['xena_cohort'] = 'GDC ' + projects
+            self.__metadata_vars = variables
+            return self.__metadata_vars
+    
+    @metadata_vars.setter
+    def metadata_vars(self, variables):
+        self.__metadata_vars = variables
+    
+    def __init__(self, projects, root_dir='.', raw_data_dir=None, 
+                 matrix_dir=None):
+        super(GDCSurvivalset, self).__init__(projects, 'survival', root_dir, 
+                                             raw_data_dir, matrix_dir)
+        
+        self.metadata_template = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                'Resources', 'template.survival.meta.json'
+            )
+    
+    def download(self):
+        survival = gdc.search('analysis/survival', 
+                              in_filter={'project.project_id': self.projects}, 
+                              typ='json')['results'][0]['donors']
+        mkdir_p(self.raw_data_dir)
+        path = os.path.join(
+                self.raw_data_dir,
+                '{}.GDC_survival.tsv'.format(','.join(self.projects))
+            )
+        pd.DataFrame(survival).set_index('id').to_csv(path, sep='\t')
+        self.raw_data_list = [path]
+        print('Raw {} data for {} is ready.'.format(self.projects, 
+                                                    self.xena_dtype))
+        return self
+    
+    def transform(self):
+        raw_df = pd.read_table(self.raw_data_list[0])
+        survival_df = raw_df.drop(
+                ['project_id', 'submitter_id', 'survivalEstimate'], axis=1
+            ).rename(columns={'censored': '_EVENT', 'time': '_TIME_TO_EVENT'})
+        survival_df['_OS_IND'] = (~survival_df['_EVENT']).map(int)
+        survival_df['_EVENT'] = survival_df['_OS_IND']
+        survival_df['_OS'] = survival_df['_TIME_TO_EVENT']
+        # Get samples to case map
+        case_samples = gdc.search(
+                'cases', in_filter={'project.project_id': self.projects}, 
+                fields=['submitter_id,submitter_sample_ids'], typ='json'
+            )
+        samples_df = pd.io.json.json_normalize(
+                case_samples, 'submitter_sample_ids', 'id'
+            ).rename(columns={0: 'sample'})
+        sample_mask = samples_df['sample'].map(
+                lambda s: s[-3:-1] not in ['10']
+            )
+        samples_df = samples_df[sample_mask]
+        # Make sample indexed survival matrix
+        df = (pd.merge(survival_df, samples_df, how='inner', on='id')
+                .drop('id', axis=1)
+                .set_index('sample'))
+        mkdir_p(os.path.dirname(self.matrix))
+        df.to_csv(self.matrix, sep='\t')
+        print('\rXena matrix is saved at {}.'.format(self.matrix))
+        return self
+
+
 def main():
     print('A python module of Xena specific importing pipeline for GDC data.')
 
