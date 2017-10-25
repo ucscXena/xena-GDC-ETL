@@ -1494,9 +1494,12 @@ class GDCSurvivalset(XenaDataset):
     
     def transform(self):
         raw_df = pd.read_table(self.raw_data_list[0])
+        # Transform GDC data according to Xena survival data spec
         survival_df = raw_df.drop(
-                ['project_id', 'submitter_id', 'survivalEstimate'], axis=1
-            ).rename(columns={'censored': '_EVENT', 'time': '_TIME_TO_EVENT'})
+                ['project_id', 'survivalEstimate'], axis=1
+            ).rename(columns={'censored': '_EVENT', 
+                              'time': '_TIME_TO_EVENT', 
+                              'submitter_id': '_PATIENT'})
         survival_df['_OS_IND'] = (~survival_df['_EVENT']).map(int)
         survival_df['_EVENT'] = survival_df['_OS_IND']
         survival_df['_OS'] = survival_df['_TIME_TO_EVENT']
