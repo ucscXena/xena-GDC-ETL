@@ -1383,7 +1383,7 @@ class TARGETPhenoset(XenaDataset):
     
     def __target_clin_dfs2matrix(self, df_list):
         print('Merging into one matrix ...', end='')
-        clin_df = pd.concat(df_list)
+        clin_df = pd.concat(df_list).replace(r'\r\n', ' ', regex=True)
         print('\rMapping clinical info to individual samples...', end='')
         cases = gdc.search(
                 'cases', in_filter={'project.project_id': self.projects}, 

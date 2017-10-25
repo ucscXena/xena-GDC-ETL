@@ -29,7 +29,13 @@ def main():
     # Get all project_ids on GDC, and convert unicode to str for python 2
     projects = [str(x) for x in gdc.get_project_info().index]
     # Selected types of datasets for Xena
-    xena_dtypes = ['survival']
+    xena_dtypes = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna', 
+                   'masked_cnv', 'muse_snv', 'mutect2_snv', 
+                   'somaticsniper_snv', 'varscan2_snv']
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.join(script_dir, 'gitignore', 'test')
+    projects = ['TARGET-NBL']
+    xena_dtypes = ['phenotype']
     
     counts = 0
     total_projects = len(projects)
