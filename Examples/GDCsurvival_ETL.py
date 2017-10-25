@@ -28,7 +28,7 @@ def main():
     projects = [str(x) for x in gdc.get_project_info().index]
     script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     root_dir = os.path.join(script_dir, 'gitignore', 'test')
-    projects = ['TCGA-CHOL']
+    projects = ['TARGET-NBL', 'TARGET-OS']
     
     counts = 0
     total_projects = len(projects)

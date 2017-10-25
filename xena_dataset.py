@@ -1503,8 +1503,9 @@ class GDCSurvivalset(XenaDataset):
         # Get samples to case map
         case_samples = gdc.search(
                 'cases', in_filter={'project.project_id': self.projects}, 
-                fields=['submitter_id,submitter_sample_ids'], typ='json'
+                fields='submitter_sample_ids', typ='json'
             )
+        case_samples = [c for c in case_samples if 'submitter_sample_ids' in c]
         samples_df = pd.io.json.json_normalize(
                 case_samples, 'submitter_sample_ids', 'id'
             ).rename(columns={0: 'sample'})
