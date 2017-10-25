@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""This module provides basic and minimum necessary functions for carrying out 
+"""This module provides basic and minimum necessary functions for carrying out
 data query and download for Xena GDC ETL pipelines.
 """
 
@@ -18,7 +18,7 @@ import pandas as pd
 import requests
 
 GDC_API_BASE = 'https://api.gdc.cancer.gov'
-_SUPPORTED_FILE_TYPES = {'txt', 'vcf', 'bam', 'tsv', 'xml', 'maf', 'xlsx', 
+_SUPPORTED_FILE_TYPES = {'txt', 'vcf', 'bam', 'tsv', 'xml', 'maf', 'xlsx',
                          'tar', 'gz', 'md5', 'xls'}
 _SUPPORTED_DATASETS = [
         {'data_type': 'Copy Number Segment'},
@@ -31,7 +31,7 @@ _SUPPORTED_DATASETS = [
         {'analysis.workflow_type': 'HTSeq - FPKM-UQ'},
         {'analysis.workflow_type': 'MuSE Variant Aggregation and Masking'},
         {'analysis.workflow_type': 'MuTect2 Variant Aggregation and Masking'},
-        {'analysis.workflow_type': 
+        {'analysis.workflow_type':
             'SomaticSniper Variant Aggregation and Masking'},
         {'analysis.workflow_type': 'VarScan2 Variant Aggregation and Masking'},
         {'data_type': 'Biospecimen Supplement'},
@@ -80,28 +80,28 @@ TCGA_STUDY_ABBR = {
 
 
 def simple_and_filter(in_dict={}, exclude_dict={}):
-    """Make a simple GDC API compatible query filter from a dict, in which 
+    """Make a simple GDC API compatible query filter from a dict, in which
     individual conditions are joint by the "and" logic.
     
-    In the return filter, individual conditions in the ``in_dict`` and 
-    ``exclude_dict`` will be joint by the "and" operator, meaning a hit has to 
-    match all conditions. Here, a condition can use either a "in" operator 
-    (specified in the ``in_dict``) or a "exclude" operator (specified in the 
+    In the return filter, individual conditions in the ``in_dict`` and
+    ``exclude_dict`` will be joint by the "and" operator, meaning a hit has to
+    match all conditions. Here, a condition can use either a "in" operator
+    (specified in the ``in_dict``) or a "exclude" operator (specified in the
     ``exclude_dict``).
-    See details at 
+    See details at
     https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query
     
     Args:
-        in_dict (dict): A dict describing query conditions with the "in" 
-            operator. Each (key, value) pair represents for one condition. The 
-            "key" is the 'field' operand. Operator between "key" and "value" 
+        in_dict (dict): A dict describing query conditions with the "in"
+            operator. Each (key, value) pair represents for one condition. The
+            "key" is the 'field' operand. Operator between "key" and "value"
             is "in".
-        exclude_dict (dict): A dict describing query conditions with the 
-            "exclude" operator. Each (key, value) pair represents for one 
-            condition. The "key" is the 'field' operand. Operator between 
+        exclude_dict (dict): A dict describing query conditions with the
+            "exclude" operator. Each (key, value) pair represents for one
+            condition. The "key" is the 'field' operand. Operator between
             "key" and "value" is "exclude_dict".
-    Returns: 
-        dict: A dict of filter conforming to GDC API's format. It should then 
+    Returns:
+        dict: A dict of filter conforming to GDC API's format. It should then
         be converted to JSON format and used in the following http request.
     """
     
@@ -112,25 +112,25 @@ def simple_and_filter(in_dict={}, exclude_dict={}):
         value = in_dict[key]
         if not isinstance(value, list):
             value = [value]
-        operation_list.append({"op":"in", 
+        operation_list.append({"op":"in",
                                "content":{"field":key, "value":value}})
     for key in exclude_dict:
         value = exclude_dict[key]
         if not isinstance(value, list):
             value = [value]
-        operation_list.append({"op":"exclude", 
+        operation_list.append({"op":"exclude",
                                "content":{"field":key, "value":value}})
     return {"op":"and", "content":operation_list}
 
 
 def reduce_json_array(j):
-    """Recursively go over a JSON and unpack arrays which have only one item, 
+    """Recursively go over a JSON and unpack arrays which have only one item,
     i.e. remove unnecessary arrays (brackets).
     
     Args:
         j (list of dict): A JSON to be reduced.
         
-    Returns: 
+    Returns:
         list or dict: a reduced JSON with unnecessary array removed.
     """
     
@@ -146,41 +146,41 @@ def reduce_json_array(j):
     return reduced
 
 
-def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[], 
+def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
            typ='dataframe'):
-    """Search one GDC endpoints and return searching results in a pandas 
+    """Search one GDC endpoints and return searching results in a pandas
     DataFrame if possible.
     
-    When searching results cannot be safely converted to a pandas DataFrame, 
-    results will be returned in the JSON format as it is returned from GDC 
+    When searching results cannot be safely converted to a pandas DataFrame,
+    results will be returned in the JSON format as it is returned from GDC
     API.
     
     Args:
         endpoint (str): One string of GDC API supported endpoint. See:
             https://docs.gdc.cancer.gov/API/Users_Guide/Getting_Started/#api-endpoints
-        in_filter (dict, optional): A dict of query conditions which will be 
-            used to perform the query. Each (key, value) pair represents for 
-            one ondition. It will be passed to ``simple_and_filter`` for 
-            making a query filter compatible with GDC API. Please check 
+        in_filter (dict, optional): A dict of query conditions which will be
+            used to perform the query. Each (key, value) pair represents for
+            one ondition. It will be passed to ``simple_and_filter`` for
+            making a query filter compatible with GDC API. Please check
             ``simple_and_filter`` function for details.
-        exclude_filter (dict, optional): An optional dict of query conditions 
-            which will be used to perform the query. Each (key, value) pair 
-            represents for one condition. It will be passed to 
-            ``simple_and_filter`` for making a query filter compatible with 
+        exclude_filter (dict, optional): An optional dict of query conditions
+            which will be used to perform the query. Each (key, value) pair
+            represents for one condition. It will be passed to
+            ``simple_and_filter`` for making a query filter compatible with
             GDC API. Please check ``simple_and_filter`` function for details.
-        fields (list or str, optional): One or more fields to be queried. Each 
-            field will be used as a column name in the returned DataFrame. It 
-            can be a comma separated string or a list of field strings or a 
+        fields (list or str, optional): One or more fields to be queried. Each
+            field will be used as a column name in the returned DataFrame. It
+            can be a comma separated string or a list of field strings or a
             combination of both.
-        expand (list or str, optional): One or more field groups to be 
-            queried. It can be a comma separated string or a list of field 
+        expand (list or str, optional): One or more field groups to be
+            queried. It can be a comma separated string or a list of field
             strings or a combination of both.
-        typ (str): type of search result to return (JSON or dataframe). 
+        typ (str): type of search result to return (JSON or dataframe).
             Defaults to 'dataframe'.
     
     Returns:
-        pandas.core.frame.DataFrame or str: A search result in form of a 
-            pandas DataFrame or a JSON formatted string, depending on the 
+        pandas.core.frame.DataFrame or str: A search result in form of a
+            pandas DataFrame or a JSON formatted string, depending on the
             value of ``typ`` and the DataFrame convertibility of JSON.
     """
     
@@ -189,7 +189,7 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
     except (AttributeError, AssertionError):
         raise ValueError('typ should be a string of either JSON or dataframe, '
                          'not {}'.format(typ))
-    filters =  simple_and_filter(in_dict=in_filter, 
+    filters =  simple_and_filter(in_dict=in_filter,
                                  exclude_dict=exclude_filter)
     if isinstance(fields, str):
         fields = [fields]
@@ -235,12 +235,12 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
 def get_ext(file_name):
     """Get all extensions supported by this module in the file name.
     
-    Supported extensions are defined in the constant "_SUPPORTED_FILE_TYPES". 
+    Supported extensions are defined in the constant "_SUPPORTED_FILE_TYPES".
     Multiple extensions will be separated by ".".
     
     Args:
-        file_name (str): The filename will be split by "." and checked from 
-            left to right. Extensions will be kept starting from the first 
+        file_name (str): The filename will be split by "." and checked from
+            left to right. Extensions will be kept starting from the first
             (and left most) supported extension.
     
     Returns:
@@ -278,20 +278,20 @@ def download(uuids, download_dir='.', chunk_size=4096):
     """Download GDC's open access data according to UUID(s).
     
     Args:
-        uuids (str, list or dict): A single UUID (str), a list of UUIDs (list) 
-            or a dict whose keys are UUIDs for target file(s). If "uuids" is 
-            str or list, downloaded file(s) will be renamed to 
-            "UUID.extension" where "extension" is extracted by "get_ext()" 
-            from the original filename. Renamed file(s) will be saved at 
-            "download_dir". If "uuids" is a dict, the argument "download_dir" 
-            will be ignored; values of dict will be paths for saving 
+        uuids (str, list or dict): A single UUID (str), a list of UUIDs (list)
+            or a dict whose keys are UUIDs for target file(s). If "uuids" is
+            str or list, downloaded file(s) will be renamed to
+            "UUID.extension" where "extension" is extracted by "get_ext()"
+            from the original filename. Renamed file(s) will be saved at
+            "download_dir". If "uuids" is a dict, the argument "download_dir"
+            will be ignored; values of dict will be paths for saving
             corresponding downloaded files.
-        download_dir (str, optional): The directory for saving downloaded 
-            file(s) when "uuids" is str or list. It will be ignored if "uuids" 
+        download_dir (str, optional): The directory for saving downloaded
+            file(s) when "uuids" is str or list. It will be ignored if "uuids"
             is dict. Defaults to ".".
-        chunk_size (int, optional): The chunk size is the number of bytes it 
-            should read into memory, when the response is got with 
-            "stream=True". Check the documentation of "requests" module for 
+        chunk_size (int, optional): The chunk size is the number of bytes it
+            should read into memory, when the response is got with
+            "stream=True". Check the documentation of "requests" module for
             details. Defaults to 4096.
     
     Returns:
@@ -311,14 +311,14 @@ def download(uuids, download_dir='.', chunk_size=4096):
     data_endpt = '{}/data/'.format(GDC_API_BASE)
     for uuid in uuids:
         count += 1
-        response = requests.get(data_endpt + uuid, stream=True)        
+        response = requests.get(data_endpt + uuid, stream=True)
         if response.status_code == 200:
             file_size = int(response.headers['Content-Length'])
             if uuids[uuid] is None:
                 content_disp = response.headers['Content-Disposition']
                 ori_name = content_disp[content_disp.find('filename=') + 9:]
                 new_filename = uuid + '.' + get_ext(ori_name)
-                path = os.path.join(os.path.abspath(download_dir), 
+                path = os.path.join(os.path.abspath(download_dir),
                                     new_filename)
             else:
                 path = os.path.abspath(uuids[uuid])
@@ -331,7 +331,7 @@ def download(uuids, download_dir='.', chunk_size=4096):
                 for chunk in response.iter_content(chunk_size):
                     f.write(chunk)
                     downloaded = downloaded + chunk_size
-                    print(status.format(count, total, path, 
+                    print(status.format(count, total, path,
                                         min(1, downloaded/file_size)), end='')
                     sys.stdout.flush()
             download_list.append(path)
@@ -346,12 +346,12 @@ def get_project_info(projects=None):
     
     Args:
         projects (list or str): one (str) or a list of GDC "project_id"(s),
-            whose info will be returned. If None, projects will not be 
-            filtered, i.e. info for all GDC projects will be returned. 
+            whose info will be returned. If None, projects will not be
+            filtered, i.e. info for all GDC projects will be returned.
             Defaults to None.
     
     Returns:
-        pandas.core.frame.DataFrame: A DataFrame of project info including 
+        pandas.core.frame.DataFrame: A DataFrame of project info including
         "project ID", "project name", "primary site" and "program name".
     """
     
@@ -361,25 +361,25 @@ def get_project_info(projects=None):
             in_filter = {'project.project_id': projects}
         else:
             in_filter = {'project.project_id': [projects]}
-    project_df = search('projects', in_filter=in_filter, 
-                        fields=['name', 'primary_site', 'project_id', 
+    project_df = search('projects', in_filter=in_filter,
+                        fields=['name', 'primary_site', 'project_id',
                                 'program.name'])
     return project_df.set_index('id')
 
 
 def get_clinical_samples(projects=None):
-    """Get info for all samples of ``projects`` and clinical info for all 
+    """Get info for all samples of ``projects`` and clinical info for all
     cases of ``projects`` through GDC API.
     
     Args:
         projects (list or str): one (str) or a list of GDC "project_id"(s),
-            whose info will be returned. If None, projects will not be 
-            filtered, i.e. info for all GDC projects will be returned. 
+            whose info will be returned. If None, projects will not be
+            filtered, i.e. info for all GDC projects will be returned.
             Defaults to None.
     
     Returns:
-        pandas.core.frame.DataFrame: A DataFrame organized by samples, having 
-        info for all samples of ``projects``, as well as corresponding 
+        pandas.core.frame.DataFrame: A DataFrame organized by samples, having
+        info for all samples of ``projects``, as well as corresponding
         clinical info.
     """
     
@@ -389,15 +389,15 @@ def get_clinical_samples(projects=None):
             in_filter = {'project.project_id': projects}
         else:
             in_filter = {'project.project_id': [projects]}
-    fields = ['case_id', 'created_datetime', 'disease_type', 'id', 
+    fields = ['case_id', 'created_datetime', 'disease_type', 'id',
               'primary_site', 'state', 'submitter_id', 'updated_datetime']
-    expand = ['demographic', 'diagnoses', 'diagnoses.treatments', 'exposures', 
+    expand = ['demographic', 'diagnoses', 'diagnoses.treatments', 'exposures',
               'family_histories', 'project', 'samples', 'tissue_source_site']
-    res = search('cases', in_filter=in_filter, fields=fields, expand=expand, 
+    res = search('cases', in_filter=in_filter, fields=fields, expand=expand,
                  typ='json')
     reduced_json = reduce_json_array(res)
     cases_df = pd.io.json.json_normalize(reduced_json).drop('samples', axis=1)
-    samples_df = pd.io.json.json_normalize(reduced_json, 'samples', 'id', 
+    samples_df = pd.io.json.json_normalize(reduced_json, 'samples', 'id',
                                            record_prefix='samples.')
     return pd.merge(cases_df, samples_df, how='inner', on='id')
 

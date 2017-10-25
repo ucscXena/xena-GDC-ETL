@@ -3,8 +3,8 @@
 
 """A script for importing data from GDC to Xena
 
-Supported types of data are genomic data, phenotype data and survival data. 
-For a simple complete import, the script can be adapted from this example by 
+Supported types of data are genomic data, phenotype data and survival data.
+For a simple complete import, the script can be adapted from this example by
 modifying 3 variables: root_dir, projects and xena_dtypes. For example::
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -22,6 +22,11 @@ import logging
 import os
 import timeit
 
+import gdc
+from xena_dataset import (GDCOmicset,
+                          TCGAPhenoset, TARGETPhenoset,
+                          GDCSurvivalset)
+
 def main():
     start_time = timeit.default_timer()
     
@@ -29,8 +34,8 @@ def main():
     # Get all project_ids on GDC, and convert unicode to str for python 2
     projects = [str(x) for x in gdc.get_project_info().index]
     # Selected types of datasets for Xena
-    xena_dtypes = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna', 
-                   'masked_cnv', 'muse_snv', 'mutect2_snv', 
+    xena_dtypes = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna',
+                   'masked_cnv', 'muse_snv', 'mutect2_snv',
                    'somaticsniper_snv', 'varscan2_snv']
     script_dir = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(script_dir, 'gitignore', 'test')
@@ -40,7 +45,7 @@ def main():
     counts = 0
     total_projects = len(projects)
     log_format = '%(asctime)-15s [%(levelname)s]: %(message)s'
-    logging.basicConfig(level=logging.WARNING, format=log_format, 
+    logging.basicConfig(level=logging.WARNING, format=log_format,
                         datefmt='%Y-%m-%d %H:%M:%S',
                         filename=os.path.join(root_dir, 'etl.err'),
                         filemode='w')
@@ -73,18 +78,4 @@ def main():
     print('Finish in {:d}:{:02d}:{:02d}.'.format(h, m, s))
 
 if __name__ == '__main__':
-    if __package__ is None:
-        import sys
-        sys.path.insert(
-            0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        )
-        import gdc
-        from xena_dataset import GDCOmicset
-        from xena_dataset import TCGAPhenoset, TARGETPhenoset
-        from xena_dataset import GDCSurvivalset
-    else:
-        from .. import gdc
-        from ..xena_dataset import GDCOmicset
-        from ..xena_dataset import TCGAPhenoset, TARGETPhenoset
-        from ..xena_dataset import GDCSurvivalset
     main()

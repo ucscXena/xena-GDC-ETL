@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""This module mainly provides a ``XenaDataset`` class representing one Xena 
-matrix in a Xena cohort. Three class, ``GDCOmicset``, ``TCGAPhenoset`` and 
-``TARGETPhenoset`` are derived from ``XenaDataset``, representing genomic 
+"""This module mainly provides a ``XenaDataset`` class representing one Xena
+matrix in a Xena cohort. Three class, ``GDCOmicset``, ``TCGAPhenoset`` and
+``TARGETPhenoset`` are derived from ``XenaDataset``, representing genomic
 data, phenotype info of TCGA and phenotype info of TARGET respectively.
 
-In general, a ``XenaDataset`` class contains 3 methods, ``download``, 
-``transform`` and ``metadata``, which can be used for quickly assembling an 
+In general, a ``XenaDataset`` class contains 3 methods, ``download``,
+``transform`` and ``metadata``, which can be used for quickly assembling an
 ETL pipeline importing data into Xena.
 """
 
@@ -51,15 +51,15 @@ def mkdir_p(dir_name):
 def read_by_ext(filename, mode='r'):
     """Automatically decide how to open a file which might be compressed.
     
-    Leveraged codes from the "hook_compressed" function in python's fileinput 
+    Leveraged codes from the "hook_compressed" function in python's fileinput
     module.
     
     Args:
-        filename (str): Must contain proper extension indicating the 
+        filename (str): Must contain proper extension indicating the
             compression condition.
-        mode (str, optional): To specify the mode in which the file is opened. 
-            It will be passed to corresponding open function (``open``, 
-            ``gzip.open`` or ``bz2.BZ2File``); please check them for details. 
+        mode (str, optional): To specify the mode in which the file is opened.
+            It will be passed to corresponding open function (``open``,
+            ``gzip.open`` or ``bz2.BZ2File``); please check them for details.
             Defaults to 'r'.
     
     Returns:
@@ -78,7 +78,7 @@ def read_by_ext(filename, mode='r'):
 
 
 def read_biospecimen(fileobj):
-    """Extract info from GDC's biospecimen supplement and re-organize them 
+    """Extract info from GDC's biospecimen supplement and re-organize them
     into a pandas DataFrame.
     
     Args:
@@ -141,7 +141,7 @@ def read_biospecimen(fileobj):
 
 
 def read_clinical(fileobj):
-    """Extract info from GDC's clinical supplement and re-organize them into a 
+    """Extract info from GDC's clinical supplement and re-organize them into a
     pandas DataFrame.
     
     Args:
@@ -176,12 +176,12 @@ def read_clinical(fileobj):
     try:
         patient['race'] = ','.join(
                 [child.text.strip()
-                 for child in root.find('.//clin_shared:race_list', ns) 
+                 for child in root.find('.//clin_shared:race_list', ns)
                  if child.text and child.text.strip()]
             )
     except:
         patient['race'] = ''
-    # Redo the most recent "follow_up" and update the patient dict if there is 
+    # Redo the most recent "follow_up" and update the patient dict if there is
     # an overlapped key.
     follow_ups = root.xpath('.//*[local-name()="follow_up"]')
     if follow_ups:
@@ -200,14 +200,14 @@ def read_clinical(fileobj):
 def rna_columns_matrix(df_list):
     """Merge and process a list of dataframes to make a Xena data matrix.
     
-    Every dataframe contains data for individual sample. They are merged 
-    horizontally (``axis=1``; growing with more and more columns). For merged 
-    matrix, first average columns having the same name and then transform its 
+    Every dataframe contains data for individual sample. They are merged
+    horizontally (``axis=1``; growing with more and more columns). For merged
+    matrix, first average columns having the same name and then transform its
     data by log(x + 1).
     
     Args:
-        df_list (list of pandas.core.frame.DataFrame): Input raw data. One 
-            dataframe is expected to have data for one sample, with column 
+        df_list (list of pandas.core.frame.DataFrame): Input raw data. One
+            dataframe is expected to have data for one sample, with column
             header being sample ID (not strictly required).
     
     Returns:
@@ -216,7 +216,7 @@ def rna_columns_matrix(df_list):
     
     print('\rMerging into one matrix ...', end='')
     df = pd.concat(df_list, axis=1)
-    # ``pandas.concat`` Will lose index name when there are rows outside 
+    # ``pandas.concat`` Will lose index name when there are rows outside
     # intersection during outter join.
     if df.index.name is None:
         df.index.name = df_list[0].index.name
@@ -229,13 +229,13 @@ def rna_columns_matrix(df_list):
 def snv_maf_matrix(df_list):
     """Transform pre-sliced GDC's MAF data into Xena data matrix.
     
-    A new column of DNA variant allele frequencies named "dna_vaf" will 
-    calculated by division "t_alt_count" / "t_depth". Columns "t_alt_count" 
-    and "t_depth" will then be dropped. In the end, columns will be renamed 
+    A new column of DNA variant allele frequencies named "dna_vaf" will
+    calculated by division "t_alt_count" / "t_depth". Columns "t_alt_count"
+    and "t_depth" will then be dropped. In the end, columns will be renamed
     accordingly and row index will be set as sample ID.
     
     Args:
-        df (pandas.core.frame.DataFrame): Input raw matrix for mutation data 
+        df (pandas.core.frame.DataFrame): Input raw matrix for mutation data
            (from MAF file).
     
     Returns:
@@ -252,14 +252,14 @@ def snv_maf_matrix(df_list):
     print('\rRe-organizing matrix ...', end='')
     df = (df.drop(['t_alt_count', 't_depth'], axis=1)
             .set_index('Tumor_Sample_Barcode')
-            .rename(columns={'Hugo_Symbol': 'gene', 
-                             'Chromosome': 'chrom', 
-                             'Start_Position': 'start', 
-                             'End_Position': 'end', 
-                             'Reference_Allele': 'ref', 
-                             'Tumor_Seq_Allele2': 'alt', 
-                             'Tumor_Sample_Barcode': 'sampleid', 
-                             'HGVSp_Short': 'Amino_Acid_Change', 
+            .rename(columns={'Hugo_Symbol': 'gene',
+                             'Chromosome': 'chrom',
+                             'Start_Position': 'start',
+                             'End_Position': 'end',
+                             'Reference_Allele': 'ref',
+                             'Tumor_Seq_Allele2': 'alt',
+                             'Tumor_Sample_Barcode': 'sampleid',
+                             'HGVSp_Short': 'Amino_Acid_Change',
                              'Consequence': 'effect',
                              'FILTER': 'filter'}))
     df.index.name = 'Sample_ID'
@@ -269,24 +269,24 @@ def snv_maf_matrix(df_list):
 class XenaDataset(object):
     """XenaDataset represents for one Xena matrix in a Xena cohort.
 
-    This class provides a set of method for downloading and transforming data 
-    into Xena matrix, as well as generating associated metadata. It also 
+    This class provides a set of method for downloading and transforming data
+    into Xena matrix, as well as generating associated metadata. It also
     provides a set of attributes to control these processes.
 
     Attributes:
-        projects (str or list): One (string) or a list of project IDs 
+        projects (str or list): One (string) or a list of project IDs
             describing study projects included in this dataset.
-        xena_dtype (str): A short string (liek an ID) describing the type of 
-            data in this dataset. It is highly recommended, though not 
+        xena_dtype (str): A short string (liek an ID) describing the type of
+            data in this dataset. It is highly recommended, though not
             required, that one dataset has a single type of data.
         root_dir (str): Defines the root directory for this dataset.
-            By default, all files related to this class, such as raw data, 
-            Xena matrix, metadata, should and highly recommended to be 
-            organized and saved under this directory. However, this is not 
-            required. You can set directories for raw data (through the 
-            ``raw_data_dir`` property) and Xena matrix (through the 
-            ``matrix_dir``property) specifically. No actual directories will 
-            be made by just setting these properties. Directories will only be 
+            By default, all files related to this class, such as raw data,
+            Xena matrix, metadata, should and highly recommended to be
+            organized and saved under this directory. However, this is not
+            required. You can set directories for raw data (through the
+            ``raw_data_dir`` property) and Xena matrix (through the
+            ``matrix_dir``property) specifically. No actual directories will
+            be made by just setting these properties. Directories will only be
             made when needed.The default directory structure is::
             
                 root_dir
@@ -308,48 +308,48 @@ class XenaDataset(object):
             
             Defaults to "." which points to current python work directory.
         
-        raw_data_dir (str): A directory for saving raw data. Check the 
-            ``root_dir`` property for the default directory structure. 
+        raw_data_dir (str): A directory for saving raw data. Check the
+            ``root_dir`` property for the default directory structure.
             Defaults to None.
-        download_map (dict): A dict with the key being a URL for one raw data 
-            to be downloaded and the value being a path for saving downloaded 
+        download_map (dict): A dict with the key being a URL for one raw data
+            to be downloaded and the value being a path for saving downloaded
             raw data.
-        raw_data_list (list): A list of file path(s) for all raw data related 
-            to this dataset. It will be automatically set by the ``download`` 
-            method; or it can be assigned directly as a public attribute. This 
-            ``raw_data_list`` attribute will be used by the ``transform`` 
-            method for making a Xena matrix from raw data. If the 
-            ``raw_data_list`` is not available when trying to get this 
-            attribute, the ``raw_data_dir`` property will be checked. All 
-            files under ``raw_data_dir`` will be treated as data and used for 
+        raw_data_list (list): A list of file path(s) for all raw data related
+            to this dataset. It will be automatically set by the ``download``
+            method; or it can be assigned directly as a public attribute. This
+            ``raw_data_list`` attribute will be used by the ``transform``
+            method for making a Xena matrix from raw data. If the
+            ``raw_data_list`` is not available when trying to get this
+            attribute, the ``raw_data_dir`` property will be checked. All
+            files under ``raw_data_dir`` will be treated as data and used for
             creating a ``raw_data_list``.
-        read_raw (func): A function used for reading a raw data. A file object 
+        read_raw (func): A function used for reading a raw data. A file object
             will be passed to it.
-        raws2matrix (func): A function used for merging multiple raw data read 
-            by ``read_raw`` into one Xena matrix. A list of data read by 
+        raws2matrix (func): A function used for merging multiple raw data read
+            by ``read_raw`` into one Xena matrix. A list of data read by
             ``read_raw`` will be passed to this function.
-        matrix_dir (str): A path for saving the Xena matrix for this 
-            dataset. If the ``matrix_dir`` is not available when trying to get 
-            this attribute, the ``matrix`` property will be checked first. If 
-            the ``matrix`` property is available, its directory will be 
-            assigned to the ``matrix_dir``. If the ``matrix`` property is not 
-            available, a default path will be assigned according to the 
-            default directory structure. Check the ``root_dir`` property for 
+        matrix_dir (str): A path for saving the Xena matrix for this
+            dataset. If the ``matrix_dir`` is not available when trying to get
+            this attribute, the ``matrix`` property will be checked first. If
+            the ``matrix`` property is available, its directory will be
+            assigned to the ``matrix_dir``. If the ``matrix`` property is not
+            available, a default path will be assigned according to the
+            default directory structure. Check the ``root_dir`` property for
             the default directory structure. Defaults to None.
-        matrix (str): A path for the Xena matrix of this dataset. 
-            This attribute will be used but not validated by the ``transform`` 
-            method for saving newly generated Xena matrix. This attribute will 
-            also be used yet will be validated (i.e. it has to point to a 
-            valid existing file) by the ``metadata`` method for making 
-            metadata associated with the Xena matrix and with this dataset. By 
-            default, when used by the ``transform`` method, this ``matrix`` 
+        matrix (str): A path for the Xena matrix of this dataset.
+            This attribute will be used but not validated by the ``transform``
+            method for saving newly generated Xena matrix. This attribute will
+            also be used yet will be validated (i.e. it has to point to a
+            valid existing file) by the ``metadata`` method for making
+            metadata associated with the Xena matrix and with this dataset. By
+            default, when used by the ``transform`` method, this ``matrix``
             attribute will adapte a pattern as "projects.xena_type.tsv".
-        metadata_template (jinja2.environment.Template or str): A Jinja2 
-            template for rendering metadata of this dataset. When using a 
-            string to set ``metadata_template``, it will be used as a path to 
-            the template file and the corresponding template will be got and 
+        metadata_template (jinja2.environment.Template or str): A Jinja2
+            template for rendering metadata of this dataset. When using a
+            string to set ``metadata_template``, it will be used as a path to
+            the template file and the corresponding template will be got and
             assigned to this attribute.
-        metadata_vars: A dict of variables which will be used (by \*\* 
+        metadata_vars: A dict of variables which will be used (by \*\*
             unpacking) for rendering the ``metadata_template``.
     """
     
@@ -368,7 +368,7 @@ class XenaDataset(object):
     
     @property
     def root_dir(self):
-        """A path of an existing directory for keeping files (raw data, matrix 
+        """A path of an existing directory for keeping files (raw data, matrix
         and metadata) of this dataset.
         """
         
@@ -387,7 +387,7 @@ class XenaDataset(object):
             return self.__raw_data_dir
         except AttributeError:
             self.__raw_data_dir = os.path.join(
-                    self.root_dir, '_'.join(self.projects), 'Raw_Data', 
+                    self.root_dir, '_'.join(self.projects), 'Raw_Data',
                     str(self.xena_dtype)
                 )
             return self.__raw_data_dir
@@ -444,7 +444,7 @@ class XenaDataset(object):
                 return self.__matrix_dir
             except AttributeError:
                 self.__matrix_dir = os.path.join(
-                        self.root_dir, '_'.join(self.projects), 
+                        self.root_dir, '_'.join(self.projects),
                         'Xena_Matrices'
                     )
                 return self.__matrix_dir
@@ -461,7 +461,7 @@ class XenaDataset(object):
         except (AttributeError, AssertionError):
             self.__matrix = os.path.join(
                     self.matrix_dir,
-                    '{}.{}.tsv'.format('_'.join(self.projects), 
+                    '{}.{}.tsv'.format('_'.join(self.projects),
                                        self.xena_dtype)
                 )
             return self.__matrix
@@ -473,7 +473,7 @@ class XenaDataset(object):
     
     @property
     def metadata_template(self):
-        assert isinstance(self.__metadata_template, 
+        assert isinstance(self.__metadata_template,
                           jinja2.environment.Template)
         return self.__metadata_template
     
@@ -494,7 +494,7 @@ class XenaDataset(object):
                             'or an existing path to a template JSON file, '
                             'not a :{}.'.format(type(template)))
     
-    def __init__(self, projects, xena_dtype, root_dir='.', 
+    def __init__(self, projects, xena_dtype, root_dir='.',
                  raw_data_dir=None, matrix_dir=None):
         self.projects = projects
         self.xena_dtype = xena_dtype
@@ -507,14 +507,14 @@ class XenaDataset(object):
     def download(self, chunk_size=4096):
         """Download file(s) according to the ``download_map`` property.
         
-        A list of paths for downloaded files will be assigned to the 
-        ``raw_data_list`` property which can be used for Xena matrix 
+        A list of paths for downloaded files will be assigned to the
+        ``raw_data_list`` property which can be used for Xena matrix
         ``transform`` processing. Check the ``transform`` method for details.
         
         Args:
-            chunk_size (int, optional): The chunk size is the number of bytes 
-                it should read into memory, when the response is got with 
-                "stream=True". Check the documentation of "requests" module 
+            chunk_size (int, optional): The chunk size is the number of bytes
+                it should read into memory, when the response is got with
+                "stream=True". Check the documentation of "requests" module
                 for details. Defaults to 4096.
         
         Returns:
@@ -527,7 +527,7 @@ class XenaDataset(object):
         download_list = []
         for url, path in self.download_map.items():
             count += 1
-            response = requests.get(url, stream=True)        
+            response = requests.get(url, stream=True)
             if response.status_code == 200:
                 file_size = int(response.headers['Content-Length'])
                 path = os.path.abspath(path)
@@ -540,8 +540,8 @@ class XenaDataset(object):
                     for chunk in response.iter_content(chunk_size):
                         f.write(chunk)
                         downloaded = downloaded + chunk_size
-                        print(status.format(count, total, path, 
-                                            min(1, downloaded/file_size)), 
+                        print(status.format(count, total, path,
+                                            min(1, downloaded/file_size)),
                               end='')
                         sys.stdout.flush()
                 download_list.append(path)
@@ -549,21 +549,21 @@ class XenaDataset(object):
                 print('\rFail to download file {}.'.format(url))
         print('')
         self.raw_data_list = download_list
-        print('Raw {} data for {} is ready.'.format(self.projects, 
+        print('Raw {} data for {} is ready.'.format(self.projects,
                                                     self.xena_dtype))
         return self
     
     def transform(self):
         """Transform raw data in a dataset into Xena matrix.
         
-        A path for the generated matrix will be assigned to the ``matrix`` 
-        property which can be used for making metadata by the ``metadata`` 
+        A path for the generated matrix will be assigned to the ``matrix``
+        property which can be used for making metadata by the ``metadata``
         method. Check the ``metadata`` method for details.
         
-        The transformation process 1) takes in a list of path for raw data; 2) 
-        open each data based on its file extension; 3) read the file object by 
-        ``read_func`` and append the readout to a list, which will be 4) 
-        assembled into a Xena matrix by ``raws2matrix``. The generated Xena 
+        The transformation process 1) takes in a list of path for raw data; 2)
+        open each data based on its file extension; 3) read the file object by
+        ``read_func`` and append the readout to a list, which will be 4)
+        assembled into a Xena matrix by ``raws2matrix``. The generated Xena
         matrix will be saved at the path defined by the ``matrix`` property.
         
         Returns:
@@ -594,13 +594,13 @@ class XenaDataset(object):
     def metadata(self):
         """Make "metadata.json" for Xena data loading.
         
-        One metadata will be created for one Xena matrix defined by the 
-        ``matrix`` property. The ``matrix`` property has to point to an 
-        existing file when this ``metadata`` method is being called. The 
-        metadata JSON file will be saved under the same directory as the 
-        matrix file and named with a ".json" postfix appended to the filename 
-        of Xena matrix. JSON templates for making metatdata are defined by the 
-        ``metadata_template`` property, and variables for rendering the 
+        One metadata will be created for one Xena matrix defined by the
+        ``matrix`` property. The ``matrix`` property has to point to an
+        existing file when this ``metadata`` method is being called. The
+        metadata JSON file will be saved under the same directory as the
+        matrix file and named with a ".json" postfix appended to the filename
+        of Xena matrix. JSON templates for making metatdata are defined by the
+        ``metadata_template`` property, and variables for rendering the
         template are defined by the ``metadata_vars`` property.
         
         Returns:
@@ -629,26 +629,26 @@ class XenaDataset(object):
 
 
 class GDCOmicset(XenaDataset):
-    """GDCOmicset is derived from the ``XenaDataset`` class and represents for 
+    """GDCOmicset is derived from the ``XenaDataset`` class and represents for
     a Xena matrix whose data is genomic data from GDC.
 
-    This class provides a set of default configurations for downloading and 
-    transforming GDC data, as well as generating associated metadata for the 
+    This class provides a set of default configurations for downloading and
+    transforming GDC data, as well as generating associated metadata for the
     transformed Xena matrix.
 
     Attributes:
-        projects (str or list): One (string) or a list of GDC's 
-            "cases.project.project_id". All corresponding projects will be 
+        projects (str or list): One (string) or a list of GDC's
+            "cases.project.project_id". All corresponding projects will be
             included in this dataset.
-        xena_dtype (str): A dataset type supported by this class. To get a 
+        xena_dtype (str): A dataset type supported by this class. To get a
             list of supported types, use ``GDCOmicset.get_supported_dtype()``.
-        gdc_filter (dict): A filter dict specifying GDC files relevant to this 
-            dataset. Its key is one GDC API available field and the 
+        gdc_filter (dict): A filter dict specifying GDC files relevant to this
+            dataset. Its key is one GDC API available field and the
             corresponding value should be a string or a list of strings.
         root_dir (str, optional): Defines the root directory for this dataset.
-            By default, all files related to this class, such as raw data, 
-            Xena matrix, metadata, should and highly recommended to be 
-            organized and saved under this directory. The default directory 
+            By default, all files related to this class, such as raw data,
+            Xena matrix, metadata, should and highly recommended to be
+            organized and saved under this directory. The default directory
             structure is::
             
                 root_dir
@@ -668,48 +668,48 @@ class GDCOmicset(XenaDataset):
                         ├── projects.xena_dtype(N).tsv
                         └── projects.xena_dtype(N).tsv.json
             
-            Defaults to "." which points to current python work directory. 
-            Setting "root_dir" will not only set the "root_dir" property but 
-            also set "raw_data_dir" and/or "matrix_dir" properties if the 
-            directory for GDC data ("raw_data_dir") and/or Xena matrix 
-            ("matrix_dir") is not set yet. However, no actual directories will 
-            be made by just setting these properties. Directories will only be 
+            Defaults to "." which points to current python work directory.
+            Setting "root_dir" will not only set the "root_dir" property but
+            also set "raw_data_dir" and/or "matrix_dir" properties if the
+            directory for GDC data ("raw_data_dir") and/or Xena matrix
+            ("matrix_dir") is not set yet. However, no actual directories will
+            be made by just setting these properties. Directories will only be
             made when needed.
         
-            If you want to reset the default directory structure while 
-            "raw_data_dir" and/or "matrix_dir" properties are set already, you 
-            can override it using the "set_default_dir_tree" method with 
+            If you want to reset the default directory structure while
+            "raw_data_dir" and/or "matrix_dir" properties are set already, you
+            can override it using the "set_default_dir_tree" method with
             "reset_default=True".
-        raw_data_dir (str, optional): A path for saving raw data downloaded 
-            from GDC. Defaults to None. By default, it will be set by the 
+        raw_data_dir (str, optional): A path for saving raw data downloaded
+            from GDC. Defaults to None. By default, it will be set by the
             ``set_default_dir_tree`` method, based on the ``root_dir``.
-        raw_data_list (list): A list of file path(s) for all GDC raw data 
-            related to this dataset. It will be automatically set by the 
-            ``download`` method; or it can be assigned directly as a public 
-            attribute. This ``raw_data_list`` attribute will be used by 
-            ``transform`` method for making a Xena matrix from GDC raw data. 
-            If the ``raw_data_list`` is not usable when trying to get this 
-            attribute, the ``raw_data_dir`` property will be checked. All 
-            files under ``raw_data_dir`` will be treated as data and used for 
-            creating a ``raw_data_list``. 
-        matrix_dir (str, optional): A path for saving the Xena matrix for this 
-            dataset. Defaults to None. By default, it will be set by the 
+        raw_data_list (list): A list of file path(s) for all GDC raw data
+            related to this dataset. It will be automatically set by the
+            ``download`` method; or it can be assigned directly as a public
+            attribute. This ``raw_data_list`` attribute will be used by
+            ``transform`` method for making a Xena matrix from GDC raw data.
+            If the ``raw_data_list`` is not usable when trying to get this
+            attribute, the ``raw_data_dir`` property will be checked. All
+            files under ``raw_data_dir`` will be treated as data and used for
+            creating a ``raw_data_list``.
+        matrix_dir (str, optional): A path for saving the Xena matrix for this
+            dataset. Defaults to None. By default, it will be set by the
             ``set_default_dir_tree`` method, based on the ``root_dir``.
-        matrix (str, optional): A path for the Xena matrix of this dataset. 
-            This attribute will be used but not validated (i.e. it can be any 
-            desired directory and filename) by the ``transform`` method for 
-            saving newly generated Xena matrix. This attribute will also be 
-            used and validated (i.e. it has to point to a valid file) by the 
-            ``metadata`` method for making metadata assciated with the Xena 
+        matrix (str, optional): A path for the Xena matrix of this dataset.
+            This attribute will be used but not validated (i.e. it can be any
+            desired directory and filename) by the ``transform`` method for
+            saving newly generated Xena matrix. This attribute will also be
+            used and validated (i.e. it has to point to a valid file) by the
+            ``metadata`` method for making metadata assciated with the Xena
             matrix and with this dataset.
             
-            By default, when used by the ``transform`` method, this ``matrix`` 
+            By default, when used by the ``transform`` method, this ``matrix``
             attribute will adapte a pattern as "projects.xena_type.tsv". There
-            are two ways to pass custom matrix name: 1) you can set this 
-            ``matrix`` attribute before calling ``transform``. This allows you 
-            to customize both directory and filename for the Xena matrix. 
-            2) you can pass a ``matrix_name`` argument to the ``transform`` 
-            method. You can only customize the name (not its directory) of the 
+            are two ways to pass custom matrix name: 1) you can set this
+            ``matrix`` attribute before calling ``transform``. This allows you
+            to customize both directory and filename for the Xena matrix.
+            2) you can pass a ``matrix_name`` argument to the ``transform``
+            method. You can only customize the name (not its directory) of the
             Xena matrix.
     """
     
@@ -731,28 +731,28 @@ class GDCOmicset(XenaDataset):
                     'analysis.workflow_type': 'DNAcopy'},
             'masked_cnv': {'data_type': 'Masked Copy Number Segment',
                            'analysis.workflow_type': 'DNAcopy',
-                           'cases.samples.sample_type_id': 
-                               (['01', '02', '03', '04', '05', '06', '07', 
-                                 '08', '09', '15', '16', '20', '40', '50', 
+                           'cases.samples.sample_type_id':
+                               (['01', '02', '03', '04', '05', '06', '07',
+                                 '08', '09', '15', '16', '20', '40', '50',
                                  '60', '61', '99'])},
             'muse_snv': {
                     'data_type': 'Masked Somatic Mutation',
-                    'analysis.workflow_type': 
+                    'analysis.workflow_type':
                         'MuSE Variant Aggregation and Masking'
                 },
             'mutect2_snv': {
                     'data_type': 'Masked Somatic Mutation',
-                    'analysis.workflow_type': 
+                    'analysis.workflow_type':
                         'MuTect2 Variant Aggregation and Masking'
                 },
             'somaticsniper_snv': {
                     'data_type': 'Masked Somatic Mutation',
-                    'analysis.workflow_type': 
+                    'analysis.workflow_type':
                         'SomaticSniper Variant Aggregation and Masking'
                 },
             'varscan2_snv': {
                     'data_type': 'Masked Somatic Mutation',
-                    'analysis.workflow_type': 
+                    'analysis.workflow_type':
                         'VarScan2 Variant Aggregation and Masking'
                 },
             'biospecimen': {'data_type': 'Biospecimen Supplement'},
@@ -761,28 +761,28 @@ class GDCOmicset(XenaDataset):
 
     # Prefix in filenames for downloaded files
     _GDC_PREFIX = {
-            'htseq_counts': 'cases.samples.submitter_id', 
-            'htseq_fpkm': 'cases.samples.submitter_id', 
-            'htseq_fpkm-uq': 'cases.samples.submitter_id', 
-            'mirna': 'cases.samples.submitter_id', 
-            'mirna_isoform': 'cases.samples.submitter_id', 
-            'cnv': 'cases.samples.submitter_id', 
-            'masked_cnv': 'cases.samples.submitter_id', 
-            'muse_snv': 'submitter_id', 
-            'mutect2_snv': 'submitter_id', 
-            'somaticsniper_snv': 'submitter_id', 
+            'htseq_counts': 'cases.samples.submitter_id',
+            'htseq_fpkm': 'cases.samples.submitter_id',
+            'htseq_fpkm-uq': 'cases.samples.submitter_id',
+            'mirna': 'cases.samples.submitter_id',
+            'mirna_isoform': 'cases.samples.submitter_id',
+            'cnv': 'cases.samples.submitter_id',
+            'masked_cnv': 'cases.samples.submitter_id',
+            'muse_snv': 'submitter_id',
+            'mutect2_snv': 'submitter_id',
+            'somaticsniper_snv': 'submitter_id',
             'varscan2_snv': 'submitter_id',
-            'biospecimen': 'cases.submitter_id', 
+            'biospecimen': 'cases.submitter_id',
             'clinical': 'cases.submitter_id'
         }
     
     # Settings for making Xena matrix from GDC data
     _READ_RAW_FUNCS = dict.fromkeys(
-            ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq'], 
+            ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq'],
             lambda x: pd.read_table(
-                    x, header=None, 
-                    names=['Ensembl_ID', 
-                           os.path.basename(x.name).split('.', 1)[0]], 
+                    x, header=None,
+                    names=['Ensembl_ID',
+                           os.path.basename(x.name).split('.', 1)[0]],
                     index_col=0, usecols=[0, 1], comment='_'
                 )
         )
@@ -798,7 +798,7 @@ class GDCOmicset(XenaDataset):
             index_col=0, usecols=[1, 3]
         )
     _READ_RAW_FUNCS.update(dict.fromkeys(
-            ['cnv', 'masked_cnv'], 
+            ['cnv', 'masked_cnv'],
             lambda x: pd.read_table(
                     x, header=0, usecols=[1, 2, 3, 5]
                 ).assign(sample=os.path.basename(x.name).split('.', 1)[0])
@@ -806,8 +806,8 @@ class GDCOmicset(XenaDataset):
     _READ_RAW_FUNCS.update(dict.fromkeys(
             ['muse_snv', 'mutect2_snv', 'somaticsniper_snv', 'varscan2_snv'],
             lambda x: pd.read_table(
-                    x, header=0, 
-                    usecols=[12, 36, 4, 5, 6, 39, 41, 51, 0, 10, 15, 110], 
+                    x, header=0,
+                    usecols=[12, 36, 4, 5, 6, 39, 41, 51, 0, 10, 15, 110],
                     comment='#'
                 )
         ))
@@ -819,12 +819,12 @@ class GDCOmicset(XenaDataset):
             'htseq_fpkm-uq': rna_columns_matrix,
             'mirna': rna_columns_matrix,
             'mirna_isoform': rna_columns_matrix,
-            'cnv': 
+            'cnv':
                 lambda x: (pd.concat(x, axis=0)
                              .rename(columns={'Chromosome': 'Chrom',
                                               'Segment_Mean': 'value'})
                              .set_index('sample')),
-            'masked_cnv': 
+            'masked_cnv':
                 lambda x: (pd.concat(x, axis=0)
                              .rename(columns={'Chromosome': 'Chrom',
                                               'Segment_Mean': 'value'})
@@ -833,12 +833,12 @@ class GDCOmicset(XenaDataset):
             'mutect2_snv': snv_maf_matrix,
             'somaticsniper_snv': snv_maf_matrix,
             'varscan2_snv': snv_maf_matrix,
-            'biospecimen': 
+            'biospecimen':
                 lambda x: (pd.concat(x, axis=0)
                              .replace(r'^\s*$', np.nan, regex=True)
                              .dropna(axis=1, how='all')
                              .set_index('bcr_sample_barcode')),
-            'clinical': 
+            'clinical':
                 lambda x: (pd.concat(x, axis=0)
                              .replace(r'^\s*$', np.nan, regex=True)
                              .dropna(axis=1, how='all')
@@ -858,8 +858,8 @@ class GDCOmicset(XenaDataset):
                           'somaticsniper_snv': 'template.snv.meta.json',
                           'varscan2_snv': 'template.snv.meta.json'}
     _METADATA_TEMPLATE = {
-            k: os.path.join(os.path.dirname(os.path.abspath(__file__)), 
-                            'Resources', v) 
+            k: os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            'Resources', v)
             for k, v in _METADATA_TEMPLATE.items()
         }
     # Map GDC project_id to Xena specific cohort name.
@@ -900,22 +900,22 @@ class GDCOmicset(XenaDataset):
         }
     # Jinja2 template variables for corresponding "xena_dtype".
     _METADATA_VARIABLES = {
-            'htseq_counts': {'gdc_type': 'HTSeq - Counts',}, 
+            'htseq_counts': {'gdc_type': 'HTSeq - Counts',},
             'htseq_fpkm': {'gdc_type': 'HTSeq - FPKM',
-                           'unit': 'fpkm'}, 
+                           'unit': 'fpkm'},
             'htseq_fpkm-uq': {'gdc_type': 'HTSeq - FPKM-UQ',
-                              'unit': 'fpkm-uq'}, 
-            'mirna': {'gdc_type': 'miRNA Expression Quantification'}, 
+                              'unit': 'fpkm-uq'},
+            'mirna': {'gdc_type': 'miRNA Expression Quantification'},
             'mirna_isoform': {'gdc_type': 'Isoform Expression Quantification'},
-            'cnv': {'gdc_type': 'Copy Number Segment'}, 
-            'masked_cnv': {'gdc_type': 'Masked Copy Number Segment'}, 
-            'muse_snv': {'gdc_type': 'MuSE Variant Aggregation and Masking'}, 
+            'cnv': {'gdc_type': 'Copy Number Segment'},
+            'masked_cnv': {'gdc_type': 'Masked Copy Number Segment'},
+            'muse_snv': {'gdc_type': 'MuSE Variant Aggregation and Masking'},
             'mutect2_snv': {
                     'gdc_type': 'MuTect2 Variant Aggregation and Masking'
-                }, 
+                },
             'somaticsniper_snv': {
                     'gdc_type': 'SomaticSniper Variant Aggregation and Masking'
-                }, 
+                },
             'varscan2_snv': {
                     'gdc_type': 'VarScan2 Variant Aggregation and Masking'
                 }
@@ -948,7 +948,7 @@ class GDCOmicset(XenaDataset):
                     r'(Data Release [^\s]+)\s', data_release
                 ).group(1).replace(' ', '-').replace('.', '').lower()
             self.__gdc_release = (
-                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#' 
+                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#'
                     + anchor
                 )
             return self.__gdc_release
@@ -960,12 +960,12 @@ class GDCOmicset(XenaDataset):
     # Set default query filter dict for GDC API if it hasn't been set yet.
     @property
     def gdc_filter(self):
-        """A filter dict which will be used on GDC's API for querying data 
+        """A filter dict which will be used on GDC's API for querying data
         files belonging to this dataset.
         
         If the filter dict hasn't been defined, a default filter querying for
-        only open access data will be returned. The default filter also 
-        contains extra conditions according to "projects" and "xena_dtype" 
+        only open access data will be returned. The default filter also
+        contains extra conditions according to "projects" and "xena_dtype"
         properties.
         """
         
@@ -973,7 +973,7 @@ class GDCOmicset(XenaDataset):
             assert self.__gdc_filter
             return self.__gdc_filter
         except (AttributeError, AssertionError):
-            self.__gdc_filter = {'access': 'open', 
+            self.__gdc_filter = {'access': 'open',
                                  'cases.project.project_id': self.projects}
             self.__gdc_filter.update(self._XENA_GDC_DTYPE[self.xena_dtype])
             return self.__gdc_filter
@@ -985,10 +985,10 @@ class GDCOmicset(XenaDataset):
     # Set default GDC field for prefixing filename of downloaded files.
     @property
     def gdc_prefix(self):
-        """A single GDC field whost value will be used as the prefix of the 
+        """A single GDC field whost value will be used as the prefix of the
         filename for downloaded files.
         
-        If this GDC field hasn't been defined, a default field will be used 
+        If this GDC field hasn't been defined, a default field will be used
         according to the "xena_dtype" property.
         """
         
@@ -1007,23 +1007,23 @@ class GDCOmicset(XenaDataset):
     def download_map(self):
         """Get a dictionary of GDC files to be downloaded for this dataset.
         
-        If the dict hasn't been defined, data files will be queried through 
-        GDC's API based on the "gdc_filter" property. Check the "gdc_filter" 
+        If the dict hasn't been defined, data files will be queried through
+        GDC's API based on the "gdc_filter" property. Check the "gdc_filter"
         property for details about querying conditions.
         
-        Keys of this dict are UUIDs of data files, while values are filenames 
-        to be used for saving corresponding files. If the dict hasn't been 
-        defined, data files for each sample, by default, will be renamed to 
+        Keys of this dict are UUIDs of data files, while values are filenames
+        to be used for saving corresponding files. If the dict hasn't been
+        defined, data files for each sample, by default, will be renamed to
         "<prefix>.<UUID>.<file extension>" (without brackets), where
-        prefix is defined by the "gdc_prefix" property. 
+        prefix is defined by the "gdc_prefix" property.
         
-        It is worth noting that the data transformation process may need a ID 
-        for every data files. The ID, if needed, will be extracted from the 
-        filename (the first substring when splitting the filename by "."). For 
-        example, Xena uses GDC's "cases.samples.submitter_id" for sample ID. 
-        Therefore, data files for each sample will be renamed to 
+        It is worth noting that the data transformation process may need a ID
+        for every data files. The ID, if needed, will be extracted from the
+        filename (the first substring when splitting the filename by "."). For
+        example, Xena uses GDC's "cases.samples.submitter_id" for sample ID.
+        Therefore, data files for each sample will be renamed to
         "<cases.samples.submitter_id>.<UUID>.<file extension>".
-        Please keep that in mind when defining your own download dict. Please 
+        Please keep that in mind when defining your own download dict. Please
         check the "gdc_prefix" property and the "transform" method for details.
         """
         
@@ -1034,7 +1034,7 @@ class GDCOmicset(XenaDataset):
             fields = ['file_id', 'file_name', self.gdc_prefix]
             try:
                 print('Searching for raw data ...', end='')
-                file_df = gdc.search('files', in_filter=self.gdc_filter, 
+                file_df = gdc.search('files', in_filter=self.gdc_filter,
                                      fields=fields)
             except Exception:
                 file_dict = {}
@@ -1048,12 +1048,12 @@ class GDCOmicset(XenaDataset):
             if not file_dict:
                 msg = '\rNo {} data found for project {}.'
                 gdc_dtype = self._XENA_GDC_DTYPE[self.xena_dtype]
-                print(msg.format(' - '.join(sorted(gdc_dtype.values())), 
+                print(msg.format(' - '.join(sorted(gdc_dtype.values())),
                                  str(self.projects)))
                 return None
             file_dict = {
-                    '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): 
-                        os.path.join(self.raw_data_dir, name) 
+                    '{}/data/{}'.format(gdc.GDC_API_BASE, uuid):
+                        os.path.join(self.raw_data_dir, name)
                     for uuid, name in file_dict.items()
                 }
             self.__download_map = file_dict
@@ -1088,7 +1088,7 @@ class GDCOmicset(XenaDataset):
     @XenaDataset.metadata_template.getter
     def metadata_template(self):
         try:
-            assert isinstance(self.__metadata_template, 
+            assert isinstance(self.__metadata_template,
                               jinja2.environment.Template)
             return self.__metadata_template
         except (AttributeError, AssertionError):
@@ -1104,7 +1104,7 @@ class GDCOmicset(XenaDataset):
     @property
     def metadata_vars(self):
         try:
-            assert (self.__metadata_vars 
+            assert (self.__metadata_vars
                     and isinstance(self.__metadata_vars, dict))
             return self.__metadata_vars
         except (AttributeError, AssertionError):
@@ -1112,8 +1112,8 @@ class GDCOmicset(XenaDataset):
                     "%m-%d-%Y", time.gmtime(os.path.getmtime(self.matrix))
                 )
             projects = ','.join(self.projects)
-            variables = {'project_id': projects, 
-                         'date': matrix_date, 
+            variables = {'project_id': projects,
+                         'date': matrix_date,
                          'gdc_release': self.gdc_release}
             if projects in self._XENA_COHORT:
                 variables['xena_cohort'] = self._XENA_COHORT[projects]
@@ -1124,21 +1124,21 @@ class GDCOmicset(XenaDataset):
             except KeyError:
                 pass
             # Data type specific jinja2 Variables
-            if self.xena_dtype in ['muse_snv', 'mutect2_snv', 
+            if self.xena_dtype in ['muse_snv', 'mutect2_snv',
                                    'somaticsniper_snv', 'varscan2_snv']:
                 try:
-                    print('\rSearching the specific URL for raw MAF data ...', 
+                    print('\rSearching the specific URL for raw MAF data ...',
                           end='')
-                    res_df = gdc.search('files', in_filter=self.gdc_filter, 
+                    res_df = gdc.search('files', in_filter=self.gdc_filter,
                                         fields='file_id')
                     if res_df['file_id'].shape == (1,):
                         variables['maf_uuid'] = str(res_df['file_id'][0])
                 except Exception:
                     message = ('Fail to get a specific URL for the MAF file '
                                'for: matrix "{}"; "{}" data of cohort "{}".')
-                    warnings.warn(message.format(self.matrix, 
-                                                 variables['project_id'], 
-                                                 variables['xena_cohort']), 
+                    warnings.warn(message.format(self.matrix,
+                                                 variables['project_id'],
+                                                 variables['xena_cohort']),
                                   stacklevel=2)
             self.__metadata_vars = variables
             return self.__metadata_vars
@@ -1149,11 +1149,11 @@ class GDCOmicset(XenaDataset):
 
 
 class TCGAPhenoset(XenaDataset):
-    """TCGAPhenoset is derived from the ``XenaDataset`` class and represents 
+    """TCGAPhenoset is derived from the ``XenaDataset`` class and represents
     for a Xena matrix whose data is phenotype data of a TCGA project.
 
-    This class provides a set of default configurations for downloading and 
-    transforming TCGA clinical and biospecimen data, as well as generating 
+    This class provides a set of default configurations for downloading and
+    transforming TCGA clinical and biospecimen data, as well as generating
     associated metadata for the transformed Xena matrix.
     """
     
@@ -1167,7 +1167,7 @@ class TCGAPhenoset(XenaDataset):
                     r'(Data Release [^\s]+)\s', data_release
                 ).group(1).replace(' ', '-').replace('.', '').lower()
             self.__gdc_release = (
-                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#' 
+                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#'
                     + anchor
                 )
             return self.__gdc_release
@@ -1179,7 +1179,7 @@ class TCGAPhenoset(XenaDataset):
     @property
     def metadata_vars(self):
         try:
-            assert (self.__metadata_vars 
+            assert (self.__metadata_vars
                     and isinstance(self.__metadata_vars, dict))
             return self.__metadata_vars
         except (AttributeError, AssertionError):
@@ -1187,8 +1187,8 @@ class TCGAPhenoset(XenaDataset):
                     "%m-%d-%Y", time.gmtime(os.path.getmtime(self.matrix))
                 )
             projects = ','.join(self.projects)
-            variables = {'project_id': projects, 
-                         'date': matrix_date, 
+            variables = {'project_id': projects,
+                         'date': matrix_date,
                          'gdc_release': self.gdc_release}
             if projects in GDCOmicset._XENA_COHORT:
                 variables['xena_cohort'] = GDCOmicset._XENA_COHORT[projects]
@@ -1201,12 +1201,12 @@ class TCGAPhenoset(XenaDataset):
     def metadata_vars(self, variables):
         self.__metadata_vars = variables
     
-    def __init__(self, projects, root_dir='.', raw_data_dir=None, 
+    def __init__(self, projects, root_dir='.', raw_data_dir=None,
                  matrix_dir=None):
         self.projects = projects
         self.xena_dtype = 'phenotype'
         self.root_dir = root_dir
-        self.clin_dataset = GDCOmicset(self.projects, 'clinical', root_dir, 
+        self.clin_dataset = GDCOmicset(self.projects, 'clinical', root_dir,
                                         raw_data_dir, matrix_dir)
         self.bio_dataset = GDCOmicset(self.projects, 'biospecimen', root_dir,
                                        raw_data_dir, matrix_dir)
@@ -1219,18 +1219,18 @@ class TCGAPhenoset(XenaDataset):
             )
     
     def download(self):
-        """Download GDC's open access phenotype data for projects in this 
+        """Download GDC's open access phenotype data for projects in this
         dataset.
         
-        There are two types of phenotype data on GDC, the clinical data and 
-        the biospecimen data. Data is selected based solely on the "projects" 
-        property. Both clinical and biospecimen data will be downloaded. They 
-        will be saved under two separated directories. Data from different 
-        projects will be put together under one directory as a single dataset, 
-        following the same rule as in the ``GDCOmicset`` class. In fact, both 
-        downloads are performed by corresponding ``GDCOmicset`` classes. 
+        There are two types of phenotype data on GDC, the clinical data and
+        the biospecimen data. Data is selected based solely on the "projects"
+        property. Both clinical and biospecimen data will be downloaded. They
+        will be saved under two separated directories. Data from different
+        projects will be put together under one directory as a single dataset,
+        following the same rule as in the ``GDCOmicset`` class. In fact, both
+        downloads are performed by corresponding ``GDCOmicset`` classes.
         Check the ``download`` method of the ``GDCOmicset`` class for details.
-                        
+        
         Returns:
             self: allow method chaining.
         """
@@ -1244,15 +1244,15 @@ class TCGAPhenoset(XenaDataset):
     def transform(self):
         """Transform raw phenotype data into Xena matrix.
         
-        Raw clinical data and biospecimen data will be transformed separately. 
-        Then the clinical matrix and biospecimen matrix will be merged on 
+        Raw clinical data and biospecimen data will be transformed separately.
+        Then the clinical matrix and biospecimen matrix will be merged on
         "cases.submitter_id" and processed properly.
         
         Returns:
             self: allow method chaining.
         """
         
-        self.raw_data_list = [self.clin_dataset.transform().matrix, 
+        self.raw_data_list = [self.clin_dataset.transform().matrix,
                               self.bio_dataset.transform().matrix]
         self.read_raw = pd.read_table
         self.raws2matrix = (
@@ -1272,11 +1272,11 @@ class TCGAPhenoset(XenaDataset):
 
 
 class TARGETPhenoset(XenaDataset):
-    """TARGETPhenoset is derived from the ``XenaDataset`` class and represents 
+    """TARGETPhenoset is derived from the ``XenaDataset`` class and represents
     for a Xena matrix whose data is phenotype data of a TARGET project.
 
-    This class provides a set of default configurations for downloading and 
-    transforming TARGET clinical, as well as generating associated metadata 
+    This class provides a set of default configurations for downloading and
+    transforming TARGET clinical, as well as generating associated metadata
     for the transformed Xena matrix.
     """
     
@@ -1290,7 +1290,7 @@ class TARGETPhenoset(XenaDataset):
                     r'(Data Release [^\s]+)\s', data_release
                 ).group(1).replace(' ', '-').replace('.', '').lower()
             self.__gdc_release = (
-                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#' 
+                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#'
                     + anchor
                 )
             return self.__gdc_release
@@ -1303,23 +1303,23 @@ class TARGETPhenoset(XenaDataset):
     def download_map(self):
         """Get a dictionary of GDC files to be downloaded for this dataset.
         
-        If the dict hasn't been defined, data files will be queried through 
-        GDC's API based on the "gdc_filter" property. Check the "gdc_filter" 
+        If the dict hasn't been defined, data files will be queried through
+        GDC's API based on the "gdc_filter" property. Check the "gdc_filter"
         property for details about querying conditions.
         
-        Keys of this dict are UUIDs of data files, while values are filenames 
-        to be used for saving corresponding files. If the dict hasn't been 
-        defined, data files for each sample, by default, will be renamed to 
+        Keys of this dict are UUIDs of data files, while values are filenames
+        to be used for saving corresponding files. If the dict hasn't been
+        defined, data files for each sample, by default, will be renamed to
         "<prefix>.<UUID>.<file extension>" (without brackets), where
-        prefix is defined by the "gdc_prefix" property. 
+        prefix is defined by the "gdc_prefix" property.
         
-        It is worth noting that the data transformation process may need a ID 
-        for every data files. The ID, if needed, will be extracted from the 
-        filename (the first substring when splitting the filename by "."). For 
-        example, Xena uses GDC's "cases.samples.submitter_id" for sample ID. 
-        Therefore, data files for each sample will be renamed to 
+        It is worth noting that the data transformation process may need a ID
+        for every data files. The ID, if needed, will be extracted from the
+        filename (the first substring when splitting the filename by "."). For
+        example, Xena uses GDC's "cases.samples.submitter_id" for sample ID.
+        Therefore, data files for each sample will be renamed to
         "<cases.samples.submitter_id>.<UUID>.<file extension>".
-        Please keep that in mind when defining your own download dict. Please 
+        Please keep that in mind when defining your own download dict. Please
         check the "gdc_prefix" property and the "transform" method for details.
         """
         
@@ -1327,13 +1327,13 @@ class TARGETPhenoset(XenaDataset):
             assert self.__download_map
             return self.__download_map
         except (AttributeError, AssertionError):
-            filters = {'access': 'open', 
-                       'cases.project.project_id': self.projects, 
+            filters = {'access': 'open',
+                       'cases.project.project_id': self.projects,
                        'data_type': 'Clinical Supplement'}
             fields = ['file_id', 'file_name']
             try:
                 print('Searching for raw data ...', end='')
-                file_df = gdc.search('files', in_filter=filters, 
+                file_df = gdc.search('files', in_filter=filters,
                                      fields=fields)
             except Exception:
                 file_dict = {}
@@ -1346,12 +1346,12 @@ class TARGETPhenoset(XenaDataset):
             if not file_dict:
                 msg = '\rNo {} data found for project {}.'
                 gdc_dtype = self._XENA_GDC_DTYPE[self.xena_dtype]
-                print(msg.format(' - '.join(sorted(gdc_dtype.values())), 
+                print(msg.format(' - '.join(sorted(gdc_dtype.values())),
                                  str(self.projects)))
                 return None
             file_dict = {
-                    '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): 
-                        os.path.join(self.raw_data_dir, name) 
+                    '{}/data/{}'.format(gdc.GDC_API_BASE, uuid):
+                        os.path.join(self.raw_data_dir, name)
                     for uuid, name in file_dict.items()
                 }
             self.__download_map = file_dict
@@ -1362,7 +1362,7 @@ class TARGETPhenoset(XenaDataset):
     @property
     def metadata_vars(self):
         try:
-            assert (self.__metadata_vars 
+            assert (self.__metadata_vars
                     and isinstance(self.__metadata_vars, dict))
             return self.__metadata_vars
         except (AttributeError, AssertionError):
@@ -1370,8 +1370,8 @@ class TARGETPhenoset(XenaDataset):
                     "%m-%d-%Y", time.gmtime(os.path.getmtime(self.matrix))
                 )
             projects = ','.join(self.projects)
-            variables = {'project_id': projects, 
-                         'date': matrix_date, 
+            variables = {'project_id': projects,
+                         'date': matrix_date,
                          'gdc_release': self.gdc_release,
                          'xena_cohort': 'GDC ' + projects}
             self.__metadata_vars = variables
@@ -1386,26 +1386,26 @@ class TARGETPhenoset(XenaDataset):
         clin_df = pd.concat(df_list).replace(r'\r\n', ' ', regex=True)
         print('\rMapping clinical info to individual samples...', end='')
         cases = gdc.search(
-                'cases', in_filter={'project.project_id': self.projects}, 
+                'cases', in_filter={'project.project_id': self.projects},
                 fields=['submitter_id', 'samples.submitter_id'], typ='json'
             )
         cases_samples = [c for c in cases if 'samples' in c]
         from pandas.io.json import json_normalize
         cases_samples_map = json_normalize(
-                cases_samples, 'samples', ['submitter_id'], 
+                cases_samples, 'samples', ['submitter_id'],
                 meta_prefix='cases.'
-            ).rename(columns={'submitter_id': 'sample_id', 
+            ).rename(columns={'submitter_id': 'sample_id',
                               'cases.submitter_id': 'TARGET USI'})
-        return pd.merge(clin_df.reset_index(), cases_samples_map, how='inner', 
+        return pd.merge(clin_df.reset_index(), cases_samples_map, how='inner',
                         on='TARGET USI').set_index('sample_id')
     
-    def __init__(self, projects, root_dir='.', raw_data_dir=None, 
+    def __init__(self, projects, root_dir='.', raw_data_dir=None,
                  matrix_dir=None):
         self.xena_dtype = 'clinical'
         self.read_raw = read_clinical
         self.raws2matrix = self.__target_clin_dfs2matrix
-        super(TARGETPhenoset, self).__init__(projects, 'clinical', 
-                                                 root_dir, raw_data_dir, 
+        super(TARGETPhenoset, self).__init__(projects, 'clinical',
+                                                 root_dir, raw_data_dir,
                                                  matrix_dir)
         
         self.metadata_template = os.path.join(
@@ -1415,11 +1415,11 @@ class TARGETPhenoset(XenaDataset):
 
 
 class GDCSurvivalset(XenaDataset):
-    """GDCSurvivalset is derived from the ``XenaDataset`` class and represents 
+    """GDCSurvivalset is derived from the ``XenaDataset`` class and represents
     for a Xena matrix of GDC survival data for project(s) of interest.
-
-    This class provides a set of default configurations for downloading and 
-    transforming GDC survival data, as well as generating associated metadata 
+    
+    This class provides a set of default configurations for downloading and
+    transforming GDC survival data, as well as generating associated metadata
     for the transformed Xena matrix.
     """
     
@@ -1433,7 +1433,7 @@ class GDCSurvivalset(XenaDataset):
                     r'(Data Release [^\s]+)\s', data_release
                 ).group(1).replace(' ', '-').replace('.', '').lower()
             self.__gdc_release = (
-                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#' 
+                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#'
                     + anchor
                 )
             return self.__gdc_release
@@ -1445,7 +1445,7 @@ class GDCSurvivalset(XenaDataset):
     @property
     def metadata_vars(self):
         try:
-            assert (self.__metadata_vars 
+            assert (self.__metadata_vars
                     and isinstance(self.__metadata_vars, dict))
             return self.__metadata_vars
         except (AttributeError, AssertionError):
@@ -1453,8 +1453,8 @@ class GDCSurvivalset(XenaDataset):
                     "%m-%d-%Y", time.gmtime(os.path.getmtime(self.matrix))
                 )
             projects = ','.join(self.projects)
-            variables = {'project_id': projects, 
-                         'date': matrix_date, 
+            variables = {'project_id': projects,
+                         'date': matrix_date,
                          'gdc_release': self.gdc_release}
             if projects in GDCOmicset._XENA_COHORT:
                 variables['xena_cohort'] = GDCOmicset._XENA_COHORT[projects]
@@ -1467,9 +1467,9 @@ class GDCSurvivalset(XenaDataset):
     def metadata_vars(self, variables):
         self.__metadata_vars = variables
     
-    def __init__(self, projects, root_dir='.', raw_data_dir=None, 
+    def __init__(self, projects, root_dir='.', raw_data_dir=None,
                  matrix_dir=None):
-        super(GDCSurvivalset, self).__init__(projects, 'survival', root_dir, 
+        super(GDCSurvivalset, self).__init__(projects, 'survival', root_dir,
                                              raw_data_dir, matrix_dir)
         
         self.metadata_template = os.path.join(
@@ -1478,8 +1478,8 @@ class GDCSurvivalset(XenaDataset):
             )
     
     def download(self):
-        survival = gdc.search('analysis/survival', 
-                              in_filter={'project.project_id': self.projects}, 
+        survival = gdc.search('analysis/survival',
+                              in_filter={'project.project_id': self.projects},
                               typ='json')['results'][0]['donors']
         mkdir_p(self.raw_data_dir)
         path = os.path.join(
@@ -1488,7 +1488,7 @@ class GDCSurvivalset(XenaDataset):
             )
         pd.DataFrame(survival).set_index('id').to_csv(path, sep='\t')
         self.raw_data_list = [path]
-        print('Raw {} data for {} is ready.'.format(self.projects, 
+        print('Raw {} data for {} is ready.'.format(self.projects,
                                                     self.xena_dtype))
         return self
     
@@ -1497,15 +1497,15 @@ class GDCSurvivalset(XenaDataset):
         # Transform GDC data according to Xena survival data spec
         survival_df = raw_df.drop(
                 ['project_id', 'survivalEstimate'], axis=1
-            ).rename(columns={'censored': '_EVENT', 
-                              'time': '_TIME_TO_EVENT', 
+            ).rename(columns={'censored': '_EVENT',
+                              'time': '_TIME_TO_EVENT',
                               'submitter_id': '_PATIENT'})
         survival_df['_OS_IND'] = (~survival_df['_EVENT']).map(int)
         survival_df['_EVENT'] = survival_df['_OS_IND']
         survival_df['_OS'] = survival_df['_TIME_TO_EVENT']
         # Get samples to case map
         case_samples = gdc.search(
-                'cases', in_filter={'project.project_id': self.projects}, 
+                'cases', in_filter={'project.project_id': self.projects},
                 fields='submitter_sample_ids', typ='json'
             )
         case_samples = [c for c in case_samples if 'submitter_sample_ids' in c]
