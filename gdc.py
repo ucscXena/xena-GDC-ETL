@@ -147,7 +147,7 @@ def reduce_json_array(j):
 
 
 def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
-           typ='dataframe'):
+           typ='dataframe', method='GET'):
     """Search one GDC endpoints and return searching results in a pandas
     DataFrame if possible.
     
@@ -177,6 +177,7 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
             strings or a combination of both.
         typ (str): type of search result to return (JSON or dataframe).
             Defaults to 'dataframe'.
+        method (str): HTTP method for the search. Defaults to 'GET'.
     
     Returns:
         pandas.core.frame.DataFrame or str: A search result in form of a
@@ -189,8 +190,8 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
     except (AttributeError, AssertionError):
         raise ValueError('typ should be a string of either JSON or dataframe, '
                          'not {}'.format(typ))
-    filters =  simple_and_filter(in_dict=in_filter,
-                                 exclude_dict=exclude_filter)
+    filters = simple_and_filter(in_dict=in_filter,
+                                exclude_dict=exclude_filter)
     if isinstance(fields, str):
         fields = [fields]
     if isinstance(expand, str):
@@ -203,7 +204,13 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
     if expand:
         payload['expand'] = ','.join(expand)
     url = '{}/{}'.format(GDC_API_BASE, endpoint)
-    response = requests.get(url, params=payload)
+    if method.upper() == 'POST':
+        response = requests.post(url, data=payload)
+    elif method.upper() == 'GET':
+        response = requests.get(url, params=payload)
+    else:
+        raise ValueError('Invalide method: {}\n method must be either "GET" '
+                         'or "POST".'.format(method))
     try:
         payload['size'] = response.json()['data']['pagination']['total']
     except KeyError:
@@ -215,7 +222,10 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
             warnings.warn('Fail to get a table of results. JSON returned. '
                           'Please check the result carefully.', stacklevel=2)
             return response.json()
-    response = requests.get(url, params=payload)
+    if method.upper() == 'POST':
+        response = requests.post(url, data=payload)
+    else:
+        response = requests.get(url, params=payload)
     if response.status_code == 200:
         results = response.json()['data']['hits']
         if typ.lower() == 'json':
