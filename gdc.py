@@ -179,6 +179,7 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
         typ (str): type of search result to return (JSON or dataframe).
             Defaults to 'dataframe'.
         method (str): HTTP method for the search. Defaults to 'GET'.
+            ..
     
     Returns:
         pandas.core.frame.DataFrame or str: A search result in form of a

@@ -138,7 +138,6 @@ API
            Defaults to ‘dataframe’.
 
         method (str): HTTP method for the search. Defaults to ‘GET’.
-
      Returns:
         pandas.core.frame.DataFrame or str: A search result in form of a
            pandas DataFrame or a JSON formatted string, depending on the value

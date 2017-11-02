@@ -39,11 +39,11 @@ Installation
   - ``xena_dataset.py`` contains core functionalities for importing data from GDC to Xena and needs the ``gdc.py`` module in this package;
   - ``gdc2xena.py`` defines `a command line tool`__ which requires both ``gdc.py`` module and ``xena_dataset.py`` module in this package;
 
-__ gdc2xena_
+    __ gdc2xena_
 
   - ``gdc_check_new.py`` defines `a command line tool`__ which requiresthe ``gdc.py`` module in this package.
 
-__ gdc_check_new_
+    __ gdc_check_new_
 
 Basic usage with command line tools
 -----------------------------------
@@ -88,8 +88,8 @@ Basic usage with command line tools
 
   Notes:
 
-    1. Root directory must be existing
-    2. Please check the next section for `advanced usage with XenaDataset and its subclasses`_, if you want to customize the importing process with selected (rather than all possible) combinations of your input projects and data types or selected (rather than all 3) importing step(s).
+  1. Root directory must be existing
+  2. Please check the next section for `advanced usage with XenaDataset and its subclasses`_, if you want to customize the importing process with selected (rather than all possible) combinations of your input projects and data types or selected (rather than all 3) importing step(s).
 
 .. _gdc_check_new:
 
@@ -123,26 +123,26 @@ Advanced usage with XenaDataset and its subclasses
   
   A Xena dataset is defined by its study project (cohort) and the type of data in this dataset. A typical importing process has the following 3 steps:
   
-    1. Download raw data from the source.
-    
-      The ``download_map`` property defines a dict of raw data to be downloaded, with the key being the URL and the value being the path, including the filename, for saving corresponding downloaded file. The ``download`` method will read the ``download_map`` and perform the downloading, creating non-existing directories as needed. After downloading all files, a list of paths for downloaded files will be recorded in the ``raw_data_list`` property. The ``download`` method needs only a valid ``download_map``. It will return the object itself, therefore can be chained with ``transform``.
-    
-    2. Transform raw data into valid Xena matrix.
-    
-      One assumption for data transformation is that there might be multiple raw data (in the ``raw_data_list``) supporting the single Xena matrix in a dataset. Therefore, the ``transform`` method will first merge data and then process merged matrix as needed. It will open the file one by one accordingly (by extension), and read the file object and transform its data with a function defined by ``read_raw``. The list of transformed single data will be merged and processed by a function defined by ``raws2matrix``, which gives the finalized Xena matrix. The ``transform`` method requires a valid list of raw data, besides ``read_raw`` and ``raws2matrix``. A valid list of raw data can be either explicitly defined by ``raw_data_list`` or can be derived from ``raw_data_dir`` with all files under ``raw_data_dir`` being treated as raw data. It will return the object itself, therefore can be chained with ``metadata``.
-    
-    3. Generate metadata for the new Xena matrix.
-    
-      Metadata for Xena matrix is a JSON file rendered by the ``metadata`` method with ``metadata_vars`` (dict) through Jinja2 from ``metadata_template``. This JSON file will be saved under the same directory as the matrix, with a filename being the matrix name plus the '.json' postfix. The ``metadata`` method requires an existing file of Xena matrix.
+  1. Download raw data from the source.
+  
+    The ``download_map`` property defines a dict of raw data to be downloaded, with the key being the URL and the value being the path, including the filename, for saving corresponding downloaded file. The ``download`` method will read the ``download_map`` and perform the downloading, creating non-existing directories as needed. After downloading all files, a list of paths for downloaded files will be recorded in the ``raw_data_list`` property. The ``download`` method needs only a valid ``download_map``. It will return the object itself, therefore can be chained with ``transform``.
+  
+  2. Transform raw data into valid Xena matrix.
+  
+    One assumption for data transformation is that there might be multiple raw data (in the ``raw_data_list``) supporting the single Xena matrix in a dataset. Therefore, the ``transform`` method will first merge data and then process merged matrix as needed. It will open the file one by one accordingly (by extension), and read the file object and transform its data with a function defined by ``read_raw``. The list of transformed single data will be merged and processed by a function defined by ``raws2matrix``, which gives the finalized Xena matrix. The ``transform`` method requires a valid list of raw data, besides ``read_raw`` and ``raws2matrix``. A valid list of raw data can be either explicitly defined by ``raw_data_list`` or can be derived from ``raw_data_dir`` with all files under ``raw_data_dir`` being treated as raw data. It will return the object itself, therefore can be chained with ``metadata``.
+  
+  3. Generate metadata for the new Xena matrix.
+  
+    Metadata for Xena matrix is a JSON file rendered by the ``metadata`` method with ``metadata_vars`` (dict) through Jinja2 from ``metadata_template``. This JSON file will be saved under the same directory as the matrix, with a filename being the matrix name plus the '.json' postfix. The ``metadata`` method requires an existing file of Xena matrix.
   
   .. _directory related settings:
   
   ``root_dir`` is both an optional instantiation arguments and a property. By default, it points to the current working directory. It is worth mentioning that the default directory structure mentioned above is implemented in the class. However, you are free to changed the setting with the following properties:
   
-    - Pass an argument for ``root_dir`` during instantiation or set the ``root_dir`` property explicitly after instantiation.
-    - Downloaded raw data will be saved under ``raw_data_dir``.
-    - Newly transformed Xena matrix will be saved as ``matrix`` under ``matrix_dir``. The directory path in ``matrix`` has the priority over ``matrix_dir``. By default, Xena matrix will be saved under the "matrix_dir" as "<projects>.<xena_dtype>.tsv".
-    - Metadata will always have the specific pattern of name and be together with ``matrix`` (i.e. no way to change this behavior).
+  - Pass an argument for ``root_dir`` during instantiation or set the ``root_dir`` property explicitly after instantiation.
+  - Downloaded raw data will be saved under ``raw_data_dir``.
+  - Newly transformed Xena matrix will be saved as ``matrix`` under ``matrix_dir``. The directory path in ``matrix`` has the priority over ``matrix_dir``. By default, Xena matrix will be saved under the "matrix_dir" as "<projects>.<xena_dtype>.tsv".
+  - Metadata will always have the specific pattern of name and be together with ``matrix`` (i.e. no way to change this behavior).
 
 .. _subclasses:
 
