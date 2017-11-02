@@ -27,7 +27,7 @@ def main():
                         "impacted project(s), data_type(s) and "
                         "analysis.workflow_type(s)."
         )
-    parser.add_argument('url', type=str,
+    parser.add_argument('url', type=str, metavar='URL',
                         help='URL for GDC\'s list of updated files. It can be '
                              'a compressed file with a supported extension, '
                              'which includes ".gz", ".bz2", ".zip", or "xz". '
@@ -35,7 +35,6 @@ def main():
                              'by "New File UUID".')
     args = parser.parse_args()
     new_uuids = pd.read_table(args.url)['New File UUID'].tolist()
-    print(len(new_uuids))
     df_list = []
     for uuids in (new_uuids[i:i + 20000] 
                   for i in range(0, len(new_uuids), 20000)):

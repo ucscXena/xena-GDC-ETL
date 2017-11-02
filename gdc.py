@@ -37,6 +37,7 @@ _SUPPORTED_DATASETS = [
         {'data_type': 'Biospecimen Supplement'},
         {'data_type': 'Clinical Supplement'}
     ]
+# https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tcga-study-abbreviations
 TCGA_STUDY_ABBR = {
         'LAML': 'Acute Myeloid Leukemia',
         'ACC': 'Adrenocortical carcinoma',
@@ -417,6 +418,7 @@ def main():
     
     # Simple test
     print(get_project_info().head())
-    
+
+
 if __name__ == '__main__':
     main()

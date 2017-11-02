@@ -33,6 +33,28 @@ from xena_dataset import (GDCOmicset,
                           GDCSurvivalset)
 
 def gdc2xena(root_dir, projects, xena_dtypes):
+    """Start a pipeline for importing data from GDC to Xena.
+    
+    Data will be imported on a dataset basis, which is defined by project
+    and one specific data type. Data will be downloaded and transformed into
+    the ``root_dir`` directory. Each project in projects will have its own
+    directory under ``root_dir``. A project directory will have two
+    subdirectories, "Raw_Data" and "Xena_Matrices", which hold downloaded
+    data and transformed Xena matrices (with corresponding metadata)
+    respectively. Errors raised during the importing of a dataset will be
+    recorded in "etl.err" under ``root_dir`` and will not affect the importing
+    of other datasets. Importing process, including the time consumption of
+    the whole process, will be output to "stdout".
+    
+    Args:
+        root_dir (str): An existing directory for saving imported data and log
+            of errors.
+        projects (list of str): A list of valid GDC project_id(s).
+        xena_dtypes (list of str): A list of supported data type codes, which
+            are (without quotation marks): "htseq_counts", "htseq_fpkm",
+            "htseq_fpkm-uq", "mirna", "masked_cnv", "muse_snv", "mutect2_snv",
+            "somaticsniper_snv", "varscan2_snv", "phenotype", "survival".
+    """
     start_time = timeit.default_timer()
     
     counts = 0
