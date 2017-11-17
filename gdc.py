@@ -379,7 +379,7 @@ def get_project_info(projects=None):
     return project_df.set_index('id')
 
 
-def get_clinical_samples(projects=None):
+def get_samples_clinical(projects=None):
     """Get info for all samples of ``projects`` and clinical info for all
     cases of ``projects`` through GDC API.
     

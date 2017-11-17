@@ -1,0 +1,74 @@
+released.project	
+created_datetime	
+created_datetime.demographic	
+demographic_id.demographic	
+state.demographic	
+submitter_id.demographic	
+updated_datetime.demographic	
+created_datetime.diagnoses	
+diagnosis_id.diagnoses	
+state.diagnoses	
+submitter_id.diagnoses	
+created_datetime.treatments.diagnoses	
+state.treatments.diagnoses	
+submitter_id.treatments.diagnoses	
+treatment_id.treatments.diagnoses	
+updated_datetime.treatments.diagnoses	
+updated_datetime.diagnoses	
+created_datetime.exposures	
+exposure_id.exposures	
+state.exposures	
+submitter_id.exposures	
+updated_datetime.exposures	
+state.project	
+state	
+tissue_source_site_id.tissue_source_site	
+updated_datetime	
+created_datetime.samples	
+updated_datetime.samples	
+case_id	bcr_patient_uuid
+ethnicity.demographic	ethnicity
+gender.demographic	gender
+race.demographic	race
+days_to_birth.diagnoses	days_to_birth
+days_to_death.diagnoses	days_to_death
+days_to_last_follow_up.diagnoses	days_to_last_followup
+morphology.diagnoses	icd_o_3_histology
+primary_diagnosis.diagnoses	icd_10
+site_of_resection_or_biopsy.diagnoses	icd_o_3_site
+tissue_or_organ_of_origin.diagnoses	icd_o_3_site
+tumor_stage.diagnoses	pathologic_stage
+vital_status.diagnoses	vital_status
+disease_type	primary_diagnosis
+alcohol_history.exposures	alcohol_history_documented
+height.exposures	height
+weight.exposures	height
+id	bcr_patient_uuid
+primary_site	tumor_tissue_site
+disease_type.project	primary_diagnosis
+name.project	primary_diagnosis
+primary_site.project	tumor_tissue_site
+submitter_id	bcr_patient_barcode
+composition.samples	composition
+current_weight.samples	current_weight
+days_to_collection.samples	days_to_collection
+days_to_sample_procurement.samples	days_to_sample_procurement
+freezing_method.samples	freezing_method
+initial_weight.samples	initial_weight
+intermediate_dimension.samples	intermediate_dimension
+is_ffpe.samples	is_ffpe
+longest_dimension.samples	longest_dimension
+oct_embedded.samples	oct_embedded
+pathology_report_uuid.samples	pathology_report_uuid
+preservation_method.samples	preservation_method
+sample_id.samples	bcr_sample_uuid
+sample_type.samples	sample_type
+sample_type_id.samples	sample_type_id
+shortest_dimension.samples	shortest_dimension
+state.samples	state
+time_between_clamping_and_freezing.samples	time_between_clamping_and_freezing
+time_between_excision_and_freezing.samples	time_between_excision_and_freezing
+tissue_type.samples	tissue_type
+tumor_descriptor.samples	tumor_descriptor
+TCGA_study	primary_diagnosis
+age_at_diagnosis_in_years	age_at_initial_pathologic_diagnosis

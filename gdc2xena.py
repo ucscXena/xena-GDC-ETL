@@ -28,9 +28,7 @@ import os
 import timeit
 
 import gdc
-from xena_dataset import (GDCOmicset,
-                          TCGAPhenoset, TARGETPhenoset,
-                          GDCSurvivalset)
+from xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
 
 def gdc2xena(root_dir, projects, xena_dtypes):
     """Start a pipeline for importing data from GDC to Xena.
@@ -74,9 +72,9 @@ def gdc2xena(root_dir, projects, xena_dtypes):
                 dataset = GDCSurvivalset(project, root_dir)
             elif dtype == 'phenotype':
                 if project.startswith('TCGA'):
-                    dataset = TCGAPhenoset(project, root_dir)
+                    dataset = GDCPhenoset(project, 'phenotype', root_dir)
                 if project.startswith('TARGET'):
-                    dataset = TARGETPhenoset(project, root_dir)
+                    dataset = GDCPhenoset(project, 'clinical', root_dir)
             else:
                 dataset = GDCOmicset(project, dtype, root_dir)
             try:
