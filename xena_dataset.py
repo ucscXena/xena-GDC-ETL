@@ -1175,6 +1175,90 @@ class GDCPhenoset(XenaDataset):
             'phenotype': {'data_category': ['Biospecimen', 'Clinical']},
             'API_phenotype': {'data_category': ['Biospecimen', 'Clinical']}
         }
+    # To resovle overlapping between raw data and API data, remove columns
+    # according to the following lists.
+    _API_DROPS = [
+            'id',
+            'case_id',
+            'state',
+            'created_datetime',
+            'updated_datetime',
+            
+            'demographic_id.demographic',
+            'submitter_id.demographic',
+            'state.demographic',
+            'created_datetime.demographic',
+            'updated_datetime.demographic',
+            
+            'diagnosis_id.diagnoses',
+            'submitter_id.diagnoses',
+            'state.diagnoses',
+            'created_datetime.diagnoses',
+            'updated_datetime.diagnoses',
+            
+            'treatment_id.treatments.diagnoses',
+            'submitter_id.treatments.diagnoses',
+            'state.treatments.diagnoses',
+            'created_datetime.treatments.diagnoses',
+            'updated_datetime.treatments.diagnoses',
+            
+            'exposure_id.exposures',
+            'submitter_id.exposures',
+            'state.exposures',
+            'created_datetime.exposures',
+            'updated_datetime.exposures',
+            
+            'pathology_report_uuid.samples',
+            
+            'state.project',
+            'released.project',
+            
+            'sample_id.samples',
+            'created_datetime.samples',
+            'updated_datetime.samples',
+            
+            'tissue_source_site_id.tissue_source_site',
+        ]
+    _RAW_DROPS = [
+            'alcohol_history_documented',
+            'bcr_patient_barcode',
+            'bcr_patient_uuid',
+            'bcr_sample_uuid',
+            'composition',
+            'current_weight',
+            'days_to_birth',
+            'days_to_collection',
+            'days_to_death',
+            'days_to_last_followup',
+            'days_to_sample_procurement',
+            'ethnicity',
+            'freezing_method',
+            'gender',
+            'height',
+            'icd_10',
+            'icd_o_3_histology',
+            'icd_o_3_site',
+            'initial_weight',
+            'intermediate_dimension',
+            'is_ffpe',
+            'longest_dimension',
+            'oct_embedded',
+            'pathologic_stage',
+            'pathology_report_uuid',
+            'preservation_method',
+            'primary_diagnosis',
+            'race',
+            'sample_type',
+            'sample_type_id',
+            'shortest_dimension',
+            'state',
+            'time_between_clamping_and_freezing',
+            'time_between_excision_and_freezing',
+            'tissue_type',
+            'tumor_descriptor',
+            'tumor_tissue_site',
+            'vital_status',
+        ]
 
     @property
     def xena_dtype(self):
@@ -1406,48 +1490,38 @@ class GDCPhenoset(XenaDataset):
                 )
         if self.xena_dtype == 'API_phenotype':
             # Query GDC API for phenotype info
-            df = gdc.get_samples_clinical(self.projects)
+            api_clin = gdc.get_samples_clinical(self.projects)
             # Revert hierarchy order in column names
-            df = df.rename(
+            api_clin = api_clin.rename(
                     columns={n: '.'.join(reversed(n.split('.')))
-                             for n in df.columns}
+                             for n in api_clin.columns}
                 )
             # Remove code 10, Blood Derived Normal, sample:
             # https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/sample-type-codes
-            sample_mask = df['submitter_id.samples'].map(
+            sample_mask = api_clin['submitter_id.samples'].map(
                     lambda s: s[-3:-1] not in ['10']
                 )
-            df = df[sample_mask].set_index('submitter_id.samples')
+            api_clin = api_clin[sample_mask].set_index('submitter_id.samples')
             # Remove all empty columns
-            df = df.dropna(axis=1, how='all')
-            api_raw_map = str(
-                os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             'API_RAW_map.tsv')
-            )
-            api_remove_list = []
-            raw_rename_dict = {}
-            with open(api_raw_map, 'r') as f:
-                for line in f:
-                    try:
-                        (key, val) = line.split()
-                        raw_rename_dict[val] = key
-                    except:
-                        api_remove_list.append(line.strip())
-            for c in api_remove_list:
+            api_clin = api_clin.dropna(axis=1, how='all')
+            # For overlapping columns between raw data matrix and GDC'S API
+            # data matrix, use API data.
+            for c in self._API_DROPS:
                 try:
-                    df.drop(c, axis=1, inplace=True)
+                    api_clin.drop(c, axis=1, inplace=True)
                 except:
                     pass
-            for c in raw_rename_dict.values():
+            for c in self._RAW_DROPS:
                 try:
                     xena_matrix.drop(c, axis=1, inplace=True)
                 except:
                     pass
+            # Merge phenotype matrix from raw data and that from GDC's API
             xena_matrix = xena_matrix.reset_index().rename(
                     columns={'bcr_sample_barcode': 'submitter_id.samples'}
                 )
             xena_matrix = (
-                    pd.merge(xena_matrix, df.reset_index(),
+                    pd.merge(xena_matrix, api_clin.reset_index(),
                              how='outer', on='submitter_id.samples')
                       .replace(r'^\s*$', np.nan, regex=True)
                       .set_index('submitter_id.samples')
