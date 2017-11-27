@@ -128,7 +128,7 @@ def read_biospecimen(fileobj):
     if hasattr(fileobj, 'name'):
         filename = fileobj.name
     else:
-        filename = os.path.basename(fileobj)
+        filename = fileobj
     ext = os.path.splitext(filename)[1]
     if ext == '.xlsx':
         # Design specifically for TARGET biospecimen
@@ -1127,8 +1127,8 @@ class GDCPhenoset(XenaDataset):
             "cases.project.project_id". All corresponding projects will be
             included in this dataset.
         xena_dtype (str): One dataset type of "biospecimen", "clinical",
-            "phenotype" or "API_phenotype". Defaults to None, for which the
-            class will guess the correct type to use from ``projects``.
+            "raw_phenotype" or "GDC_phenotype". Defaults to None, for which
+            the class will guess the correct type to use from ``projects``.
         gdc_release (str): URL to the data release note for the dataset. It
             will be used by the ``metadata`` method when making the metadata
             for this dataset. It is highly recommended that this attribute is
@@ -1172,8 +1172,8 @@ class GDCPhenoset(XenaDataset):
     _XENA_GDC_DTYPE = {
             'biospecimen': {'data_category': 'Biospecimen'},
             'clinical': {'data_category': 'Clinical'},
-            'phenotype': {'data_category': ['Biospecimen', 'Clinical']},
-            'API_phenotype': {'data_category': ['Biospecimen', 'Clinical']}
+            'raw_phenotype': {'data_category': ['Biospecimen', 'Clinical']},
+            'GDC_phenotype': {'data_category': ['Biospecimen', 'Clinical']}
         }
     # To resovle overlapping between raw data and API data, remove columns
     # according to the following lists.
@@ -1373,15 +1373,15 @@ class GDCPhenoset(XenaDataset):
         if xena_dtype is not None:
             self.xena_dtype = xena_dtype
         elif all([i.startswith('TCGA-') for i in self.projects]):
-            self.xena_dtype = 'phenotype'
+            self.xena_dtype = 'GDC_phenotype'
         elif all([i.startswith('TARGET-') for i in self.projects]):
             self.xena_dtype = 'clinical'
         else:
             warnings.warn(
                     'Caution: fail to guess phenotype data type for project '
-                    '{}; use "phenotype" as default.'.format(self.projects)
+                    '{}; use "raw_phenotype" as default.'.format(self.projects)
                 )
-            self.xena_dtype = 'phenotype'
+            self.xena_dtype = 'raw_phenotype'
         self.root_dir = root_dir
         if matrix_dir is not None:
             self.matrix_dir = matrix_dir
@@ -1478,7 +1478,7 @@ class GDCPhenoset(XenaDataset):
                 xena_matrix = bio_matrix.set_index('bcr_sample_barcode')
             except:
                 xena_matrix = bio_matrix
-        elif self.xena_dtype in ['phenotype', 'API_phenotype']:
+        elif self.xena_dtype in ['raw_phenotype', 'GDC_phenotype']:
             bio_columns = (bio_matrix.columns.difference(clin_matrix.columns)
                                              .insert(0, 'bcr_patient_barcode'))
             xena_matrix = (
@@ -1488,8 +1488,8 @@ class GDCPhenoset(XenaDataset):
                       .set_index('bcr_sample_barcode')
                       .fillna(bio_matrix.set_index('bcr_sample_barcode'))
                 )
-        if self.xena_dtype == 'API_phenotype':
-            # Query GDC API for phenotype info
+        if self.xena_dtype == 'GDC_phenotype':
+            # Query GDC API for GDC harmonized phenotype info
             api_clin = gdc.get_samples_clinical(self.projects)
             # Revert hierarchy order in column names
             api_clin = api_clin.rename(
@@ -1691,10 +1691,6 @@ class GDCSurvivalset(XenaDataset):
 
 def main():
     print('A python module of Xena specific importing pipeline for GDC data.')
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    root_dir = os.path.join(script_dir, 'gitignore', 'test')
-    test = GDCPhenoset('TCGA-CHOL', 'API_phenotype', root_dir=root_dir)
-    test.download().transform().metadata()
 
 
 if __name__ == '__main__':

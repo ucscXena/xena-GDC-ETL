@@ -70,11 +70,18 @@ def gdc2xena(root_dir, projects, xena_dtypes):
         for dtype in xena_dtypes:
             if dtype == 'survival':
                 dataset = GDCSurvivalset(project, root_dir)
-            elif dtype == 'phenotype':
+            elif dtype == 'raw_phenotype':
                 if project.startswith('TCGA'):
-                    dataset = GDCPhenoset(project, 'phenotype', root_dir)
+                    dataset = GDCPhenoset(project, 'raw_phenotype', root_dir)
                 if project.startswith('TARGET'):
                     dataset = GDCPhenoset(project, 'clinical', root_dir)
+            elif dtype == 'GDC_phenotype':
+                if project.startswith('TCGA'):
+                    dataset = GDCPhenoset(project, 'GDC_phenotype', root_dir)
+                else:
+                    raise ValueError('GDC_phenotype is only available for '
+                                     'TCGA projects, not supported for '
+                                     'project {}.'.format(project))
             else:
                 dataset = GDCOmicset(project, dtype, root_dir)
             try:
@@ -94,8 +101,7 @@ def gdc2xena(root_dir, projects, xena_dtypes):
 def main():
     valid_dtype = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna',
                    'masked_cnv', 'muse_snv', 'mutect2_snv', 
-                   'somaticsniper_snv', 'varscan2_snv', 'phenotype',
-                   'survival']
+                   'somaticsniper_snv', 'varscan2_snv', 'raw_phenotype',
     parser = argparse.ArgumentParser(
             description='Pipeline for importing data from GDC to Xena.',
             epilog='Supported data types are: {}'.format(str(valid_dtype))

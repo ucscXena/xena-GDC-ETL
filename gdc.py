@@ -407,9 +407,15 @@ def get_samples_clinical(projects=None):
               'family_histories', 'project', 'samples', 'tissue_source_site']
     res = search('cases', in_filter=in_filter, fields=fields, expand=expand,
                  typ='json')
-    reduced_json = reduce_json_array(res)
-    cases_df = pd.io.json.json_normalize(reduced_json).drop('samples', axis=1)
-    samples_df = pd.io.json.json_normalize(reduced_json, 'samples', 'id',
+    reduced_no_samples_json = reduce_json_array(
+            [{k: v for k, v in d.items() if k != 'samples'} for d in res]
+        )
+    cases_df = pd.io.json.json_normalize(reduced_no_samples_json)
+    # In the list of reduced json, "samples" fields for each case are not
+    # consistently ``list`` (if there is only 1 sample for the case, it will
+    # be reduced into "naked" ``dict``). Therefore, it cannot be normalized
+    # correctly with ``record_path `` "samples". Use the raw json instead.
+    samples_df = pd.io.json.json_normalize(res, 'samples', 'id',
                                            record_prefix='samples.')
     return pd.merge(cases_df, samples_df, how='inner', on='id')
 
