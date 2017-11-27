@@ -102,6 +102,7 @@ def main():
     valid_dtype = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna',
                    'masked_cnv', 'muse_snv', 'mutect2_snv', 
                    'somaticsniper_snv', 'varscan2_snv', 'raw_phenotype',
+                   'GDC_phenotype', 'survival']
     parser = argparse.ArgumentParser(
             description='Pipeline for importing data from GDC to Xena.',
             epilog='Supported data types are: {}'.format(str(valid_dtype))
