@@ -1,0 +1,18 @@
+{"cohort":"{{ xena_cohort }}",
+ "min":0.00000,
+ "url":"{% if gdc_release %}{{ gdc_release }}, {% endif %}https://api.gdc.cancer.gov/data/",
+ "dataSubType":"DNA methylation",
+ ":probeMap":"/probeMap/illuminaMethyl450_hg19_GPL16304",
+ "security":"public",
+ "dataProducer":"Genomic Data Commons",
+ "label":"{{ gdc_type }}",
+ "max":1.00000,
+ "wrangling_procedure":
+ "Beta_value from the same sample but from different vials/portions/analytes/aliquotes is averaged; beta_value from different samples is combined into genomicMatrix.",
+ "PLATFORM":"Illumina Human Methylation 450",
+ "type":"genomicMatrix",
+ "wrangler":"Xena GDC ETL script",
+ "version":"{{ date }}",
+ "unit":"beta value"{% if notes %},
+ "notes":"{{ notes }}"{% endif %}
+}

@@ -307,6 +307,32 @@ def snv_maf_matrix(df_list):
     return df
 
 
+def merge_cols_avg(df_list):
+    """Merge and process a list of dataframes to make a Xena data matrix.
+    
+    Every dataframe contains data for individual sample. They are merged
+    horizontally (``axis=1``; growing with more and more columns). For merged
+    matrix, columns having the same name were then averaged.
+    
+    Args:
+        df_list (list of pandas.core.frame.DataFrame): Input raw data. One
+            dataframe is expected to have data for one sample, with column
+            header being sample ID (not strictly required).
+    
+    Returns:
+        pandas.core.frame.DataFrame: Ready to load Xena matrix.
+    """
+    
+    print('\rMerging columns into one matrix ...', end='')
+    df = pd.concat(df_list, axis=1)
+    # ``pandas.concat`` Will lose index name when there are rows outside
+    # intersection during outter join.
+    if df.index.name is None:
+        df.index.name = df_list[0].index.name
+    print('\rAveraging duplicated samples ...', end='')
+    return df.groupby(df.columns, axis=1).mean()
+
+
 class XenaDataset(object):
     """XenaDataset represents for one Xena matrix in a Xena cohort.
 
@@ -806,7 +832,8 @@ class GDCOmicset(XenaDataset):
                     'data_type': 'Masked Somatic Mutation',
                     'analysis.workflow_type':
                         'VarScan2 Variant Aggregation and Masking'
-                }
+                },
+            'methylation': {'data_type': 'Methylation Beta Value'}
         }
 
     # Prefix in filenames for downloaded files
@@ -821,7 +848,8 @@ class GDCOmicset(XenaDataset):
             'muse_snv': 'submitter_id',
             'mutect2_snv': 'submitter_id',
             'somaticsniper_snv': 'submitter_id',
-            'varscan2_snv': 'submitter_id'
+            'varscan2_snv': 'submitter_id',
+            'methylation': 'cases.samples.submitter_id'
         }
     
     # Settings for making Xena matrix from GDC data
@@ -859,6 +887,12 @@ class GDCOmicset(XenaDataset):
                     comment='#'
                 )
         ))
+    _READ_RAW_FUNCS['methylation'] = lambda x: pd.read_table(
+            x, header=0,
+            names=['Composite Element REF',
+                   os.path.basename(x.name).split('.', 1)[0]],
+            index_col=0, usecols=[0, 1]
+        )
     _RAWS2MATRIX_FUNCS = {
             'htseq_counts': rna_columns_matrix,
             'htseq_fpkm': rna_columns_matrix,
@@ -878,7 +912,8 @@ class GDCOmicset(XenaDataset):
             'muse_snv': snv_maf_matrix,
             'mutect2_snv': snv_maf_matrix,
             'somaticsniper_snv': snv_maf_matrix,
-            'varscan2_snv': snv_maf_matrix
+            'varscan2_snv': snv_maf_matrix,
+            'methylation': merge_cols_avg
         }
     
     # Map xena_dtype to corresponding metadata template.
@@ -892,7 +927,8 @@ class GDCOmicset(XenaDataset):
                           'muse_snv': 'template.snv.meta.json',
                           'mutect2_snv': 'template.snv.meta.json',
                           'somaticsniper_snv': 'template.snv.meta.json',
-                          'varscan2_snv': 'template.snv.meta.json'}
+                          'varscan2_snv': 'template.snv.meta.json',
+                          'methylation': 'template.methylation.meta.json'}
     _METADATA_TEMPLATE = {
             k: os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             'Resources', v)
@@ -918,7 +954,8 @@ class GDCOmicset(XenaDataset):
                 },
             'varscan2_snv': {
                     'gdc_type': 'VarScan2 Variant Aggregation and Masking'
-                }
+                },
+            'methylation': {'gdc_type': 'Methylation Beta Value'}
         }
     
     @property
