@@ -52,7 +52,7 @@ def gdc2xena(root_dir, projects, xena_dtypes):
             are (without quotation marks): "htseq_counts", "htseq_fpkm",
             "htseq_fpkm-uq", "mirna", "masked_cnv", "muse_snv", "mutect2_snv",
             "somaticsniper_snv", "varscan2_snv", "phenotype", "survival",
-            "methylation".
+            "methylation27", "methylation450".
     """
     start_time = timeit.default_timer()
     
@@ -103,7 +103,8 @@ def main():
     valid_dtype = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna',
                    'masked_cnv', 'muse_snv', 'mutect2_snv', 
                    'somaticsniper_snv', 'varscan2_snv', 'raw_phenotype',
-                   'GDC_phenotype', 'survival', 'methylation']
+                   'GDC_phenotype', 'survival', 'methylation27',
+                   'methylation450']
     parser = argparse.ArgumentParser(
             description='Pipeline for importing data from GDC to Xena.',
             epilog='Supported data types are: {}'.format(str(valid_dtype))

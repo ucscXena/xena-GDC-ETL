@@ -833,7 +833,11 @@ class GDCOmicset(XenaDataset):
                     'analysis.workflow_type':
                         'VarScan2 Variant Aggregation and Masking'
                 },
-            'methylation': {'data_type': 'Methylation Beta Value'}
+            'methylation27': {'data_type': 'Methylation Beta Value',
+                              'platform': 'Illumina Human Methylation 27'},
+            'methylation450': {'data_type': 'Methylation Beta Value',
+                              'platform': 'Illumina Human Methylation 450'}
+
         }
 
     # Prefix in filenames for downloaded files
@@ -849,7 +853,8 @@ class GDCOmicset(XenaDataset):
             'mutect2_snv': 'submitter_id',
             'somaticsniper_snv': 'submitter_id',
             'varscan2_snv': 'submitter_id',
-            'methylation': 'cases.samples.submitter_id'
+            'methylation27': 'cases.samples.submitter_id',
+            'methylation450': 'cases.samples.submitter_id'
         }
     
     # Settings for making Xena matrix from GDC data
@@ -887,12 +892,14 @@ class GDCOmicset(XenaDataset):
                     comment='#'
                 )
         ))
-    _READ_RAW_FUNCS['methylation'] = lambda x: pd.read_table(
-            x, header=0,
-            names=['Composite Element REF',
-                   os.path.basename(x.name).split('.', 1)[0]],
-            index_col=0, usecols=[0, 1]
-        )
+    _READ_RAW_FUNCS.update(dict.fromkeys(
+            ['methylation27', 'methylation450'],
+            lambda x: pd.read_table(
+                    x, header=0, index_col=0, usecols=[0, 1],
+                    names=['Composite Element REF',
+                           os.path.basename(x.name).split('.', 1)[0]]
+                )
+        ))
     _RAWS2MATRIX_FUNCS = {
             'htseq_counts': rna_columns_matrix,
             'htseq_fpkm': rna_columns_matrix,
@@ -913,7 +920,8 @@ class GDCOmicset(XenaDataset):
             'mutect2_snv': snv_maf_matrix,
             'somaticsniper_snv': snv_maf_matrix,
             'varscan2_snv': snv_maf_matrix,
-            'methylation': merge_cols_avg
+            'methylation27': merge_cols_avg,
+            'methylation450': merge_cols_avg
         }
     
     # Map xena_dtype to corresponding metadata template.
@@ -928,7 +936,8 @@ class GDCOmicset(XenaDataset):
                           'mutect2_snv': 'template.snv.meta.json',
                           'somaticsniper_snv': 'template.snv.meta.json',
                           'varscan2_snv': 'template.snv.meta.json',
-                          'methylation': 'template.methylation.meta.json'}
+                          'methylation27': 'template.methylation.meta.json',
+                          'methylation450': 'template.methylation.meta.json'}
     _METADATA_TEMPLATE = {
             k: os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             'Resources', v)
@@ -955,7 +964,8 @@ class GDCOmicset(XenaDataset):
             'varscan2_snv': {
                     'gdc_type': 'VarScan2 Variant Aggregation and Masking'
                 },
-            'methylation': {'gdc_type': 'Methylation Beta Value'}
+            'methylation27': {'gdc_type': 'Illumina Human Methylation 27'},
+            'methylation450': {'gdc_type': 'Illumina Human Methylation 450'}
         }
     
     @property
