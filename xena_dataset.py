@@ -132,7 +132,15 @@ def read_biospecimen(fileobj):
     ext = os.path.splitext(filename)[1]
     if ext == '.xlsx':
         # Design specifically for TARGET biospecimen
-        df = pd.read_excel(filename, sheetname='Sample Names', header=None)
+        try:
+            df = pd.read_excel(filename, sheet_name='Sample Names',
+                               header=None)
+        except:
+            try:
+                df = pd.read_excel(filename, sheet_name='SampleNames',
+                                   header=None)
+            except:
+                raise
         df.iloc[0].fillna(method='ffill', inplace=True)
         df.columns = df.iloc[0:2].apply(lambda x: x.str.cat(sep='.'))
         return df.drop(df.index[0:2]).set_index(df.columns[0])
@@ -196,7 +204,7 @@ def read_clinical(fileobj):
         filename = fileobj
     ext = os.path.splitext(filename)[1]
     if ext == '.xlsx':
-        return pd.read_excel(filename, sheetname='Clinical Data', index_col=0)
+        return pd.read_excel(filename, sheet_name='Clinical Data', index_col=0)
     elif ext != '.xml':
         raise IOError('Unknown file type for clinical data: {}'.format(ext))
     
