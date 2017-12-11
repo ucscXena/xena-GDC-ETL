@@ -415,7 +415,14 @@ def get_samples_clinical(projects=None):
     # consistently ``list`` (if there is only 1 sample for the case, it will
     # be reduced into "naked" ``dict``). Therefore, it cannot be normalized
     # correctly with ``record_path `` "samples". Use the raw json instead.
-    samples_df = pd.io.json.json_normalize(res, 'samples', 'id',
+    # Besides, there are cases (34 by 12/11/2017) which doesn't have any
+    # samples and thus doesn't have the key "samples". Such cases are fixed
+    # with the ``[{}]`` default for ``json_normalize``.
+    samples_json = []
+    for r in res:
+        r.setdefault('samples', [{}])
+        samples_json.append(r)
+    samples_df = pd.io.json.json_normalize(samples_json, 'samples', 'id',
                                            record_prefix='samples.')
     return pd.merge(cases_df, samples_df, how='inner', on='id')
 

@@ -1525,7 +1525,8 @@ class GDCPhenoset(XenaDataset):
                 xena_matrix = bio_matrix.set_index('bcr_sample_barcode')
             except:
                 xena_matrix = bio_matrix
-        elif self.xena_dtype in ['raw_phenotype', 'GDC_phenotype']:
+        elif (self.xena_dtype in ['raw_phenotype', 'GDC_phenotype']
+              and all([i.startswith('TCGA-') for i in self.projects])):
             bio_columns = (bio_matrix.columns.difference(clin_matrix.columns)
                                              .insert(0, 'bcr_patient_barcode'))
             xena_matrix = (
@@ -1543,36 +1544,47 @@ class GDCPhenoset(XenaDataset):
                     columns={n: '.'.join(reversed(n.split('.')))
                              for n in api_clin.columns}
                 )
-            # Remove code 10, Blood Derived Normal, sample:
-            # https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/sample-type-codes
-            sample_mask = api_clin['submitter_id.samples'].map(
-                    lambda s: s[-3:-1] not in ['10']
-                )
-            api_clin = api_clin[sample_mask].set_index('submitter_id.samples')
-            # Remove all empty columns
-            api_clin = api_clin.dropna(axis=1, how='all')
-            # For overlapping columns between raw data matrix and GDC'S API
-            # data matrix, use API data.
-            for c in self._API_DROPS:
-                try:
-                    api_clin.drop(c, axis=1, inplace=True)
-                except:
-                    pass
-            for c in self._RAW_DROPS:
-                try:
-                    xena_matrix.drop(c, axis=1, inplace=True)
-                except:
-                    pass
-            # Merge phenotype matrix from raw data and that from GDC's API
-            xena_matrix = xena_matrix.reset_index().rename(
-                    columns={'bcr_sample_barcode': 'submitter_id.samples'}
-                )
-            xena_matrix = (
-                    pd.merge(xena_matrix, api_clin.reset_index(),
-                             how='outer', on='submitter_id.samples')
-                      .replace(r'^\s*$', np.nan, regex=True)
-                      .set_index('submitter_id.samples')
-                )
+            if all([i.startswith('TCGA-') for i in self.projects]):
+                # Remove code 10, Blood Derived Normal, sample:
+                # https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/sample-type-codes
+                sample_mask = api_clin['submitter_id.samples'].map(
+                        lambda s: s[-3:-1] not in ['10']
+                    )
+                api_clin = api_clin[sample_mask].set_index(
+                        'submitter_id.samples'
+                    )
+                # Remove all empty columns
+                api_clin = api_clin.dropna(axis=1, how='all')
+                # For overlapping columns between raw data matrix and GDC'S
+                # API data matrix, use API data.
+                for c in self._API_DROPS:
+                    try:
+                        api_clin.drop(c, axis=1, inplace=True)
+                    except:
+                        pass
+                for c in self._RAW_DROPS:
+                    try:
+                        xena_matrix.drop(c, axis=1, inplace=True)
+                    except:
+                        pass
+                # Merge phenotype matrix from raw data and that from GDC's API
+                xena_matrix = xena_matrix.reset_index().rename(
+                        columns={'bcr_sample_barcode': 'submitter_id.samples'}
+                    )
+                xena_matrix = (
+                        pd.merge(xena_matrix, api_clin.reset_index(),
+                                 how='outer', on='submitter_id.samples')
+                          .replace(r'^\s*$', np.nan, regex=True)
+                          .set_index('submitter_id.samples')
+                    )
+            elif all([i.startswith('TARGET-') for i in self.projects]):
+                xena_matrix = api_clin.dropna(
+                        axis=1, how='all'
+                    ).set_index('submitter_id.samples')
+            else:
+                raise ValueError('Getting "GDC_phenotype" for a cohort with '
+                                 'mixed TCGA and TARGET projects is not '
+                                 'currently suppported.')
         # Transformation done
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)

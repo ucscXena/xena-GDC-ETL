@@ -77,12 +77,7 @@ def gdc2xena(root_dir, projects, xena_dtypes):
                 if project.startswith('TARGET'):
                     dataset = GDCPhenoset(project, 'clinical', root_dir)
             elif dtype == 'GDC_phenotype':
-                if project.startswith('TCGA'):
-                    dataset = GDCPhenoset(project, 'GDC_phenotype', root_dir)
-                else:
-                    raise ValueError('GDC_phenotype is only available for '
-                                     'TCGA projects, not supported for '
-                                     'project {}.'.format(project))
+                dataset = GDCPhenoset(project, 'GDC_phenotype', root_dir)
             else:
                 dataset = GDCOmicset(project, dtype, root_dir)
             try:
