@@ -1,0 +1,7 @@
+{
+	"type":"probeMap",
+	"name":"illuminaMethyl450_hg38_GDC",
+	"url":"https://portal.gdc.cancer.gov/files/acd76d89-a4d7-47ea-a1c2-480a3d200634",
+	"assembly":"hg38",
+	"version":"2017-12-10"
+}

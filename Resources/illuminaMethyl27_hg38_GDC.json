@@ -1,0 +1,7 @@
+{
+	"type":"probeMap",
+	"name":"illuminaMethyl27_hg38_GDC",
+	"url":"https://portal.gdc.cancer.gov/files/f3eaf986-c631-4fb4-b9e8-9cfaf5338210",
+	"assembly": "hg38",
+	"version":"2017-12-10"
+}

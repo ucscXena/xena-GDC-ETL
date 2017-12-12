@@ -972,8 +972,8 @@ class GDCOmicset(XenaDataset):
             'varscan2_snv': {
                     'gdc_type': 'VarScan2 Variant Aggregation and Masking'
                 },
-            'methylation27': {'gdc_type': 'Illumina Human Methylation 27'},
-            'methylation450': {'gdc_type': 'Illumina Human Methylation 450'}
+            'methylation27': {'platform_num': '27'},
+            'methylation450': {'platform_num': '450'}
         }
     
     @property
