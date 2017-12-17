@@ -15,6 +15,7 @@ ETL pipeline importing data into Xena.
 from __future__ import division
 from __future__ import print_function
 
+import functools
 import time
 import os
 import re
@@ -246,37 +247,35 @@ def read_clinical(fileobj):
     return pd.DataFrame({patient['bcr_patient_barcode']: patient}).T
 
 
-def rna_columns_matrix(df_list):
-    """Merge and process a list of dataframes to make a Xena data matrix.
-    
-    Every dataframe contains data for individual sample. They are merged
-    horizontally (``axis=1``; growing with more and more columns). For merged
-    matrix, first average columns having the same name and then transform its
-    data by log(x + 1).
+def merge_cnv(filelist):
+    """Transform GDC's CNV data into Xena data matrix.
     
     Args:
-        df_list (list of pandas.core.frame.DataFrame): Input raw data. One
-            dataframe is expected to have data for one sample, with column
-            header being sample ID (not strictly required).
+        filelist (list of path): The list of input raw MAF file for mutation
+            data.
     
     Returns:
-        pandas.core.frame.DataFrame: Ready to load Xena matrix.
+        pandas.core.frame.DataFrame: Transformed pandas DataFrame.
     """
     
-    print('\rMerging into one matrix ...', end='')
-    df = pd.concat(df_list, axis=1)
-    # ``pandas.concat`` Will lose index name when there are rows outside
-    # intersection during outter join.
-    if df.index.name is None:
-        df.index.name = df_list[0].index.name
-    print('\rAveraging duplicated samples ...', end='')
-    df_avg = df.groupby(df.columns, axis=1).mean()
-    print('\rLog transforming data ...       ', end='')
-    return np.log2(df_avg + 1)
+    xena_matrix = pd.DataFrame()
+    total = len(filelist)
+    count = 0
+    for path in filelist:
+        xena_matrix = xena_matrix.append(pd.read_table(
+                path, header=0, usecols=[1, 2, 3, 5]
+            ).assign(sample=os.path.basename(path).split('.', 1)[0]))
+        count += 1
+        print('\rProcessed {}/{} file...'.format(count, total), end='')
+        sys.stdout.flush()
+    print('\rAll {} files have been processed. '.format(total))
+    return xena_matrix.rename(
+            columns={'Chromosome': 'Chrom', 'Segment_Mean': 'value'}
+        ).set_index('sample')
 
 
-def snv_maf_matrix(df_list):
-    """Transform pre-sliced GDC's MAF data into Xena data matrix.
+def snv_maf_matrix(filelist):
+    """Transform GDC's MAF data into Xena data matrix.
     
     A new column of DNA variant allele frequencies named "dna_vaf" will
     calculated by division "t_alt_count" / "t_depth". Columns "t_alt_count"
@@ -284,15 +283,19 @@ def snv_maf_matrix(df_list):
     accordingly and row index will be set as sample ID.
     
     Args:
-        df (pandas.core.frame.DataFrame): Input raw matrix for mutation data
-           (from MAF file).
+        filelist (list of path): The list of input raw MAF file for mutation
+            data.
     
     Returns:
         pandas.core.frame.DataFrame: Transformed pandas DataFrame.
     """
     
-    assert len(df_list) == 1
-    df = df_list[0]
+    assert len(filelist) == 1
+    print('\rProcessing 1/1 file...', end='')
+    df = pd.read_table(
+            filelist[0], header=0, comment='#',
+            usecols=[12, 36, 4, 5, 6, 39, 41, 51, 0, 10, 15, 110]
+        )
     print('\rCalculating "dna_vaf" ...', end='')
     df['dna_vaf'] = df['t_alt_count'] / df['t_depth']
     print('\rTrim "Tumor_Sample_Barcode" into Xena sample ID ...', end='')
@@ -315,30 +318,66 @@ def snv_maf_matrix(df_list):
     return df
 
 
-def merge_cols_avg(df_list):
-    """Merge and process a list of dataframes to make a Xena data matrix.
+def merge_sample_cols(filelist, header='infer', index_col=0,
+                      usecols=[0, 1], comment=None, index_name='id',
+                      get_sid=lambda f: os.path.basename(f).split('.', 1)[0],
+                      log2TF=True):
+    """Merge and process a list of raw data files to make a Xena data matrix.
     
-    Every dataframe contains data for individual sample. They are merged
-    horizontally (``axis=1``; growing with more and more columns). For merged
-    matrix, columns having the same name were then averaged.
+    Each file will be considered as data from one sample and will be extracted
+    as one column in the merged matrix. Data from the same sample (identified
+    by sample ID) will be averaged before being put into the matrix. By
+    default (``log2TF=True``), merged will be transformed by log2(x + 1).
     
     Args:
-        df_list (list of pandas.core.frame.DataFrame): Input raw data. One
-            dataframe is expected to have data for one sample, with column
-            header being sample ID (not strictly required).
+        filelist (list of path): The list of input raw data.
+        header:
+        index_col:
+        usecols:
+        comment:
+        index_name:
+        get_sid:
+        log2TF:
     
     Returns:
         pandas.core.frame.DataFrame: Ready to load Xena matrix.
     """
     
-    print('\rMerging columns into one matrix ...', end='')
-    df = pd.concat(df_list, axis=1)
-    # ``pandas.concat`` Will lose index name when there are rows outside
-    # intersection during outter join.
-    if df.index.name is None:
-        df.index.name = df_list[0].index.name
-    print('\rAveraging duplicated samples ...', end='')
-    return df.groupby(df.columns, axis=1).mean()
+    # Group data by sample (sid), especially for samples with more than 1 data
+    # files (repeats). If repeats within a sample need to be averaged, this
+    # will be very helpful.
+    sample_dict = {}
+    for path in filelist:
+        sample_id = get_sid(path)#os.path.basename(path).split('.', 1)[0]
+        if sample_id not in sample_dict:
+            sample_dict[sample_id] = []
+        sample_dict[sample_id].append(path)
+    # Read raw data sample by sample, average data for each sample if needed,
+    # and put data for each sample into the matrix
+    xena_matrix = pd.DataFrame()
+    total = len(filelist)
+    count = 0
+    for sample_id in sample_dict:
+        df_list = [pd.read_table(f, header=header, index_col=index_col,
+                                 usecols=usecols, comment=comment,
+                                 names=[index_name, sample_id])
+                   for f in sample_dict[sample_id]]
+        if len(sample_dict[sample_id]) > 1:
+            df_list = [xena_matrix,
+                       pd.concat(df_list, axis=1,
+                                 copy=False).mean(1).rename(sample_id)]
+        else:
+            df_list.insert(0, xena_matrix)
+        xena_matrix = pd.concat(df_list, axis=1, copy=False)
+        count += len(sample_dict[sample_id])
+        print('\rProcessed {}/{} file...'.format(count, total), end='')
+        sys.stdout.flush()
+    print('\rAll {} files have been processed. '.format(total))
+    xena_matrix.index.name = index_name
+    if log2TF:
+        return np.log2(xena_matrix + 1)
+    else:
+        return xena_matrix
 
 
 class XenaDataset(object):
@@ -415,15 +454,10 @@ class XenaDataset(object):
             ``raw_data_dir`` property will be checked. All files under
             ``raw_data_dir`` will be treated as data and used for creating a
             ``raw_data_list``.
-        read_raw (callable): A function used for reading a raw data during
-            Xena matrix ``transform``. A valid ``read_raw`` function must
-            accept only one argument, which is a file object. Its return will
-            be put in a list which will then be passed to ``raws2matrix``
-            function.
         raws2matrix (callable): A function used for merging multiple raw data
-            read by ``read_raw`` into one Xena matrix, as well as processing
-            the merged matrix if needed. A valid ``raws2matrix`` must accept
-            only one argument, which is a list of ``read_raw`` return(s).
+            in the ``raw_data_list`` into one Xena matrix, as well as
+            processing the merged matrix if needed. A valid ``raws2matrix``
+            must accept only one argument, which is ``raw_data_list``.
         matrix (str): A path for the Xena matrix of this dataset.
             This attribute will be used but not validated by the ``transform``
             method for saving newly generated Xena matrix. This attribute will
@@ -620,29 +654,23 @@ class XenaDataset(object):
             count += 1
             response = requests.get(url, stream=True)
             if response.status_code == 200:
-                file_size = int(response.headers['Content-Length'])
                 path = os.path.abspath(path)
-                status = '\r[{:d}/{:d}] Download to "{}": {:4.0%}'
+                status = '\r[{:d}/{:d}] Downloading to "{}" ...'
+                print(status.format(count, total, path), end='')
+                sys.stdout.flush()
                 mkdir_p(os.path.dirname(path))
                 with open(path, 'wb') as f:
-                    downloaded = 0
-                    print(status.format(count, total, path, 0), end='')
-                    sys.stdout.flush()
                     for chunk in response.iter_content(chunk_size):
                         f.write(chunk)
-                        downloaded = downloaded + chunk_size
-                        print(status.format(count, total, path,
-                                            min(1, downloaded/file_size)),
-                              end='')
-                        sys.stdout.flush()
                 download_list.append(path)
             else:
-                print('\rFail to download file {}.'.format(url))
+                raise IOError('\nFail to download file {}.'.format(url))
         print('')
         self.raw_data_list = download_list
         print('Raw {} data for {} is ready.'.format(self.projects,
                                                     self.xena_dtype))
         return self
+    
     
     def transform(self):
         """Transform raw data in a dataset into Xena matrix.
@@ -659,18 +687,7 @@ class XenaDataset(object):
         
         message = 'Make Xena matrix for {} data of {}.'
         print(message.format(self.xena_dtype, self.projects))
-        total = len(self.raw_data_list)
-        count = 0
-        df_list = []
-        for path in self.raw_data_list:
-            count = count + 1
-            print('\rProcessing {}/{} file...'.format(count, total), end='')
-            sys.stdout.flush()
-            with read_by_ext(path) as f:
-                df = self.read_raw(f)
-            df_list.append(df)
-        print('\rAll {} files have been processed. '.format(total))
-        xena_matrix = self.raws2matrix(df_list)
+        xena_matrix = self.raws2matrix(self.raw_data_list)
         # Transformation done
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
@@ -724,8 +741,8 @@ class GDCOmicset(XenaDataset):
     transformed Xena matrix. These default configurations are stored as
     private constants, and they can be checked and/or changed through the
     following attributes: ``gdc_release``, ``gdc_filter``, ``gdc_prefix``,
-    ``download_map``, ``read_raw``, ``raws2matrix``, ``metadata_template``,
-    and ``metadata_vars``.
+    ``download_map``, ``raws2matrix``, ``metadata_template``, and
+    ``metadata_vars``.
 
     Attributes:
         projects (str or list): One (string) or a list of GDC's
@@ -766,7 +783,7 @@ class GDCOmicset(XenaDataset):
             "<value of gdc_prefix>.<GDC file UUID>.<file extension>"
         
             It is worth noting that the data transformation process may need
-            an ID for every data files. Default ``read_raw`` functions may
+            an ID for every data files. The ``raws2matrix`` functions may
             extract the ID from the filename (the first substring when
             splitting the filename by "."). For example, Xena uses GDC's
             "cases.samples.submitter_id" for sample ID. Therefore,
@@ -775,18 +792,13 @@ class GDCOmicset(XenaDataset):
             "<cases.samples.submitter_id>.<file UUID>.<file extension>",
             allowing the desired sample ID to be extracted correctly. Please
             keep that in mind when trying to define your own download dict but
-            use default transformation settings (``read_raw`` and
-            ``raws2matrix``). Please check ``read_raw`` and ``raws2matrix``
-            properties, as well as the ``transform`` method for details.
-        read_raw (callable): A function which accepts only one argument of
-            file object and reads it during Xena matrix ``transform``. Its
-            return, which is usually a pandas DataFrame, will be put in a list
-            which will then be passed to ``raws2matrix``. Defaults, if needed,
-            can be mapped from ``xena_dtype``.
+            use default transformation settings (``raws2matrix``). Please
+            check the ``raws2matrix`` properties, as well as the ``transform``
+            method for details.
         raws2matrix (callable): A function which accepts only one argument of
-            a list of ``read_raw`` return(s), merges them into one Xena
-            matrix, and processes the merged matrix if needed. Defaults, if
-            needed, can be mapped from ``xena_dtype``.
+            ``raw_data_list``, merges them into one Xena matrix, and processes
+            the merged matrix if needed. Defaults, if needed, can be mapped
+            from ``xena_dtype``.
         metadata_template (jinja2.environment.Template or str): A Jinja2
             template for rendering metadata of this dataset. When setting this
             attribute with a string, it will be taken as a path to the
@@ -866,71 +878,31 @@ class GDCOmicset(XenaDataset):
         }
     
     # Settings for making Xena matrix from GDC data
-    _READ_RAW_FUNCS = dict.fromkeys(
+    _RAWS2MATRIX_FUNCS = dict.fromkeys(
             ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq'],
-            lambda x: pd.read_table(
-                    x, header=None,
-                    names=['Ensembl_ID',
-                           os.path.basename(x.name).split('.', 1)[0]],
-                    index_col=0, usecols=[0, 1], comment='_'
-                )
+            functools.partial(merge_sample_cols, header=None,
+                              index_name='Ensembl_ID')
         )
-    _READ_RAW_FUNCS['mirna'] = lambda x: pd.read_table(
-            x, header=0,
-            names=['miRNA_ID', os.path.basename(x.name).split('.', 1)[0]],
-            index_col=0, usecols=[0, 2]
+    _RAWS2MATRIX_FUNCS['mirna'] = functools.partial(merge_sample_cols,
+                                                    header=0, usecols=[0, 2],
+                                                    index_name='miRNA_ID')
+    _RAWS2MATRIX_FUNCS['mirna_isoform'] = functools.partial(
+            merge_sample_cols, header=0, usecols=[1, 3],
+            index_name='isoform_coords'
         )
-    _READ_RAW_FUNCS['mirna_isoform'] = lambda x: pd.read_table(
-            x, header=0,
-            names=['isoform_coords',
-                   os.path.basename(x.name).split('.', 1)[0]],
-            index_col=0, usecols=[1, 3]
-        )
-    _READ_RAW_FUNCS.update(dict.fromkeys(
+    _RAWS2MATRIX_FUNCS.update(dict.fromkeys(
             ['cnv', 'masked_cnv'],
-            lambda x: pd.read_table(
-                    x, header=0, usecols=[1, 2, 3, 5]
-                ).assign(sample=os.path.basename(x.name).split('.', 1)[0])
+            merge_cnv
         ))
-    _READ_RAW_FUNCS.update(dict.fromkeys(
+    _RAWS2MATRIX_FUNCS.update(dict.fromkeys(
             ['muse_snv', 'mutect2_snv', 'somaticsniper_snv', 'varscan2_snv'],
-            lambda x: pd.read_table(
-                    x, header=0,
-                    usecols=[12, 36, 4, 5, 6, 39, 41, 51, 0, 10, 15, 110],
-                    comment='#'
-                )
+            snv_maf_matrix
         ))
-    _READ_RAW_FUNCS.update(dict.fromkeys(
+    _RAWS2MATRIX_FUNCS.update(dict.fromkeys(
             ['methylation27', 'methylation450'],
-            lambda x: pd.read_table(
-                    x, header=0, index_col=0, usecols=[0, 1],
-                    names=['Composite Element REF',
-                           os.path.basename(x.name).split('.', 1)[0]]
-                )
+            functools.partial(merge_sample_cols, header=0, log2TF=False,
+                              index_name='Composite Element REF')
         ))
-    _RAWS2MATRIX_FUNCS = {
-            'htseq_counts': rna_columns_matrix,
-            'htseq_fpkm': rna_columns_matrix,
-            'htseq_fpkm-uq': rna_columns_matrix,
-            'mirna': rna_columns_matrix,
-            'mirna_isoform': rna_columns_matrix,
-            'cnv':
-                lambda x: (pd.concat(x, axis=0)
-                             .rename(columns={'Chromosome': 'Chrom',
-                                              'Segment_Mean': 'value'})
-                             .set_index('sample')),
-            'masked_cnv':
-                lambda x: (pd.concat(x, axis=0)
-                             .rename(columns={'Chromosome': 'Chrom',
-                                              'Segment_Mean': 'value'})
-                             .set_index('sample')),
-            'muse_snv': snv_maf_matrix,
-            'mutect2_snv': snv_maf_matrix,
-            'somaticsniper_snv': snv_maf_matrix,
-            'varscan2_snv': snv_maf_matrix,
-            'methylation27': merge_cols_avg,
-            'methylation450': merge_cols_avg
-        }
     
     # Map xena_dtype to corresponding metadata template.
     _METADATA_TEMPLATE = {'htseq_counts': 'template.rna.meta.json',
@@ -1079,18 +1051,6 @@ class GDCOmicset(XenaDataset):
             return self.__download_map
     
     @property
-    def read_raw(self):
-        try:
-            return self.__read_raw
-        except:
-            self.__read_raw = self._READ_RAW_FUNCS[self.xena_dtype]
-            return self.__read_raw
-    
-    @read_raw.setter
-    def read_raw(self, func):
-        self.__read_raw = func
-    
-    @property
     def raws2matrix(self):
         try:
             return self.__raws2matrix
@@ -1174,8 +1134,7 @@ class GDCPhenoset(XenaDataset):
     transformed Xena matrix. These default configurations are stored as
     private constants, and they can be checked and/or changed through the
     following attributes: ``gdc_release``, ``gdc_filter``, ``download_map``,
-    ``read_raw``, ``raws2matrix``, ``metadata_template``, and
-    ``metadata_vars``.
+    ``raws2matrix``, ``metadata_template``, and ``metadata_vars``.
 
     Attributes:
         projects (str or list): One (string) or a list of GDC's
@@ -1758,6 +1717,12 @@ class GDCSurvivalset(XenaDataset):
 
 def main():
     print('A python module of Xena specific importing pipeline for GDC data.')
+    start = time.time()
+    dataset=GDCOmicset(projects='TCGA-BRCA',
+                       root_dir=r'/mnt/e/GitHub/xena-GDC-ETL/gitignore/test',
+                       xena_dtype='methylation450')
+    dataset.download().transform().metadata()
+    print(time.time()-start)
 
 
 if __name__ == '__main__':
