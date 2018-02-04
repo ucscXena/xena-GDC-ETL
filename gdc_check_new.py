@@ -45,6 +45,13 @@ def main():
                         'analysis.workflow_type'],
                 method='POST'
             )
+        try:
+            df['cases'] = df['cases'].map(
+                    lambda c: ', '.join({p['project']['project_id']
+                                         for p in c})
+                )
+        except:
+            pass
         df_list.append(df)
     df = pd.concat(df_list, axis=0)
     try:
