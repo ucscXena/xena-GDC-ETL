@@ -29,7 +29,7 @@ Specific versions mentioned below have been tested. Eariler versions may still w
 2. `Requests <http://docs.python-requests.org/en/master/>`_ v1.2.3
 3. `Numpy <http://www.numpy.org/>`_ v1.15.0
 4. `Pandas <http://pandas.pydata.org/>`_ v0.23.2
-5. `Jinja2 <http://jinja.pocoo.org/docs/2.9/>`_ v2.7.2: used for generating metadata JSON.
+5. `Jinja2 <http://jinja.pocoo.org/docs/2.9/>`_ v2.10.1: used for generating metadata JSON.
 6. `lxml <http://lxml.de/>`_ v4.2.0: used for parsing TCGA phenotype data
 7. `xlrd <http://www.python-excel.org/>`_ v1.1.0: used for reading TARGET phenotype data
 
