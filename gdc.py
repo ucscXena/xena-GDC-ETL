@@ -376,10 +376,7 @@ def get_project_info(projects=None):
     project_df = search('projects', in_filter=in_filter,
                         fields=['name', 'primary_site', 'project_id',
                                 'program.name'])
-    if(project_df != None):
-        return project_df.set_index('id')
-    else:
-        return None
+    return project_df.set_index('id')
 
 
 def get_samples_clinical(projects=None):
@@ -434,9 +431,7 @@ def main():
     print('A simple python module providing selected GDC API functionalities.')
     
     # Simple test
-    df = get_project_info()
-    if(df != None):
-        print(df.head())
+    print(get_project_info(['TCGA-THCA']).head())
 
 
 if __name__ == '__main__':
