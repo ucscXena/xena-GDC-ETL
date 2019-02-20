@@ -370,13 +370,16 @@ def get_project_info(projects=None):
     in_filter = {}
     if projects is not None:
         if isinstance(projects, list):
-            in_filter = {'project.project_id': projects}
+            in_filter = {'projects.project_id': projects}
         else:
-            in_filter = {'project.project_id': [projects]}
+            in_filter = {'projects.project_id': [projects]}
     project_df = search('projects', in_filter=in_filter,
                         fields=['name', 'primary_site', 'project_id',
                                 'program.name'])
-    return project_df.set_index('id')
+    if(project_df != None):
+        return project_df.set_index('id')
+    else:
+        return None
 
 
 def get_samples_clinical(projects=None):
@@ -431,7 +434,9 @@ def main():
     print('A simple python module providing selected GDC API functionalities.')
     
     # Simple test
-    print(get_project_info().head())
+    df = get_project_info()
+    if(df != None):
+        print(df.head())
 
 
 if __name__ == '__main__':
