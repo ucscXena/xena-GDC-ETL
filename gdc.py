@@ -370,9 +370,9 @@ def get_project_info(projects=None):
     in_filter = {}
     if projects is not None:
         if isinstance(projects, list):
-            in_filter = {'project.project_id': projects}
+            in_filter = {'projects.project_id': projects}
         else:
-            in_filter = {'project.project_id': [projects]}
+            in_filter = {'projects.project_id': [projects]}
     project_df = search('projects', in_filter=in_filter,
                         fields=['name', 'primary_site', 'project_id',
                                 'program.name'])
@@ -431,7 +431,7 @@ def main():
     print('A simple python module providing selected GDC API functionalities.')
     
     # Simple test
-    print(get_project_info().head())
+    print(get_project_info(['TCGA-THCA']).head())
 
 
 if __name__ == '__main__':
