@@ -228,6 +228,7 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
         response = requests.post(url, data=payload)
     else:
         response = requests.get(url, params=payload)
+
     if response.status_code == 200:
         results = response.json()['data']['hits']
         if typ.lower() == 'json':
@@ -376,7 +377,11 @@ def get_project_info(projects=None):
     project_df = search('projects', in_filter=in_filter,
                         fields=['name', 'primary_site', 'project_id',
                                 'program.name'])
-    return project_df.set_index('id')
+
+    if(project_df.empty==False):
+        return project_df.set_index('id')
+    else:
+        return None
 
 
 def get_samples_clinical(projects=None):
@@ -431,7 +436,11 @@ def main():
     print('A simple python module providing selected GDC API functionalities.')
     
     # Simple test
-    print(get_project_info(['TCGA-THCA']).head())
+    df = get_project_info(["TCGA-L"])
+    if(df!=None):
+        print(df.head())
+    else:
+        print("Empty dataframe!")
 
 
 if __name__ == '__main__':
