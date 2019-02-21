@@ -435,6 +435,7 @@ def main():
     print('A simple python module providing selected GDC API functionalities.')
     
     # Simple test
+    df = get_project_info()
     if(df.empty==False):
         print(df.head())
     else:
