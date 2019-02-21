@@ -383,7 +383,6 @@ def get_project_info(projects=None):
     else:
         return project_df
 
-
 def get_samples_clinical(projects=None):
     """Get info for all samples of ``projects`` and clinical info for all
     cases of ``projects`` through GDC API.
@@ -436,7 +435,6 @@ def main():
     print('A simple python module providing selected GDC API functionalities.')
     
     # Simple test
-    df = get_project_info(['TCGA-'])
     if(df.empty==False):
         print(df.head())
     else:
