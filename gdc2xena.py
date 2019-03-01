@@ -101,12 +101,21 @@ def main():
                    'GDC_phenotype', 'survival', 'methylation27',
                    'methylation450']
     parser = argparse.ArgumentParser(
-            description='Pipeline for importing data from GDC to Xena.',
+            description='Pipeline for importing data from GDC to Xena.'
+        )
+    subparsers = parser.add_subparsers(title='Subcommands', dest='subcomm',
+                                       metavar='')
+    
+    # Subcommand for full ETL (download, transform, and metadata)
+    etlparser = subparsers.add_parser(
+            'etl', 
+            help='Download and transform GDC data into Xena matrix, '
+                 'and generate corresponding metadata.',
             epilog='Supported data types are: {}'.format(str(valid_dtype))
         )
-    parser.add_argument('-r', '--root', type=str,
-                        help='Root directory for imported data.', default='.')
-    projects_group = parser.add_mutually_exclusive_group()
+    etlparser.add_argument('-r', '--root', type=str, default='.',
+                           help='Root directory for imported data.')
+    projects_group = etlparser.add_mutually_exclusive_group()
     projects_group.add_argument('-p', '--projects', type=str, nargs='+',
                                 help='GDC project ID(s) to be imported; or '
                                      '"all" if all projects on GDC are going '
@@ -118,7 +127,7 @@ def main():
                                      'This option and the "-p" option are '
                                      'mutually exclusive.',
                                 default=[])
-    datatype_group = parser.add_mutually_exclusive_group()
+    datatype_group = etlparser.add_mutually_exclusive_group()
     datatype_group.add_argument('-t', '--datatype', type=str, nargs='+',
                                 help='Data type code(s) to be imported; or '
                                      '"all" if all supported types are going '
@@ -130,27 +139,64 @@ def main():
                                      'This option and the "-t" option are '
                                      'mutually exclusive.',
                                 default=[])
+    
+    # Subcommand for making metadata
+    metaparser = subparsers.add_parser(
+            'metadata', 
+            help='Generate metadata for a Xena matrix',
+            epilog='Supported data types are: {}'.format(str(valid_dtype))
+        )
+    metaparser.add_argument('-p', '--project', type=str, required=True,
+                            help='The project of the matrix.')
+    metaparser.add_argument('-t', '--datatype', type=str, required=True,
+                            help='One data type code for the matrix.')
+    metaparser.add_argument('-m', '--matrix', type=str, required=True,
+                            help='Path to a Xena matrix')
+    metaparser.add_argument('-r', '--release', type=float, required=True,
+                            help='GDC data release number.')
+
     args = parser.parse_args()
-    root_dir = os.path.abspath(args.root)
-    projects = args.projects
-    if 'all' in [p.lower() for p in projects]:
-        projects = [str(x) for x in gdc.get_project_info().index]
-    for p in args.not_projects:
-        projects.remove(p)
-    xena_dtypes = args.datatype
-    if 'all' in [t.lower() for t in xena_dtypes]:
-        xena_dtypes = valid_dtype
-    for t in args.not_datatype:
-        xena_dtypes.remove(t)
-    print('#### GDC to Xena Importing Settings ####')
-    total_projects = len(projects)
-    print('Import the following {} projects:'.format(total_projects))
-    print(repr(projects), end='\n\n')
-    print('for the following {} types of data:'.format(len(xena_dtypes)))
-    print(str(xena_dtypes), end='\n\n')
-    print('into this directory: {}'.format(root_dir))
-    print('########################################', end='\n\n')
-    gdc2xena(root_dir, projects, xena_dtypes)
+    if args.subcomm == 'etl':
+        root_dir = os.path.abspath(args.root)
+        projects = args.projects
+        if 'all' in [p.lower() for p in projects]:
+            projects = [str(x) for x in gdc.get_project_info().index]
+        for p in args.not_projects:
+            projects.remove(p)
+        xena_dtypes = args.datatype
+        if 'all' in [t.lower() for t in xena_dtypes]:
+            xena_dtypes = valid_dtype
+        for t in args.not_datatype:
+            xena_dtypes.remove(t)
+        print('#### GDC to Xena Importing Settings ####')
+        total_projects = len(projects)
+        print('Import the following {} projects:'.format(total_projects))
+        print(repr(projects), end='\n\n')
+        print('for the following {} types of data:'.format(len(xena_dtypes)))
+        print(str(xena_dtypes), end='\n\n')
+        print('into this directory: {}'.format(root_dir))
+        print('########################################', end='\n\n')
+        gdc2xena(root_dir, projects, xena_dtypes)
+    elif args.subcomm == 'metadata':
+        root_dir = os.path.dirname(args.matrix)
+        if args.datatype == 'survival':
+            dataset = GDCSurvivalset(args.project, root_dir)
+        elif args.datatype == 'raw_phenotype':
+            if args.project.startswith('TCGA'):
+                dataset = GDCPhenoset(args.project, 'raw_phenotype',
+                                      root_dir)
+            if args.project.startswith('TARGET'):
+                dataset = GDCPhenoset(args.project, 'clinical', root_dir)
+        elif args.datatype == 'GDC_phenotype':
+            dataset = GDCPhenoset(args.project, 'GDC_phenotype', root_dir)
+        else:
+            dataset = GDCOmicset(args.project, args.datatype, root_dir)
+        dataset.matrix = args.matrix
+        dataset.gdc_release = (
+                'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-'
+                + str(args.release).replace('.', '')
+            )
+        dataset.metadata()
 
 
 if __name__ == '__main__':
