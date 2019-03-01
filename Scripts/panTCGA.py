@@ -33,12 +33,12 @@ import pandas as pd
 
 
 def main():
-    root_dir = r'/mnt/gdc/xena/files'
-    out_dir = r'/mnt/gdc/TCGA-PANCAN/Xena_Matrices'
+    root_dir = r'/mnt/gdc/updates'
+    out_dir = r'/mnt/gdc/updates/GDC-PANCAN/Xena_Matrices'
     datatypes = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna',
                  'masked_cnv', 'muse_snv', 'mutect2_snv', 'somaticsniper_snv',
                  'varscan2_snv', 'survival']
-    gdc_release = 'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-90'
+    gdc_release = 'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-100'
     
     # Map xena_dtype to corresponding metadata template.
     meta_templates = {'htseq_counts': 'template.rna.meta.json',
@@ -111,7 +111,7 @@ def main():
         # Merge matrices
         print('\rMerging {} "{}" matrices ...'.format(len(matrices), dtype))
         merged = pd.concat(matrices, axis=merge_axis)
-        outmatrix = os.path.join(out_dir, 'TCGA-PANCAN.{}.tsv'.format(dtype))
+        outmatrix = os.path.join(out_dir, 'GDC-PANCAN.{}.tsv'.format(dtype))
         print('Saving merged matrix to {} ...'.format(outmatrix), end='')
         sys.stdout.flush()
         merged.to_csv(outmatrix, sep='\t', encoding='utf-8')
@@ -128,12 +128,12 @@ def main():
             )
         metadata_template = jinja2_env.get_template(file_name)
         variables = {
-                'project_id': 'TCGA-PANCAN',
+                'project_id': 'GDC-PANCAN',
                 'date': time.strftime(
                         "%m-%d-%Y", time.gmtime(os.path.getmtime(outmatrix))
                     ),
                 'gdc_release': gdc_release,
-                'xena_cohort': 'GDC TCGA Pan-Cancer (PANCAN)'
+                'xena_cohort': 'GDC Pan-Cancer (PANCAN)'
             }
         try:
             variables.update(meta_vars[dtype])
