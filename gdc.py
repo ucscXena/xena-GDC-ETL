@@ -228,7 +228,6 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
         response = requests.post(url, data=payload)
     else:
         response = requests.get(url, params=payload)
-
     if response.status_code == 200:
         results = response.json()['data']['hits']
         if typ.lower() == 'json':
