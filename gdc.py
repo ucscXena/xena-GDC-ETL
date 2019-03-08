@@ -261,10 +261,10 @@ def get_ext(file_name):
     
     # https://github.com/broadinstitute/gdctools/blob/master/gdctools/lib/meta.py
     name_list = file_name.split('.')
-    for i in range(len(name_list)):
-        if name_list[i] in _SUPPORTED_FILE_TYPES:
-            break
-    return '.'.join(name_list[i:])
+        for name in name_list:
+        if name in _SUPPORTED_FILE_TYPES:
+            return name
+    return None  # todo here I have returned a None object, but for any default extension we can return as thus [return "pdf(or any defaults)"]
 
 
 def mkdir_p(dir_name):
