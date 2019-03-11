@@ -376,8 +376,7 @@ def get_project_info(projects=None):
     project_df = search('projects', in_filter=in_filter,
                         fields=['name', 'primary_site', 'project_id',
                                 'program.name'])
-    return project_df.set_index('id')
-
+    return project_df
 
 def get_samples_clinical(projects=None):
     """Get info for all samples of ``projects`` and clinical info for all
@@ -431,7 +430,11 @@ def main():
     print('A simple python module providing selected GDC API functionalities.')
     
     # Simple test
-    print(get_project_info(['TCGA-THCA']).head())
+    df = get_project_info(['TCGA-THCA'])
+    if(df.empty==False):
+        print(df.head())
+    else:
+        print("Empty dataframe!")
 
 
 if __name__ == '__main__':

@@ -134,7 +134,10 @@ def main():
     root_dir = os.path.abspath(args.root)
     projects = args.projects
     if 'all' in [p.lower() for p in projects]:
-        projects = [str(x) for x in gdc.get_project_info().index]
+        projects = [str(x) for x in gdc.get_project_info()]
+        for project in projects:
+            if(project.empty==False):
+                project = project.index        
     for p in args.not_projects:
         projects.remove(p)
     xena_dtypes = args.datatype
