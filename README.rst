@@ -33,6 +33,7 @@ Installation
 
 - ``git clone https://github.com/yunhailuo/xena-GDC-ETL.git``
 - Dependencies can be installed either before or after cloning this repository.
+  You can install them by running ``pip install -r requirements.txt``.
 - In general,
 
   - ``gdc.py`` contains functionalities related to GDC API, which requires no other modules in this package;
