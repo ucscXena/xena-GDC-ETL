@@ -18,7 +18,7 @@ import pandas as pd
 import requests
 
 GDC_API_BASE = 'https://api.gdc.cancer.gov'
-_SUPPORTED_FILE_TYPES = {'txt', 'vcf', 'bam', 'tsv', 'xml', 'maf', 'xlsx',
+_RECOGNIZED_FILE_TYPES = {'txt', 'vcf', 'bam', 'tsv', 'xml', 'maf', 'xlsx',
                          'tar', 'gz', 'md5', 'xls'}
 _SUPPORTED_DATASETS = [
         {'data_type': 'Copy Number Segment'},
@@ -260,11 +260,14 @@ def get_ext(file_name):
     """
     
     # https://github.com/broadinstitute/gdctools/blob/master/gdctools/lib/meta.py
-    name_list = file_name.split('.')
-    for i in range(len(name_list)):
-        if name_list[i] in _SUPPORTED_FILE_TYPES:
-            break
-    return '.'.join(name_list[i:])
+    return_list = []
+    ext_list = file_name[file_name.find(".") + 1:len(file_name)].split(".")
+    for ext in ext_list:
+        if ext in _RECOGNIZED_FILE_TYPES:
+            return_list.append(ext)
+    if len(return_list) > 0:
+        return ".".join(return_list)
+    return ext_list[-1]
 
 
 def mkdir_p(dir_name):
