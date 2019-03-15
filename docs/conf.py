@@ -47,4 +47,3 @@ exclude_patterns = ['_build', '.doctrees', 'API.rst']
 
 mod = __import__('sphinx.writers.text', None, None, ['setup'])
 mod.MAXWIDTH = 80
-

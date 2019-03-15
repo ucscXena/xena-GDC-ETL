@@ -1,0 +1,43 @@
+sudo: required
+language: python
+python:
+  - 3.7-dev
+  - 3.6
+  - 3.5
+  - 2.7
+notifications:
+  email: false
+stages:
+  - test
+  - lint
+
+.disable_global: &disable_global
+  before_install: false
+  install: true
+  before_script: false
+  after_success: false
+  after_failure: false
+
+.lint: &lint
+  <<: *disable_global
+  python: 3.6
+  stage: lint
+  install: pip install flake8
+  script: flake8
+
+
+jobs:
+  include:
+    - stage: lint
+    - *lint
+  allow_failures:
+    - *lint
+
+stage: test
+
+script: pytest
+
+before_install:
+  - if [[ $TRAVIS_PYTHON_VERSION == "2.6" ]]; then pip install flake8==2.6.2; fi
+  - pip install -r requirements.txt
+  - pip install pytest
