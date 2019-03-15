@@ -28,7 +28,6 @@ stages:
 
 jobs:
   include:
-    - stage: lint
     - *lint
   allow_failures:
     - *lint
