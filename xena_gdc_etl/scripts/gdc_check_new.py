@@ -19,7 +19,7 @@ import sys
 
 import pandas as pd
 
-import gdc
+from xena_gdc_etl import gdc
 
 def main():
     parser = argparse.ArgumentParser(
@@ -36,7 +36,7 @@ def main():
     args = parser.parse_args()
     new_uuids = pd.read_table(args.url)['New File UUID'].tolist()
     df_list = []
-    for uuids in (new_uuids[i:i + 20000] 
+    for uuids in (new_uuids[i:i + 20000]
                   for i in range(0, len(new_uuids), 20000)):
         df = gdc.search(
                 'files',

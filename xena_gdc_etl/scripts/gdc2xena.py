@@ -27,12 +27,13 @@ import logging
 import os
 import timeit
 
-import gdc
-from xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
+from xena_gdc_etl import gdc
+from xena_gdc_etl.xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
+
 
 def gdc2xena(root_dir, projects, xena_dtypes):
     """Start a pipeline for importing data from GDC to Xena.
-    
+
     Data will be imported on a dataset basis, which is defined by project
     and one specific data type. Data will be downloaded and transformed into
     the ``root_dir`` directory. Each project in projects will have its own
@@ -43,7 +44,7 @@ def gdc2xena(root_dir, projects, xena_dtypes):
     recorded in "etl.err" under ``root_dir`` and will not affect the importing
     of other datasets. Importing process, including the time consumption of
     the whole process, will be output to "stdout".
-    
+
     Args:
         root_dir (str): An existing directory for saving imported data and log
             of errors.
@@ -55,7 +56,7 @@ def gdc2xena(root_dir, projects, xena_dtypes):
             "methylation27", "methylation450".
     """
     start_time = timeit.default_timer()
-    
+
     counts = 0
     total_projects = len(projects)
     log_format = '%(asctime)-15s [%(levelname)s]: %(message)s'
@@ -87,7 +88,7 @@ def gdc2xena(root_dir, projects, xena_dtypes):
                 logger.warning(msg, exc_info=True)
                 print(msg)
     logging.shutdown()
-    
+
     end_time = timeit.default_timer()
     m, s = divmod(int(end_time - start_time), 60)
     h, m = divmod(m, 60)
@@ -96,7 +97,7 @@ def gdc2xena(root_dir, projects, xena_dtypes):
 
 def main():
     valid_dtype = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna',
-                   'masked_cnv', 'muse_snv', 'mutect2_snv', 
+                   'masked_cnv', 'muse_snv', 'mutect2_snv',
                    'somaticsniper_snv', 'varscan2_snv', 'raw_phenotype',
                    'GDC_phenotype', 'survival', 'methylation27',
                    'methylation450']
@@ -105,10 +106,10 @@ def main():
         )
     subparsers = parser.add_subparsers(title='Subcommands', dest='subcomm',
                                        metavar='')
-    
+
     # Subcommand for full ETL (download, transform, and metadata)
     etlparser = subparsers.add_parser(
-            'etl', 
+            'etl',
             help='Download and transform GDC data into Xena matrix, '
                  'and generate corresponding metadata.',
             epilog='Supported data types are: {}'.format(str(valid_dtype))
@@ -139,10 +140,10 @@ def main():
                                      'This option and the "-t" option are '
                                      'mutually exclusive.',
                                 default=[])
-    
+
     # Subcommand for making metadata
     metaparser = subparsers.add_parser(
-            'metadata', 
+            'metadata',
             help='Generate metadata for a Xena matrix',
             epilog='Supported data types are: {}'.format(str(valid_dtype))
         )
