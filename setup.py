@@ -27,7 +27,7 @@ setup(
     description='Scripts for importing GDC data into UCSC Xena.',
     install_requires=install_requires,
     setup_requires=['pytest-runner'],
-    tests_require=['pytest', 'flake8'],
+    tests_require=['pytest', 'pytest-cov', 'flake8'],
     long_description=long_description,
     long_description_content_type='text/x-rst',
     name='xena_gdc_etl',
