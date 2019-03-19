@@ -3,6 +3,9 @@
 gitignore/
 .doctrees/
 
+# Generated from coverage
+.coverage
+
 # Compiled source #
 ###################
 *.com

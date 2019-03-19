@@ -1,6 +1,9 @@
 xena-GDC-ETL
 ============
 
+.. image:: https://travis-ci.com/yunhailuo/xena-GDC-ETL.svg?branch=master
+    :target: https://travis-ci.com/yunhailuo/xena-GDC-ETL
+
 Extract, transform and load `GDC data <https://portal.gdc.cancer.gov/>`__ onto `UCSC Xena <https://xenabrowser.net/>`__.
 
 **Table of Contents**
