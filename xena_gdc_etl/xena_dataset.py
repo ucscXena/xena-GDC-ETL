@@ -1115,8 +1115,14 @@ class GDCPhenoset(XenaDataset):
 
     # Map Xena dtype code to GDC data query dict
     _XENA_GDC_DTYPE = {
-            'biospecimen': {'data_category': 'Biospecimen'},
-            'clinical': {'data_category': 'Clinical'},
+            'biospecimen': {
+                'data_category': 'Biospecimen',
+                'data_format': 'BCR XML'
+            },
+            'clinical': {
+                'data_category': 'Clinical',
+                'data_format': 'BCR XML'
+            },
             'raw_phenotype': {'data_category': ['Biospecimen', 'Clinical']},
             'GDC_phenotype': {'data_category': ['Biospecimen', 'Clinical']}
         }
@@ -1329,10 +1335,12 @@ class GDCPhenoset(XenaDataset):
         self.root_dir = root_dir
         if matrix_dir is not None:
             self.matrix_dir = matrix_dir
-        self.metadata_template = str(
-                os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             'Resources', 'template.phenotype.meta.json')
+        jinja2_env = jinja2.Environment(
+                loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
             )
+        self.metadata_template = jinja2_env.get_template(
+            'template.phenotype.meta.json'
+        )
 
     def transform(self):
         """Transform raw phenotype data into Xena matrix.
@@ -1563,10 +1571,12 @@ class GDCSurvivalset(XenaDataset):
         super(GDCSurvivalset, self).__init__(projects, 'survival', root_dir,
                                              raw_data_dir, matrix_dir)
 
-        self.metadata_template = str(
-                os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             'Resources', 'template.survival.meta.json')
+        jinja2_env = jinja2.Environment(
+                loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
             )
+        self.metadata_template = jinja2_env.get_template(
+            'template.survival.meta.json'
+        )
 
     def download(self):
         """Retrieve GDC API's survival data for project(s) in this dataset.
