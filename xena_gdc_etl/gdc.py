@@ -348,7 +348,9 @@ def download(uuids, download_dir='.', chunk_size=4096):
                     sys.stdout.flush()
             download_list.append(path)
         else:
-            print('\rFail to download file {}.'.format(uuid))
+            print('\rFailed to download file {filename}.'
+                  'Error code: {errcode}'.format(filename=uuid,
+                                                 errcode=response.status_code))
     print('')
     return download_list
 

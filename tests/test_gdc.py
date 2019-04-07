@@ -69,6 +69,11 @@ def test_download():
     os.unlink(file_path)
 
 
+def test_download_error():
+    uuid = "something-invalid-0101"
+    gdc.download(uuid)
+
+
 def test_get_project_info():
     project_name = "TCGA-THCA"
     assert 'TCGA-BRCA' in gdc.get_project_info().index
@@ -88,3 +93,6 @@ def test_get_samples_clinical():
     project_id = "TCGA-OV"
     actual = gdc.get_samples_clinical(project_id)
     assert actual['case_id'][0] == "71faa2c1-0d5b-4dcc-bdf9-f2405f29907c"
+
+
+test_download_error()
