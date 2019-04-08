@@ -29,6 +29,9 @@ import pandas as pd
 import requests
 
 import gdc
+from xena_gdc_etl.utils import mkdir_p
+from constants import METADATA_TEMPLATE, METADATA_VARIABLES
+
 
 # Map GDC project_id to Xena specific cohort name.
 GDC_XENA_COHORT = {
@@ -66,25 +69,6 @@ GDC_XENA_COHORT = {
         'TCGA-CHOL': 'GDC TCGA Bile Duct Cancer (CHOL)',
         'TCGA-DLBC': 'GDC TCGA Large B-cell Lymphoma (DLBC)'
     }
-
-
-def mkdir_p(dir_name):
-    """Make the directory as needed: no error if existing.
-
-    Args:
-        dir_name (str): Directory name or path.
-
-    Returns:
-        str: The absolute path for the directory.
-    """
-
-    dir_path = os.path.abspath(dir_name)
-    try:
-        os.makedirs(dir_path)
-    except OSError:
-        if not os.path.isdir(dir_path):
-            raise
-    return dir_path
 
 
 def read_by_ext(filename, mode='r'):
@@ -896,46 +880,7 @@ class GDCOmicset(XenaDataset):
             ['methylation27', 'methylation450'],
             functools.partial(merge_sample_cols, header=0, log2TF=False,
                               index_name='Composite Element REF')
-        ))
-
-    # Map xena_dtype to corresponding metadata template.
-    _METADATA_TEMPLATE = {'htseq_counts': 'template.rna.meta.json',
-                          'htseq_fpkm': 'template.rna.meta.json',
-                          'htseq_fpkm-uq': 'template.rna.meta.json',
-                          'mirna': 'template.mirna.meta.json',
-                          'mirna_isoform': 'template.mirna_isoform.meta.json',
-                          'cnv': 'template.cnv.meta.json',
-                          'masked_cnv': 'template.cnv.meta.json',
-                          'muse_snv': 'template.snv.meta.json',
-                          'mutect2_snv': 'template.snv.meta.json',
-                          'somaticsniper_snv': 'template.snv.meta.json',
-                          'varscan2_snv': 'template.snv.meta.json',
-                          'methylation27': 'template.methylation.meta.json',
-                          'methylation450': 'template.methylation.meta.json'}
-    # Jinja2 template variables for corresponding "xena_dtype".
-    _METADATA_VARIABLES = {
-            'htseq_counts': {'gdc_type': 'HTSeq - Counts'},
-            'htseq_fpkm': {'gdc_type': 'HTSeq - FPKM',
-                           'unit': 'fpkm'},
-            'htseq_fpkm-uq': {'gdc_type': 'HTSeq - FPKM-UQ',
-                              'unit': 'fpkm-uq'},
-            'mirna': {'gdc_type': 'miRNA Expression Quantification'},
-            'mirna_isoform': {'gdc_type': 'Isoform Expression Quantification'},
-            'cnv': {'gdc_type': 'Copy Number Segment'},
-            'masked_cnv': {'gdc_type': 'Masked Copy Number Segment'},
-            'muse_snv': {'gdc_type': 'MuSE Variant Aggregation and Masking'},
-            'mutect2_snv': {
-                    'gdc_type': 'MuTect2 Variant Aggregation and Masking'
-                },
-            'somaticsniper_snv': {
-                    'gdc_type': 'SomaticSniper Variant Aggregation and Masking'
-                },
-            'varscan2_snv': {
-                    'gdc_type': 'VarScan2 Variant Aggregation and Masking'
-                },
-            'methylation27': {'platform_num': '27'},
-            'methylation450': {'platform_num': '450'}
-        }
+        ))   
 
     @property
     def xena_dtype(self):
@@ -1057,7 +1002,7 @@ class GDCOmicset(XenaDataset):
                               jinja2.environment.Template)
             return self.__metadata_template
         except (AttributeError, AssertionError):
-            template_json = self._METADATA_TEMPLATE[self.xena_dtype]
+            template_json = self.METADATA_TEMPLATE[self.xena_dtype]
             jinja2_env = jinja2.Environment(
                     loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
                 )
@@ -1083,7 +1028,7 @@ class GDCOmicset(XenaDataset):
             else:
                 variables['xena_cohort'] = 'GDC ' + projects
             try:
-                variables.update(self._METADATA_VARIABLES[self.xena_dtype])
+                variables.update(self.METADATA_VARIABLES[self.xena_dtype])
             except KeyError:
                 pass
             # Data type specific jinja2 Variables
