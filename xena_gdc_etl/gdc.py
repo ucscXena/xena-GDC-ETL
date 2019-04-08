@@ -17,6 +17,8 @@ import warnings
 import pandas as pd
 import requests
 
+from xena_gdc_etl.utils import mkdir_p
+
 GDC_API_BASE = 'https://api.gdc.cancer.gov'
 _SUPPORTED_FILE_TYPES = {'txt', 'vcf', 'bam', 'tsv', 'xml', 'maf', 'xlsx',
                          'tar', 'gz', 'md5', 'xls'}
@@ -265,25 +267,6 @@ def get_ext(file_name):
         if name_list[i] in _SUPPORTED_FILE_TYPES:
             break
     return '.'.join(name_list[i:])
-
-
-def mkdir_p(dir_name):
-    """Make the directory as needed: no error if existing.
-
-    Args:
-        dir_name (str): Directory name or path.
-
-    Returns:
-        str: The absolute path for the directory.
-    """
-
-    dir_path = os.path.abspath(dir_name)
-    try:
-        os.makedirs(dir_path)
-    except OSError:
-        if not os.path.isdir(dir_path):
-            raise
-    return dir_path
 
 
 def download(uuids, download_dir='.', chunk_size=4096):
