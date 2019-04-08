@@ -1,5 +1,6 @@
-import json
 import os
+
+import pytest
 
 from xena_gdc_etl import gdc
 from tests.utils import compare_dict
@@ -30,9 +31,8 @@ def test_reduce_json_array():
         'c': [10]
     }]
     input_2 = [{'a': 'b'}]
-    actual_1 = json.dumps(gdc.reduce_json_array(input_1), sort_keys=True)
-    expected_1 = json.dumps({"a": "hello", "b": [1, 2, 3], "c": 10},
-                            sort_keys=True)
+    actual_1 = gdc.reduce_json_array(input_1)
+    expected_1 = {"a": "hello", "b": [1, 2, 3], "c": 10}
     assert actual_1 == expected_1
     actual_2 = gdc.reduce_json_array(input_2)
     expected_2 = {'a': 'b'}
@@ -54,13 +54,7 @@ def test_get_ext():
     assert actual_3 == expected_3
 
 
-def test_mkdir_p():
-    input_ = "tests/tmp_dir"
-    gdc.mkdir_p(input_)
-    assert os.path.isdir(input_) is True
-    os.rmdir(input_)
-
-
+@pytest.mark.CI
 def test_download():
     uuid = "53a637ce-8aaf-4cec-b02d-89202bbb0890"
     gdc.download(uuid, download_dir="./tests")
@@ -69,6 +63,7 @@ def test_download():
     os.unlink(file_path)
 
 
+@pytest.mark.CI
 def test_get_project_info():
     project_name = "TCGA-THCA"
     assert 'TCGA-BRCA' in gdc.get_project_info().index
@@ -84,7 +79,21 @@ def test_get_project_info():
     actual.equals(expected)
 
 
+@pytest.mark.CI
 def test_get_samples_clinical():
     project_id = "TCGA-OV"
     actual = gdc.get_samples_clinical(project_id)
-    assert actual['case_id'][0] == "71faa2c1-0d5b-4dcc-bdf9-f2405f29907c"
+    assert "2038fd65-d8f1-4b16-af90-b1c8f9a379a7" == actual['case_id'][0]
+
+
+@pytest.mark.CI
+def test_search():
+    endpoint = "cases"
+    in_filter = {"project.project_id": "TARGET-CCSK"}
+    fields = ["submitter_id"]
+    actual = gdc.search(endpoint=endpoint, in_filter=in_filter, fields=fields)
+    expected = {
+        "id": "d1a15919-f5e2-5e60-aed9-cb52a8b4a7a1",
+        "target": "TARGET-51-PAKWMM"
+    }
+    actual.equals(expected)
