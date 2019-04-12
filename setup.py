@@ -34,6 +34,11 @@ setup(
     packages=find_packages(),
     package_data={'': ['resources/*']},
     scripts=scripts,
+    entry_points={
+        'console_scripts': [
+            'xge = xena_gdc_etl.main:main'
+        ],
+    },
     license='Apache License 2.0',
     keywords='Xena Genomic Data Commons GDC',
     url='https://github.com/yunhailuo/xena-GDC-ETL',
