@@ -28,11 +28,11 @@ def create_parser():
         help="Test the equality of 2 Xena matrices."
     )
     equality_parser.add_argument(
-        'df1', type=str,
+        "df1", type=str,
         help='Directory for the first matrix.'
     )
     equality_parser.add_argument(
-        'df2', type=str,
+        "df2", type=str,
         help='Directory for the second matrix.'
     )
     return parser
