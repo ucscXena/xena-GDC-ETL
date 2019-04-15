@@ -34,7 +34,9 @@ jobs:
 
 stage: test
 
-script: pytest --cov=xena_gdc_etl
+script:
+  - pytest --cov=xena_gdc_etl
+  - pip install .
 
 before_install:
   - if [[ $TRAVIS_PYTHON_VERSION == "2.6" ]]; then pip install flake8==2.6.2; fi
