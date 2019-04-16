@@ -213,7 +213,7 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
     elif method.upper() == 'GET':
         response = requests.get(url, params=payload)
     else:
-        raise ValueError('Invalide method: {}\n method must be either "GET" '
+        raise ValueError('Invalid method: {}\n method must be either "GET" '
                          'or "POST".'.format(method))
     try:
         payload['size'] = response.json()['data']['pagination']['total']

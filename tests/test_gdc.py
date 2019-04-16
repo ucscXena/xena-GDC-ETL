@@ -97,3 +97,8 @@ def test_search():
         "target": "TARGET-51-PAKWMM"
     }
     actual.equals(expected)
+    with pytest.raises(ValueError) as exception_info:
+        gdc.search(endpoint=endpoint, in_filter=in_filter, fields=fields,
+                   method="PUT")
+    error_str = 'Invalid method: PUT\n method must be either "GET" or "POST".'
+    assert exception_info.value.args[0] == error_str
