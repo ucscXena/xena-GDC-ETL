@@ -1,3 +1,4 @@
+import json
 import os
 from mock import patch, call
 try:
@@ -30,3 +31,14 @@ def test_equal_matrices(mocked_print):
             "tests/fixtures/df3.csv"
         )
         assert mocked_print.getvalue() == "Not equal.\nEqual.\n"
+
+
+def test_metadata():
+    path_to_df = "tests/fixtures/HTSeq-FPKM-UQ.csv"
+    utils.metadata(path_to_df, "htseq_fpkm-uq")
+    with open("tests/fixtures/HTSeq-FPKM-UQ.csv.json", "r") as actual:
+        actual = json.load(actual)
+    os.unlink("tests/fixtures/HTSeq-FPKM-UQ.csv.json")
+    with open("tests/fixtures/HTSeq-FPKM-UQ.json", "r") as expected:
+        expected = json.load(expected)
+    assert actual == expected

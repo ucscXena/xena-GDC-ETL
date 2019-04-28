@@ -17,7 +17,7 @@ import warnings
 import pandas as pd
 import requests
 
-from xena_gdc_etl.utils import mkdir_p
+from .utils import mkdir_p
 
 GDC_API_BASE = 'https://api.gdc.cancer.gov'
 _SUPPORTED_FILE_TYPES = {'txt', 'vcf', 'bam', 'tsv', 'xml', 'maf', 'xlsx',
