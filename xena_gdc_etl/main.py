@@ -56,7 +56,9 @@ def create_parser():
     make_metadata_parser.add_argument(
         '-t', '--datatype', type=str, required=True,
         help='One data type code indication the data type in matrices to be '
-        'merged. Supported data type codes include: {}'.format(str(valid_dtype))
+        'merged. Supported data type codes include: {}'.format(
+            str(valid_dtype)
+        )
     )
     # gdc_check_new subparser
     gdc_check_new_parser = subparsers.add_parser(
@@ -69,6 +71,6 @@ def create_parser():
         'url', type=str, metavar='URL',
         help='URL for GDC\'s list of updated files. It can be a compressed '
              'file with a supported extension, which includes ".gz", ".bz2", '
-             '".zip", or "xz". New files should be listed under a column named '
-             'by "New File UUID".')
+             '".zip", or "xz". New files should be listed under a column named'
+             ' by "New File UUID".')
     return parser
