@@ -40,3 +40,9 @@ METADATA_VARIABLES = {
     'methylation27': {'platform_num': '27'},
     'methylation450': {'platform_num': '450'}
 }
+valid_dtype = [
+    'htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna',
+    'masked_cnv', 'muse_snv', 'mutect2_snv',
+    'somaticsniper_snv', 'varscan2_snv', 'GDC_phenotype',
+    'survival', 'methylation27', 'methylation450'
+]
