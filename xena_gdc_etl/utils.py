@@ -1,8 +1,14 @@
 from __future__ import print_function
 import os
+import argparse
+import sys
+import time
 
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
+import jinja2
+
+from .constants import METADATA_TEMPLATE, METADATA_VARIABLES
 
 
 def mkdir_p(dir_name):
@@ -39,3 +45,41 @@ def equal_matrices(df1, df2):
         print('Equal.')
     except:  # appeantly AssertionError doesn't catch all
         print('Not equal.')
+
+
+def metadata(matrix, xena_dtypes):
+    """Generating Xena metadata for a Xena matrix.
+
+    Args:
+        matrix (str): The path, including the filename, of the Xena matrix.
+        xena_dtypes (str): One data type code indication the data type in
+            matrices to be merged. Supported data type codes include (without
+            quotation marks): "htseq_counts", "htseq_fpkm", "htseq_fpkm-uq",
+            "mirna", "masked_cnv", "muse_snv", "mutect2_snv",
+            "somaticsniper_snv", "varscan2_snv", "GDC_phenotype", "survival",
+            "methylation27".
+    """
+
+    # Generate metadata.
+    print('Creating metadata file ...', end='')
+    sys.stdout.flush()
+    jinja2_env = jinja2.Environment(
+            loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
+        )
+    metadata_template = jinja2_env.get_template(METADATA_TEMPLATE[xena_dtypes])
+    matrix_date = time.strftime("%m-%d-%Y",
+                                time.gmtime(os.path.getmtime(matrix)))
+    variables = {
+            'project_id': 'GDC-PANCAN',
+            'date': matrix_date,
+            'gdc_release': 'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-90', # noqa
+            'xena_cohort': 'GDC Pan-Cancer (PANCAN)'
+        }
+    try:
+        variables.update(METADATA_VARIABLES[xena_dtypes])
+    except KeyError:
+        pass
+    outmetadata = matrix + '.json'
+    with open(outmetadata, 'w') as f:
+        f.write(metadata_template.render(**variables))
+    print('\rMetadata JSON is saved at {}.'.format(outmetadata))
