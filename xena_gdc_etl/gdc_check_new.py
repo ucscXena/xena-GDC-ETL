@@ -9,7 +9,7 @@ def gdc_check_new(url):
     """
     This function provides a command line tool for checking GDC's list of
     updated files and summarize impacted project(s), data_type(s) and
-    analysis.workflow_type(s). 
+    analysis.workflow_type(s).
     """
     new_uuids = pd.read_table(url)['New File UUID'].tolist()
     df_list = []
