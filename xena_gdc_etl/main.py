@@ -1,7 +1,6 @@
 from __future__ import print_function
 import argparse
 from datetime import date
-import os
 
 from .utils import equal_matrices, metadata, handle_merge_xena
 from .gdc_check_new import gdc_check_new
