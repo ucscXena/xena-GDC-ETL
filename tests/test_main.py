@@ -22,3 +22,14 @@ class ParserTest(unittest.TestCase):
         parsed = self.parser.parse_args(["gdc_check_new",
                                         "https://example.com/data.gz"])
         assert parsed.url == "https://example.com/data.gz"
+
+    def test_merge_xena(self):
+        parsed = self.parser.parse_args(["merge-xena", "-f", "path/to/matrix1",
+                                         "path/to/matrix2", "-t", "datatype",
+                                         "-o", "path/to/dir", "-n", "new_name",
+                                         "-c", "cohort_name"])
+        assert parsed.files == ["path/to/matrix1", "path/to/matrix2"]
+        assert parsed.datatype == "datatype"
+        assert parsed.outdir == "path/to/dir"
+        assert parsed.name == "new_name"
+        assert parsed.cohort == "cohort_name"
