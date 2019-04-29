@@ -35,10 +35,10 @@ def equal_matrices(df1, df2):
     Args:
         xena matrices df1 and df2 whose equality is to be checked
     """
-    df1 = pd.read_table(df1, header=0,
-                        index_col=0).sort_index(axis=0).sort_index(axis=1)
-    df2 = pd.read_table(df2, header=0,
-                        index_col=0).sort_index(axis=0).sort_index(axis=1)
+    df1 = pd.read_csv(df1, sep='\t', header=0,
+                      index_col=0).sort_index(axis=0).sort_index(axis=1)
+    df2 = pd.read_csv(df2, sep='\t', header=0,
+                      index_col=0).sort_index(axis=0).sort_index(axis=1)
     try:
         assert_frame_equal(df1, df2)
         print('Equal.')
