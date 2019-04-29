@@ -7,6 +7,8 @@ try:
 except ImportError:
     from io import StringIO
 
+import pandas as pd
+
 from xena_gdc_etl import utils
 
 
@@ -44,3 +46,19 @@ def test_metadata():
     with open("tests/fixtures/HTSeq-FPKM-UQ.json", "r") as expected:
         expected = json.load(expected)
     assert actual == expected
+
+
+def test_merge_xena():
+    path = "tests/fixtures/"
+    name = "merged_GDC_TARGET-CCSK.tsv"
+    filelists = [path + "merge-xena1.csv", path + "merge-xena2.csv"]
+    cohort = "GDC TARGET-CCSK"
+    datatype = "GDC_phenotype"
+    outdir = path
+    utils.handle_merge_xena(name, filelists, cohort, datatype, outdir)
+    with open(path + "MergedCohort04292019.GDC_phenotype.tsv", "r") as actual:
+        actual = pd.read_csv(actual)
+    with open(path + name, "r") as expected:
+        expected = pd.read_csv(expected)
+    os.unlink(path + name)
+    actual.equals(expected)

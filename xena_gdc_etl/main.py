@@ -1,6 +1,9 @@
+from __future__ import print_function
 import argparse
+from datetime import date
+import os
 
-from .utils import equal_matrices, metadata
+from .utils import equal_matrices, metadata, handle_merge_xena
 from .gdc_check_new import gdc_check_new
 from .constants import valid_dtype
 
@@ -20,6 +23,10 @@ def main():
     # handle gdc_check_new
     elif "url" in options:
         gdc_check_new(options["url"])
+    # handle merge_xena
+    elif "files" in options and "datatype" in options:
+        handle_merge_xena(options["name"], options["files"], options["cohort"],
+                          options["datatype"], options["outdir"])
 
 
 def create_parser():
@@ -73,4 +80,41 @@ def create_parser():
              'file with a supported extension, which includes ".gz", ".bz2", '
              '".zip", or "xz". New files should be listed under a column named'
              ' by "New File UUID".')
+    # merge-xena subparser
+    merge_xena_subparser = subparsers.add_parser(
+        "merge-xena",
+        description="Pipeline for merging Xena matrices of the same data type."
+    )
+    merge_xena_subparser.add_argument(
+        '-f', '--files', type=str, nargs='+', required=True,
+        help='A list of paths for Xena matrices files to be merged. All paths '
+             'in this list support UNIX style pathname pattern expansion with '
+             '"glob". Files will be read by pandas.read_table.'
+    )
+    merge_xena_subparser.add_argument(
+        '-t', '--datatype', type=str, required=True,
+        help='One data type code indication the data type in matrices to be '
+        'merged. Supported data type codes include: {}'.format(
+            str(valid_dtype)
+        )
+    )
+    merge_xena_subparser.add_argument(
+        '-o', '--outdir', type=str, default='.',
+        help='A directory to put the merged matrix. Defaults to the current '
+        'working directory of python.'
+    )
+    merge_xena_subparser.add_argument(
+        '-n', '--name', type=str, default=None,
+        help='Filename for the merged matrix. Defaults to None. If None, the '
+        'filename will be derived from the cohort name and the data type. '
+        'Check "-t" and "-c" options for details.'
+    )
+    merge_xena_subparser.add_argument(
+        '-c', '--cohort', type=str, default=None,
+        help='A cohort name for the merged matrix. Defaults to None. If '
+        'None, it will be set to a format of "MergedCohort<date>" by default. '
+        'For example, "MergedCohort{}".'.format(
+            date.today().strftime('%m%d%Y')
+        )
+    )
     return parser

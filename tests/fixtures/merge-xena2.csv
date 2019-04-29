@@ -1,0 +1,4 @@
+	Age at Diagnosis in days	Comment	Ethnicity	Event Free Survival Time in Days	First Event	Gender	Histologic Classificaiton of Primary Tumor	ICD-O-3-M	ICD-O-3-T	Overall Survival Time in Days
+TARGET-51-PAJLWU-11A	569	NaN	Not Hispanic or Latino	4440	None	Male	CCSK	8964/3	C649	5751
+TARGET-51-PAJLWU-10A	569	NaN	Not Hispanic or Latino	4440	None	Male	CCSK	8964/3	C649	5751
+TARGET-51-PAEALX-01A	244	NaN	Not Hispanic or Latino	3058	None	Male	CCSK	8964/3	C649	3058
