@@ -1,6 +1,7 @@
 import json
 import os
-from mock import patch
+from mock import Mock, patch
+import time
 try:
     from StringIO import StringIO
 except ImportError:
@@ -30,7 +31,11 @@ def test_equal_matrices(mocked_print):
     assert mocked_print.getvalue() == "Not equal.\nEqual.\n"
 
 
+@patch.object(utils, 'time', Mock(wraps=time))
 def test_metadata():
+    utils.time.gmtime.return_value = time.struct_time(
+        (2019, 4, 28, 0, 0, 0, 0, 0, 0)
+    )
     path_to_df = "tests/fixtures/HTSeq-FPKM-UQ.csv"
     utils.metadata(path_to_df, "htseq_fpkm-uq")
     with open("tests/fixtures/HTSeq-FPKM-UQ.csv.json", "r") as actual:
