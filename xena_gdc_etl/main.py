@@ -68,7 +68,7 @@ def create_parser():
     )
     # gdc_check_new subparser
     gdc_check_new_parser = subparsers.add_parser(
-        "gdc_check_new",
+        "gdc-check-new",
         description="Check GDC's list of updated files and summarize "
                     "impacted project(s), data_type(s) and "
                     "analysis.workflow_type(s)."
