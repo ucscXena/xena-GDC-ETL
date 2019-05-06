@@ -28,9 +28,9 @@ import numpy as np
 import pandas as pd
 import requests
 
-import gdc
-from xena_gdc_etl.utils import mkdir_p
-from constants import METADATA_TEMPLATE, METADATA_VARIABLES
+from xena_gdc_etl import gdc
+from .utils import mkdir_p
+from .constants import METADATA_TEMPLATE, METADATA_VARIABLES
 
 
 # Map GDC project_id to Xena specific cohort name.
@@ -1002,7 +1002,7 @@ class GDCOmicset(XenaDataset):
                               jinja2.environment.Template)
             return self.__metadata_template
         except (AttributeError, AssertionError):
-            template_json = self.METADATA_TEMPLATE[self.xena_dtype]
+            template_json = METADATA_TEMPLATE[self.xena_dtype]
             jinja2_env = jinja2.Environment(
                     loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
                 )
@@ -1028,7 +1028,7 @@ class GDCOmicset(XenaDataset):
             else:
                 variables['xena_cohort'] = 'GDC ' + projects
             try:
-                variables.update(self.METADATA_VARIABLES[self.xena_dtype])
+                variables.update(METADATA_VARIABLES[self.xena_dtype])
             except KeyError:
                 pass
             # Data type specific jinja2 Variables

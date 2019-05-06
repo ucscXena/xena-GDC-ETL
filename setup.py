@@ -36,7 +36,8 @@ setup(
     scripts=scripts,
     entry_points={
         'console_scripts': [
-            'xge = xena_gdc_etl.main:main'
+            'xge = xena_gdc_etl.main:main',
+            'gdc2xena = xena_gdc_etl.gdc2xena:main',
         ],
     },
     license='Apache License 2.0',

@@ -12,20 +12,20 @@ def main():
     Program entry point
     """
     parser = create_parser()
-    options = vars(parser.parse_args())
+    options = parser.parse_args()
     # handle check xena equality matrices
-    if 'df1' in options and 'df2' in options:
-        equal_matrices(options['df1'], options['df2'])
+    if options.subcomm == "xena-eql":
+        equal_matrices(options.df1, options.df2)
     # handle make metadata
-    elif "matrix" in options and "datatype" in options:
-        metadata(options["matrix"], options["datatype"])
+    elif options.subcomm == "make-metadata":
+        metadata(options.matrix, options.datatype)
     # handle gdc_check_new
-    elif "url" in options:
-        gdc_check_new(options["url"])
+    elif options.subcomm == "gdc-check-new":
+        gdc_check_new(options.url)
     # handle merge_xena
-    elif "files" in options and "datatype" in options:
-        handle_merge_xena(options["name"], options["files"], options["cohort"],
-                          options["datatype"], options["outdir"])
+    elif options.subcomm == "merge-xena":
+        handle_merge_xena(options.name, options.files, options.cohort,
+                          options.datatype, options.outdir)
 
 
 def create_parser():
