@@ -10,7 +10,7 @@ class ParserTest(unittest.TestCase):
     def test_etl(self):
         parsed = self.parser.parse_args([
             "etl",
-            "-r", 
+            "-r",
             "path/to/dir",
             "-p",
             "project_name",
@@ -24,7 +24,7 @@ class ParserTest(unittest.TestCase):
         # for mutually exclusive groups
         parsed = self.parser.parse_args([
             "etl",
-            "-r", 
+            "-r",
             "path/to/dir",
             "-P",
             "not_this_project_name",
