@@ -27,8 +27,9 @@ import logging
 import os
 import timeit
 
-from xena_gdc_etl import gdc
-from xena_gdc_etl.xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
+import xena_gdc_etl.gdc as gdc
+from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
+from .constants import valid_dtype
 
 
 def gdc2xena(root_dir, projects, xena_dtypes):
@@ -56,7 +57,6 @@ def gdc2xena(root_dir, projects, xena_dtypes):
             "methylation27", "methylation450".
     """
     start_time = timeit.default_timer()
-
     counts = 0
     total_projects = len(projects)
     log_format = '%(asctime)-15s [%(levelname)s]: %(message)s'
@@ -88,25 +88,18 @@ def gdc2xena(root_dir, projects, xena_dtypes):
                 logger.warning(msg, exc_info=True)
                 print(msg)
     logging.shutdown()
-
     end_time = timeit.default_timer()
     m, s = divmod(int(end_time - start_time), 60)
     h, m = divmod(m, 60)
     print('Finish in {:d}:{:02d}:{:02d}.'.format(h, m, s))
 
 
-def main():
-    valid_dtype = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna',
-                   'masked_cnv', 'muse_snv', 'mutect2_snv',
-                   'somaticsniper_snv', 'varscan2_snv', 'raw_phenotype',
-                   'GDC_phenotype', 'survival', 'methylation27',
-                   'methylation450']
+def create_parser():
     parser = argparse.ArgumentParser(
             description='Pipeline for importing data from GDC to Xena.'
         )
     subparsers = parser.add_subparsers(title='Subcommands', dest='subcomm',
                                        metavar='')
-
     # Subcommand for full ETL (download, transform, and metadata)
     etlparser = subparsers.add_parser(
             'etl',
@@ -155,7 +148,14 @@ def main():
                             help='Path to a Xena matrix')
     metaparser.add_argument('-r', '--release', type=float, required=True,
                             help='GDC data release number.')
+    return parser
 
+
+def main():
+    """
+    Program entry point for gdc2xena
+    """
+    parser = create_parser()
     args = parser.parse_args()
     if args.subcomm == 'etl':
         root_dir = os.path.abspath(args.root)
@@ -194,11 +194,7 @@ def main():
             dataset = GDCOmicset(args.project, args.datatype, root_dir)
         dataset.matrix = args.matrix
         dataset.gdc_release = (
-                'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-'
-                + str(args.release).replace('.', '')
+                'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-' +  # noqa
+                str(args.release).replace('.', '')
             )
         dataset.metadata()
-
-
-if __name__ == '__main__':
-    main()

@@ -1,0 +1,6 @@
+analysis.workflow_type  cases   cases.project.project_id        data_type
+HTSeq - Counts          TARGET-NBL      Gene Expression Quantification
+HTSeq - FPKM-UQ         TARGET-NBL      Gene Expression Quantification
+HTSeq - Counts          TARGET-NBL      Gene Expression Quantification
+HTSeq - FPKM            TARGET-NBL      Gene Expression Quantification
+HTSeq - FPKM-UQ         TARGET-NBL      Gene Expression Quantification

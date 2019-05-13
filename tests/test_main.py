@@ -19,7 +19,7 @@ class ParserTest(unittest.TestCase):
         assert parsed.datatype == "datatype"
 
     def test_gdc_check_new(self):
-        parsed = self.parser.parse_args(["gdc_check_new",
+        parsed = self.parser.parse_args(["gdc-check-new",
                                         "https://example.com/data.gz"])
         assert parsed.url == "https://example.com/data.gz"
 
