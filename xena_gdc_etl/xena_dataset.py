@@ -638,7 +638,7 @@ class XenaDataset(object):
                 to_download[item[0]] = item[1]
         else:
             to_download = self.download_map
-        total = len(self.download_map)
+        total = len(to_download)
         count = 0
         download_list = []
         for url, path in to_download.items():
