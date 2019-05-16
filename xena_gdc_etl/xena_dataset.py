@@ -612,7 +612,7 @@ class XenaDataset(object):
         if matrix_dir is not None:
             self.matrix_dir = matrix_dir
 
-    def download(self, chunk_size=4096):
+    def download(self, chunk_size=4096, no_of_files=None):
         """Download file(s) according to the ``download_map`` property.
 
         A list of paths for downloaded files will be assigned to the
@@ -630,10 +630,18 @@ class XenaDataset(object):
         """
 
         print('Starts to download...', end='')
+        if no_of_files:
+            print("Downloading only {} files ...".format(no_of_files))
+            items = list(self.download_map.items())[:no_of_files]
+            to_download = {}
+            for item in items:
+                to_download[item[0]] = item[1]
+        else:
+            to_download = self.download_map
         total = len(self.download_map)
         count = 0
         download_list = []
-        for url, path in self.download_map.items():
+        for url, path in to_download.items():
             count += 1
             response = requests.get(url, stream=True)
             if response.status_code == 200:
