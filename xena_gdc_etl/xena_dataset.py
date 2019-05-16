@@ -1331,7 +1331,7 @@ class GDCPhenoset(XenaDataset):
             self.matrix_dir = matrix_dir
         self.metadata_template = str(
                 os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             'Resources', 'template.phenotype.meta.json')
+                             'resources', 'template.phenotype.meta.json')
             )
 
     def transform(self):
@@ -1565,7 +1565,7 @@ class GDCSurvivalset(XenaDataset):
 
         self.metadata_template = str(
                 os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             'Resources', 'template.survival.meta.json')
+                             'resources', 'template.survival.meta.json')
             )
 
     def download(self):
