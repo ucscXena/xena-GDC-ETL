@@ -7,7 +7,7 @@ from xena_gdc_etl import xena_dataset
 
 
 @pytest.mark.CI
-def test_download(capfd):
+def test_download():
     dataset = xena_dataset.GDCOmicset(
         projects="TCGA-BRCA",
         root_dir=r".",
