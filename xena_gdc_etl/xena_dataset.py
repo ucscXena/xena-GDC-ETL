@@ -624,6 +624,10 @@ class XenaDataset(object):
                 it should read into memory, when the response is got with
                 "stream=True". Check the documentation of "requests" module
                 for details. Defaults to 4096.
+            no_of_files (int, optional): Instead of downloading all the files
+                associated with a datatype, download method will download only
+                ``no_of_files``number of files. If ``no_of_files`` exceeds
+                total number of files, this method will download all the files.
 
         Returns:
             self: allow method chaining.
