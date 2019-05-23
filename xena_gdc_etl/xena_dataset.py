@@ -636,7 +636,7 @@ class XenaDataset(object):
         for url, path in self.download_map.items():
             count += 1
             response = requests.get(url, stream=True)
-            if response.status_code == 200:
+            if response.ok:
                 path = os.path.abspath(path)
                 status = '\r[{:d}/{:d}] Downloading to "{}" ...'
                 print(status.format(count, total, path), end='')
@@ -1123,8 +1123,14 @@ class GDCPhenoset(XenaDataset):
                 'data_category': 'Clinical',
                 'data_format': 'BCR XML'
             },
-            'raw_phenotype': {'data_category': ['Biospecimen', 'Clinical']},
-            'GDC_phenotype': {'data_category': ['Biospecimen', 'Clinical']}
+            'raw_phenotype': {
+                'data_category': ['Biospecimen', 'Clinical'],
+                'data_format': 'BCR XML'
+            },
+            'GDC_phenotype': {
+                'data_category': ['Biospecimen', 'Clinical'],
+                'data_format': 'BCR XML'
+            }
         }
     # To resovle overlapping between raw data and API data, remove columns
     # according to the following lists.
