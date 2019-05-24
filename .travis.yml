@@ -1,13 +1,19 @@
 language: python
 matrix:
   include:
+    - name: "Python 3.7 default install"
+      python: 3.7
+      dist: xenial
+    - name: "Python 2.7 default install"
+      python: 2.7
     - name: "Python 3.7 minimum install"
       python: 3.7
       dist: xenial
-      install:
-        - pip install -r min-requirements.txt
-        - pip install .
-        - pip install pytest~=3.6.1 pytest-cov~=2.4
+      before_install: pip install -r min-requirements.txt
+    - name: "Python 2.7 minimum install"
+      python: 2.7
+      before_install: pip install -r min-requirements.txt
+install: pip install . || pip install pytest~=3.6.1 pytest-cov~=2.4
 script: pytest --cov=xena_gdc_etl || pip freeze
 
 notifications:
