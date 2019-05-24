@@ -11,8 +11,11 @@ before_install:
   - if [[ "$MINIMUM_INSTALL" = true ]]; then
       pip install -r min-requirements.txt;
     fi
-install: pip install . || pip install pytest~=3.6.1 pytest-cov~=2.4
-script: pytest --cov=xena_gdc_etl || pip freeze
+install: pip install .
+script:
+  - pip install pytest~=3.6.1 pytest-cov~=2.4
+  - pytest --cov=xena_gdc_etl
+  - pip freeze
 
 jobs:
   include:
