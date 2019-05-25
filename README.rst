@@ -385,5 +385,5 @@ GDC ETL settings
 Documentation
 -------------
 
-Check documentation for GDC module and Xena Dataset module `here <API.rst>`_.
+Check documentation for GDC module and Xena Dataset module `here <docs/API.rst>`_.
 
