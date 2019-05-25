@@ -35,6 +35,8 @@ Installation
 ------------
 
 - ``git clone https://github.com/yunhailuo/xena-GDC-ETL.git``
+- You can also use ``pip`` to install the package by running:
+  ``pip install git+https://github.com/yunhailuo/xena-GDC-ETL``
 - Dependencies can be installed either before or after cloning this repository.
   You can install them by running ``pip install -r requirements.txt``.
 - In general,
@@ -58,9 +60,9 @@ Basic usage with command line tools
 
   .. code:: bash
 
-    gdc2xena.py [-h] [-r ROOT]
-                [-p PROJECTS [PROJECTS ...] | -P NOT_PROJECTS [NOT_PROJECTS ...]]
-                [-t DATATYPE [DATATYPE ...] | -T NOT_DATATYPE [NOT_DATATYPE ...]]
+    gdc2xena [-h] [-r ROOT]
+             [-p PROJECTS [PROJECTS ...] | -P NOT_PROJECTS [NOT_PROJECTS ...]]
+             [-t DATATYPE [DATATYPE ...] | -T NOT_DATATYPE [NOT_DATATYPE ...]]
 
   This tool will perform a full import of dataset(s) into the root directory (specified by the ``-r`` option) with a default directory tree. In general, a full import has 3 steps: downloading raw data, making Xena matrix from raw data and generating matrix associated metadata. Data from each step will be saved to corresponding directories, whose structure is like this:
 
@@ -101,13 +103,13 @@ Basic usage with command line tools
 
   .. code:: bash
 
-    gdc_check_new.py [-h] URL
+    xge gdc_check_new [-h] URL
 
   This tool takes in a file (either a URL or a local file readable by ``pandas.read_table``) of table and read one of its columns named as "New File UUID". It then checks all file UUIDs in this table on GDC and summarize all their associated project(s), data type(s) and analysis workflow type(s). Such tables are usually provided in GDC's data release note. With the summarized info, you can design specific imports to just update datasets which are updated on GDC. For example, the following command:
 
   .. code:: bash
 
-    python gdc_check_new.py https://docs.gdc.cancer.gov/Data/Release_Notes/DR9.0_files_swap.txt.gz
+    xge gdc_check_new https://docs.gdc.cancer.gov/Data/Release_Notes/DR9.0_files_swap.txt.gz
 
   should give you:
 
