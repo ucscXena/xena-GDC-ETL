@@ -466,14 +466,14 @@ class XenaDataset(object):
 
     @property
     def projects(self):
-        return self.__projects
+        return self._projects
 
     @projects.setter
     def projects(self, projects):
         if isinstance(projects, str):
-            self.__projects = [projects]
+            self._projects = [projects]
         elif isinstance(projects, list):
-            self.__projects = projects
+            self._projects = projects
         else:
             raise ValueError('"projects" must be either str or list.')
 
@@ -483,58 +483,58 @@ class XenaDataset(object):
         and metadata) of this dataset.
         """
 
-        return self.__root_dir
+        return self._root_dir
 
     @root_dir.setter
     def root_dir(self, path):
         if os.path.isdir(path):
-            self.__root_dir = os.path.abspath(path)
+            self._root_dir = os.path.abspath(path)
         else:
             raise IOError('{} is not an existing directory.'.format(path))
 
     @property
     def raw_data_dir(self):
         try:
-            return self.__raw_data_dir
+            return self._raw_data_dir
         except AttributeError:
-            self.__raw_data_dir = os.path.join(
+            self._raw_data_dir = os.path.join(
                     self.root_dir, '_'.join(self.projects), 'Raw_Data',
                     str(self.xena_dtype)
                 )
-            return self.__raw_data_dir
+            return self._raw_data_dir
 
     @raw_data_dir.setter
     def raw_data_dir(self, path):
-        self.__raw_data_dir = os.path.abspath(path)
+        self._raw_data_dir = os.path.abspath(path)
 
     @property
     def matrix_dir(self):
         try:
-            return self.__matrix_dir
+            return self._matrix_dir
         except AttributeError:
             try:
-                self.__matrix_dir = os.path.dirname(self.__matrix)
-                return self.__matrix_dir
+                self._matrix_dir = os.path.dirname(self._matrix)
+                return self._matrix_dir
             except AttributeError:
-                self.__matrix_dir = os.path.join(
+                self._matrix_dir = os.path.join(
                         self.root_dir, '_'.join(self.projects),
                         'Xena_Matrices'
                     )
-                return self.__matrix_dir
+                return self._matrix_dir
 
     @matrix_dir.setter
     def matrix_dir(self, path):
-        self.__matrix_dir = os.path.abspath(path)
+        self._matrix_dir = os.path.abspath(path)
 
     @property
     def download_map(self):
-        assert self.__download_map and isinstance(self.__download_map, dict)
-        return self.__download_map
+        assert self._download_map and isinstance(self._download_map, dict)
+        return self._download_map
 
     @download_map.setter
     def download_map(self, d):
         if isinstance(d, dict):
-            self.__download_map = d
+            self._download_map = d
         else:
             raise TypeError('download_map should be a dict, '
                             'not {}'.format(type(d)))
@@ -543,7 +543,7 @@ class XenaDataset(object):
     @property
     def raw_data_list(self):
         try:
-            return self.__raw_data_list
+            return self._raw_data_list
         except AttributeError:
             try:
                 raw_data_dir = os.path.abspath(self.raw_data_dir)
@@ -553,50 +553,50 @@ class XenaDataset(object):
                     if os.path.isfile(f_path):
                         raw_data.append(f_path)
                 if raw_data:
-                    self.__raw_data_list = raw_data
+                    self._raw_data_list = raw_data
                 else:
                     raise ValueError
             except Exception:
                 raise ValueError('Cannot find raw data.')
-            return self.__raw_data_list
+            return self._raw_data_list
 
     @raw_data_list.setter
     def raw_data_list(self, raw_data):
-        self.__raw_data_list = raw_data
+        self._raw_data_list = raw_data
 
     @property
     def matrix(self):
         try:
-            assert self.__matrix
-            return self.__matrix
+            assert self._matrix
+            return self._matrix
         except (AttributeError, AssertionError):
-            self.__matrix = os.path.join(
+            self._matrix = os.path.join(
                     self.matrix_dir,
                     '{}.{}.tsv'.format('_'.join(self.projects),
                                        self.xena_dtype)
                 )
-            return self.__matrix
+            return self._matrix
 
     @matrix.setter
     def matrix(self, path):
-        self.__matrix = os.path.abspath(path)
-        self.matrix_dir = os.path.dirname(self.__matrix)
+        self._matrix = os.path.abspath(path)
+        self.matrix_dir = os.path.dirname(self._matrix)
 
     @property
     def metadata_template(self):
-        assert isinstance(self.__metadata_template,
+        assert isinstance(self._metadata_template,
                           jinja2.environment.Template)
-        return self.__metadata_template
+        return self._metadata_template
 
     @metadata_template.setter
     def metadata_template(self, template):
         if isinstance(template, jinja2.environment.Template):
-            self.__metadata_template = template
+            self._metadata_template = template
         elif isinstance(template, str):
             jinja2_env = jinja2.Environment(
                     loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
                 )
-            self.__metadata_template = jinja2_env.get_template(template)
+            self._metadata_template = jinja2_env.get_template(template)
         else:
             raise TypeError('metadata_template should be a jinja2 template '
                             'or an existing path to a template JSON file, '
@@ -951,8 +951,8 @@ class GDCOmicset(XenaDataset):
     @XenaDataset.download_map.getter
     def download_map(self):
         try:
-            assert self.__download_map
-            return self.__download_map
+            assert self._download_map
+            return self._download_map
         except (AttributeError, AssertionError):
             fields = ['file_id', 'file_name', self.gdc_prefix]
             try:
@@ -978,10 +978,10 @@ class GDCOmicset(XenaDataset):
                     '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): os.path.join(self.raw_data_dir, name)
                     for uuid, name in file_dict.items()
                 }
-            self.__download_map = file_dict
+            self._download_map = file_dict
             msg = '\r{} files found for {} data of {}.'
             print(msg.format(len(file_dict), self.xena_dtype, self.projects))
-            return self.__download_map
+            return self._download_map
 
     @property
     def raws2matrix(self):
@@ -998,16 +998,16 @@ class GDCOmicset(XenaDataset):
     @XenaDataset.metadata_template.getter
     def metadata_template(self):
         try:
-            assert isinstance(self.__metadata_template,
+            assert isinstance(self._metadata_template,
                               jinja2.environment.Template)
-            return self.__metadata_template
+            return self._metadata_template
         except (AttributeError, AssertionError):
             template_json = METADATA_TEMPLATE[self.xena_dtype]
             jinja2_env = jinja2.Environment(
                     loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
                 )
-            self.__metadata_template = jinja2_env.get_template(template_json)
-            return self.__metadata_template
+            self._metadata_template = jinja2_env.get_template(template_json)
+            return self._metadata_template
 
     @property
     def metadata_vars(self):
@@ -1254,8 +1254,8 @@ class GDCPhenoset(XenaDataset):
     @XenaDataset.download_map.getter
     def download_map(self):
         try:
-            assert self.__download_map
-            return self.__download_map
+            assert self._download_map
+            return self._download_map
         except (AttributeError, AssertionError):
             fields = ['file_id', 'file_name', 'data_category']
             try:
@@ -1281,10 +1281,10 @@ class GDCPhenoset(XenaDataset):
                     '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): os.path.join(self.raw_data_dir, name)
                     for uuid, name in file_dict.items()
                 }
-            self.__download_map = file_dict
+            self._download_map = file_dict
             msg = '\r{} files found for {} data of {}.'
             print(msg.format(len(file_dict), self.xena_dtype, self.projects))
-            return self.__download_map
+            return self._download_map
 
     @property
     def metadata_vars(self):
