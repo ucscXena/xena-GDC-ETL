@@ -97,7 +97,7 @@ Basic usage with command line tools
   .. code:: bash
 
     mkdir -p /home/user/xena_root
-    python gdc2xena.py -P FM-AD -t htseq_counts htseq_fpkm htseq_fpkm-uq
+    gdc2xena -P FM-AD -t htseq_counts htseq_fpkm htseq_fpkm-uq
 
   Notes:
 
