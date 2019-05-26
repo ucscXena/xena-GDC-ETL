@@ -20,9 +20,11 @@ Dependencies
 
 Specific versions mentioned below have been tested. Eariler versions may still work but not guaranteed. 
 
-1. Python 2.7
+1. Python 2.7, 3.5+
 
-   This pipeline has been tested with python 2.7. It may also work with python 3 since it was originally designed to be `single-source Python 2/3 compatible <https://docs.python.org/3/howto/pyporting.html#the-short-explanation>`_.
+   This pipeline has been tested with python 2.7, 3.5, 3.6 and 3.7. It may also
+   work with other python 3 versions since it was originally designed to be
+   `single-source Python 2/3 compatible <https://docs.python.org/3/howto/pyporting.html#the-short-explanation>`_.
 
 2. `Requests <http://docs.python-requests.org/en/master/>`_ v1.2.3
 3. `Numpy <http://www.numpy.org/>`_ v1.13.0
@@ -34,8 +36,13 @@ Specific versions mentioned below have been tested. Eariler versions may still w
 Installation
 ------------
 
-- ``git clone https://github.com/yunhailuo/xena-GDC-ETL.git``
-- You can also use ``pip`` to install the package by running:
+- First clone the repository from GitHub by running
+  ``git clone https://github.com/yunhailuo/xena-GDC-ETL.git``. Now, ``cd`` into
+  ``xena-GDC-ETL`` directory and install the package using pip: ``pip install .``
+
+    If you are developing the package, you can use ``pip``'s edit mode for
+    installation: ``pip install -e .``.
+- You can also directly use ``pip`` to install the package by running:
   ``pip install git+https://github.com/yunhailuo/xena-GDC-ETL``
 - Dependencies can be installed either before or after cloning this repository.
   You can install them by running ``pip install -r requirements.txt``.
