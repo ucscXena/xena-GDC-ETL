@@ -158,7 +158,7 @@ Basic usage with command line tools
   This tool merges xena matrices and outputs the merged matrix. For the given
   example the tool will merge ``matrix1.tsv`` and ``matrix2.tsv`` matrices and
   store the merged matrix in ``path/to/output`` directory with the name
-  ``new_name.tsv``. Note that, had the argument `-c/--cohort` not been
+  ``new_name.tsv``. Note that, had the argument ``-n`` not been
   specified, the merged matrix would have been saved as
   ``TCGA-BRCA.htseq_counts.tsv``.
 
