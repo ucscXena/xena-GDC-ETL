@@ -127,6 +127,42 @@ Basic usage with command line tools
     HTSeq - FPKM-UQ           TARGET-NBL                  Gene Expression Quantification
     HTSeq - Counts            TARGET-NBL                  Gene Expression Quantification
 
+.. _xena-eql:
+
+- **Check equality of two xena matrices**
+
+  .. code:: bash
+
+    xge xena-eql path/to/matrix1.tsv path/to/matrix2.tsv
+
+  This tool takes path to two xena matrices and output if they are equal or not.
+
+.. _make-metadata:
+
+- **Generate metadata of a xena-matrix**
+
+  .. code:: bash
+
+    xge make-metadata -m path/to/matrix.tsv -d datatype
+
+  This tool generates metadata for a xena matrix.
+
+.. _merge-xena:
+
+- **Merge xena matrices**
+
+  .. code:: bash
+
+    xge merge-xena -f path/to/matrix1.tsv path/to/matrix2.tsv -t htseq_counts -o path/to/output -n new_name.tsv -c TCGA-BRCA
+
+  This tool merges xena matrices and outputs the merged matrix. For the given
+  example the tool will merge ``matrix1.tsv`` and ``matrix2.tsv`` matrices and
+  store the merged matrix in ``path/to/output`` directory with the name
+  ``new_name.tsv``. Note that, had the argument `-c/--cohort` not been
+  specified, the merged matrix would have been saved as
+  ``TCGA-BRCA.htseq_counts.tsv``.
+
+
 Advanced usage with XenaDataset and its subclasses
 --------------------------------------------------
 
