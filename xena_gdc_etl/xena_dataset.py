@@ -636,7 +636,7 @@ class XenaDataset(object):
         for url, path in self.download_map.items():
             count += 1
             response = requests.get(url, stream=True)
-            if response.status_code == 200:
+            if response.ok:
                 path = os.path.abspath(path)
                 status = '\r[{:d}/{:d}] Downloading to "{}" ...'
                 print(status.format(count, total, path), end='')
@@ -1115,10 +1115,22 @@ class GDCPhenoset(XenaDataset):
 
     # Map Xena dtype code to GDC data query dict
     _XENA_GDC_DTYPE = {
-            'biospecimen': {'data_category': 'Biospecimen'},
-            'clinical': {'data_category': 'Clinical'},
-            'raw_phenotype': {'data_category': ['Biospecimen', 'Clinical']},
-            'GDC_phenotype': {'data_category': ['Biospecimen', 'Clinical']}
+            'biospecimen': {
+                'data_category': 'Biospecimen',
+                'data_format': 'BCR XML'
+            },
+            'clinical': {
+                'data_category': 'Clinical',
+                'data_format': 'BCR XML'
+            },
+            'raw_phenotype': {
+                'data_category': ['Biospecimen', 'Clinical'],
+                'data_format': 'BCR XML'
+            },
+            'GDC_phenotype': {
+                'data_category': ['Biospecimen', 'Clinical'],
+                'data_format': 'BCR XML'
+            }
         }
     # To resovle overlapping between raw data and API data, remove columns
     # according to the following lists.
@@ -1329,10 +1341,12 @@ class GDCPhenoset(XenaDataset):
         self.root_dir = root_dir
         if matrix_dir is not None:
             self.matrix_dir = matrix_dir
-        self.metadata_template = str(
-                os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             'Resources', 'template.phenotype.meta.json')
+        jinja2_env = jinja2.Environment(
+                loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
             )
+        self.metadata_template = jinja2_env.get_template(
+            'template.phenotype.meta.json'
+        )
 
     def transform(self):
         """Transform raw phenotype data into Xena matrix.
@@ -1563,10 +1577,12 @@ class GDCSurvivalset(XenaDataset):
         super(GDCSurvivalset, self).__init__(projects, 'survival', root_dir,
                                              raw_data_dir, matrix_dir)
 
-        self.metadata_template = str(
-                os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             'Resources', 'template.survival.meta.json')
+        jinja2_env = jinja2.Environment(
+                loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
             )
+        self.metadata_template = jinja2_env.get_template(
+            'template.survival.meta.json'
+        )
 
     def download(self):
         """Retrieve GDC API's survival data for project(s) in this dataset.
