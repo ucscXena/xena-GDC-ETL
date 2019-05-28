@@ -39,6 +39,7 @@ stage: test
 script:
   - pytest --cov=xena_gdc_etl
   - pip install .
+  - pip freeze
 
 before_install:
   - if [[ $TRAVIS_PYTHON_VERSION == "2.6" ]]; then pip install flake8==2.6.2; fi
@@ -47,4 +48,3 @@ before_install:
     fi
   - pip install -r requirements.txt
   - pip install pytest~=3.6.1 pytest-cov~=2.4
-  - pip freeze
