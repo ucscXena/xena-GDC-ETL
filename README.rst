@@ -20,9 +20,11 @@ Dependencies
 
 Specific versions mentioned below have been tested. Eariler versions may still work but not guaranteed. 
 
-1. Python 2.7
+1. Python 2.7, 3.5+
 
-   This pipeline has been tested with python 2.7. It may also work with python 3 since it was originally designed to be `single-source Python 2/3 compatible <https://docs.python.org/3/howto/pyporting.html#the-short-explanation>`_.
+   This pipeline has been tested with python 2.7, 3.5, 3.6 and 3.7. It may also
+   work with other python 3 versions since it was originally designed to be
+   `single-source Python 2/3 compatible <https://docs.python.org/3/howto/pyporting.html#the-short-explanation>`_.
 
 2. `Requests <http://docs.python-requests.org/en/master/>`_ v1.2.3
 3. `Numpy <http://www.numpy.org/>`_ v1.13.0
@@ -34,7 +36,14 @@ Specific versions mentioned below have been tested. Eariler versions may still w
 Installation
 ------------
 
-- ``git clone https://github.com/yunhailuo/xena-GDC-ETL.git``
+- First clone the repository from GitHub by running
+  ``git clone https://github.com/yunhailuo/xena-GDC-ETL.git``. Now, ``cd`` into
+  ``xena-GDC-ETL`` directory and install the package using pip: ``pip install .``
+
+    If you are developing the package, you can use ``pip``'s edit mode for
+    installation: ``pip install -e .``.
+- You can also directly use ``pip`` to install the package by running:
+  ``pip install git+https://github.com/yunhailuo/xena-GDC-ETL``
 - Dependencies can be installed either before or after cloning this repository.
   You can install them by running ``pip install -r requirements.txt``.
 - In general,
@@ -58,9 +67,9 @@ Basic usage with command line tools
 
   .. code:: bash
 
-    gdc2xena.py [-h] [-r ROOT]
-                [-p PROJECTS [PROJECTS ...] | -P NOT_PROJECTS [NOT_PROJECTS ...]]
-                [-t DATATYPE [DATATYPE ...] | -T NOT_DATATYPE [NOT_DATATYPE ...]]
+    gdc2xena [-h] [-r ROOT]
+             [-p PROJECTS [PROJECTS ...] | -P NOT_PROJECTS [NOT_PROJECTS ...]]
+             [-t DATATYPE [DATATYPE ...] | -T NOT_DATATYPE [NOT_DATATYPE ...]]
 
   This tool will perform a full import of dataset(s) into the root directory (specified by the ``-r`` option) with a default directory tree. In general, a full import has 3 steps: downloading raw data, making Xena matrix from raw data and generating matrix associated metadata. Data from each step will be saved to corresponding directories, whose structure is like this:
 
@@ -83,12 +92,12 @@ Basic usage with command line tools
             ├── projects.xena_dtype(N).tsv
             └── projects.xena_dtype(N).tsv.json
 
-  A dataset is defined by its project and data type. Projects of interest are provided through ``-p`` or ``-P`` option, and data types of interest are provided through the ``-t`` or ``-T`` option. Multiple inputs separated by whitespace are allowed and will be treated separately with all possible combinations. Valid projects should be valide project_id on GDC. Valid data types includes (without quotation marks): 'htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna', 'masked_cnv', 'muse_snv', 'mutect2_snv', 'somaticsniper_snv', 'varscan2_snv', 'phenotype', and 'survival'. Upper case options (``-P`` or ``-T``) are mutually exclusive with corresponding lower case options, and they are used to define datasets of interest by excluding selections from either all projects on GDC or all supported data types. For example, the following command line imports 3 types of RNA-seq data for all but FM-AD projects from GDC to /home/user/xena_root:
+  A dataset is defined by its project and data type. Projects of interest are provided through ``-p`` or ``-P`` option, and data types of interest are provided through the ``-t`` or ``-T`` option. Multiple inputs separated by whitespace are allowed and will be treated separately with all possible combinations. Valid projects should be valid project_id on GDC. Valid data types includes (without quotation marks): 'htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna', 'masked_cnv', 'muse_snv', 'mutect2_snv', 'somaticsniper_snv', 'varscan2_snv', 'phenotype', and 'survival'. Upper case options (``-P`` or ``-T``) are mutually exclusive with corresponding lower case options, and they are used to define datasets of interest by excluding selections from either all projects on GDC or all supported data types. For example, the following command line imports 3 types of RNA-seq data for all but FM-AD projects from GDC to /home/user/xena_root:
 
   .. code:: bash
 
     mkdir -p /home/user/xena_root
-    python gdc2xena.py -P FM-AD -t htseq_counts htseq_fpkm htseq_fpkm-uq
+    gdc2xena -P FM-AD -t htseq_counts htseq_fpkm htseq_fpkm-uq
 
   Notes:
 
@@ -101,13 +110,13 @@ Basic usage with command line tools
 
   .. code:: bash
 
-    gdc_check_new.py [-h] URL
+    xge gdc_check_new [-h] URL
 
   This tool takes in a file (either a URL or a local file readable by ``pandas.read_table``) of table and read one of its columns named as "New File UUID". It then checks all file UUIDs in this table on GDC and summarize all their associated project(s), data type(s) and analysis workflow type(s). Such tables are usually provided in GDC's data release note. With the summarized info, you can design specific imports to just update datasets which are updated on GDC. For example, the following command:
 
   .. code:: bash
 
-    python gdc_check_new.py https://docs.gdc.cancer.gov/Data/Release_Notes/DR9.0_files_swap.txt.gz
+    xge gdc_check_new https://docs.gdc.cancer.gov/Data/Release_Notes/DR9.0_files_swap.txt.gz
 
   should give you:
 
@@ -117,6 +126,42 @@ Basic usage with command line tools
     HTSeq - FPKM              TARGET-NBL                  Gene Expression Quantification
     HTSeq - FPKM-UQ           TARGET-NBL                  Gene Expression Quantification
     HTSeq - Counts            TARGET-NBL                  Gene Expression Quantification
+
+.. _xena-eql:
+
+- **Check equality of two xena matrices**
+
+  .. code:: bash
+
+    xge xena-eql path/to/matrix1.tsv path/to/matrix2.tsv
+
+  This tool takes path to two xena matrices and output if they are equal or not.
+
+.. _make-metadata:
+
+- **Generate metadata of a xena-matrix**
+
+  .. code:: bash
+
+    xge make-metadata -m path/to/matrix.tsv -d datatype
+
+  This tool generates metadata for a xena matrix.
+
+.. _merge-xena:
+
+- **Merge xena matrices**
+
+  .. code:: bash
+
+    xge merge-xena -f path/to/matrix1.tsv path/to/matrix2.tsv -t htseq_counts -o path/to/output -n new_name.tsv -c TCGA-BRCA
+
+  This tool merges xena matrices and outputs the merged matrix. For the given
+  example the tool will merge ``matrix1.tsv`` and ``matrix2.tsv`` matrices and
+  store the merged matrix in ``path/to/output`` directory with the name
+  ``new_name.tsv``. Note that, had the argument ``-n`` not been
+  specified, the merged matrix would have been saved as
+  ``TCGA-BRCA.htseq_counts.tsv``.
+
 
 Advanced usage with XenaDataset and its subclasses
 --------------------------------------------------
@@ -152,7 +197,7 @@ Advanced usage with XenaDataset and its subclasses
 
 - **Build GDC importing pipelines with** ``GDCOmicset``, ``TCGAPhenoset``, ``TARGETPhenoset`` **or** ``GDCSurvivalset`` **classes**
 
-  ``GDCOmicset``, ``TCGAPhenoset``, ``TARGETPhenoset`` and ``GDCSurvivalset`` are subclasses of ``XenaDataset`` and are preloaded with settings for importing GDC genomic data, TCGA phenotype data on GDC, TARGET phenotype data on GDC and GDC's survival data respecitively. These settings can be customized by setting corresponding properties described below. For more details, please check the `next section <#gdc-etl-settings>`__ and the `documentation <API.rst>`_.
+  ``GDCOmicset``, ``TCGAPhenoset``, ``TARGETPhenoset`` and ``GDCSurvivalset`` are subclasses of ``XenaDataset`` and are preloaded with settings for importing GDC genomic data, TCGA phenotype data on GDC, TARGET phenotype data on GDC and GDC's survival data respecitively. These settings can be customized by setting corresponding properties described below. For more details, please check the `next section <#gdc-etl-settings>`__ and the `documentation <docs/API.rst>`_.
   
   The script for ``gdc2xena.py`` command line is a good example for basic usage of these classes. Similar to ``XenaDataset``, a GDC dataset is defined by ``projects``, which is one or a list of valid GDC "project_id". For ``GDCOmicset``, a dataset should also be defined with one of the supported ``xena_dtype`` (find out with the class method ``GDCOmicset.get_supported_dtype()``). The ``xena_dtype`` is critical for a ``GDCOmicset`` object selecting correct default settings. For ``TCGAPhenoset``, ``TARGETPhenoset`` and ``GDCSurvivalset``, data type are self-explanatory and cannot be changed. Therefore, you can instantiate these classes like this:
   
@@ -383,5 +428,5 @@ GDC ETL settings
 Documentation
 -------------
 
-Check documentation for GDC module and Xena Dataset module `here <API.rst>`_.
+Check documentation for GDC module and Xena Dataset module `here <docs/API.rst>`_.
 
