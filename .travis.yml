@@ -29,6 +29,8 @@ stages:
 jobs:
   include:
     - *lint
+    - python: 2.7
+      env: MINREQ=1
   allow_failures:
     - *lint
 
@@ -40,5 +42,8 @@ script:
 
 before_install:
   - if [[ $TRAVIS_PYTHON_VERSION == "2.6" ]]; then pip install flake8==2.6.2; fi
+  - if [[ -f min-requirements.txt && "$MINREQ" -eq 1 ]]; then
+      mv min_requirements.txt requirements.txt;
+    fi
   - pip install -r requirements.txt
   - pip install pytest~=3.6.1 pytest-cov~=2.4
