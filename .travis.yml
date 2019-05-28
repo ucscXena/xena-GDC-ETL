@@ -47,3 +47,4 @@ before_install:
     fi
   - pip install -r requirements.txt
   - pip install pytest~=3.6.1 pytest-cov~=2.4
+  - pip freeze
