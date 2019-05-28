@@ -43,7 +43,7 @@ script:
 before_install:
   - if [[ $TRAVIS_PYTHON_VERSION == "2.6" ]]; then pip install flake8==2.6.2; fi
   - if [[ -f min-requirements.txt && "$MINREQ" -eq 1 ]]; then
-      mv min_requirements.txt requirements.txt;
+      mv min-requirements.txt requirements.txt;
     fi
   - pip install -r requirements.txt
   - pip install pytest~=3.6.1 pytest-cov~=2.4
