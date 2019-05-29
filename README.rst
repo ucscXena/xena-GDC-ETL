@@ -199,23 +199,23 @@ Advanced usage with XenaDataset and its subclasses
 
 .. _subclasses:
 
-- **Build GDC importing pipelines with** ``GDCOmicset``, ``TCGAPhenoset``, ``TARGETPhenoset`` **or** ``GDCSurvivalset`` **classes**
+- **Build GDC importing pipelines with** ``GDCOmicset``, ``GDCPhenoset`` **or** ``GDCSurvivalset`` **classes**
 
-  ``GDCOmicset``, ``TCGAPhenoset``, ``TARGETPhenoset`` and ``GDCSurvivalset`` are subclasses of ``XenaDataset`` and are preloaded with settings for importing GDC genomic data, TCGA phenotype data on GDC, TARGET phenotype data on GDC and GDC's survival data respecitively. These settings can be customized by setting corresponding properties described below. For more details, please check the `next section <#gdc-etl-settings>`__ and the `documentation <docs/API.rst>`_.
+  ``GDCOmicset``, ``GDCPhenoset`` and ``GDCSurvivalset`` are subclasses of ``XenaDataset`` and are preloaded with settings for importing GDC genomic data, TCGA phenotype data on GDC, TARGET phenotype data on GDC and GDC's survival data respecitively. These settings can be customized by setting corresponding properties described below. For more details, please check the `next section <#gdc-etl-settings>`__ and the `documentation <docs/API.rst>`_.
   
-  The script for ``gdc2xena.py`` command line is a good example for basic usage of these classes. Similar to ``XenaDataset``, a GDC dataset is defined by ``projects``, which is one or a list of valid GDC "project_id". For ``GDCOmicset``, a dataset should also be defined with one of the supported ``xena_dtype`` (find out with the class method ``GDCOmicset.get_supported_dtype()``). The ``xena_dtype`` is critical for a ``GDCOmicset`` object selecting correct default settings. For ``TCGAPhenoset``, ``TARGETPhenoset`` and ``GDCSurvivalset``, data type are self-explanatory and cannot be changed. Therefore, you can instantiate these classes like this:
+  The script for ``gdc2xena.py`` command line is a good example for basic usage of these classes. Similar to ``XenaDataset``, a GDC dataset is defined by ``projects``, which is one or a list of valid GDC "project_id". For ``GDCOmicset``, a dataset should also be defined with one of the supported ``xena_dtype`` (find out with the class method ``GDCOmicset.get_supported_dtype()``). The ``xena_dtype`` is critical for a ``GDCOmicset`` object selecting correct default settings. For ``GDCPhenoset`` and ``GDCSurvivalset``, data type are self-explanatory and cannot be changed. Therefore, you can instantiate these classes like this:
   
   .. code:: python
   
-    from xena_dataset import GDCOmicset, TCGAPhenoset, TARGETPhenoset, GDCSurvivalset
+    from xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
     
     gdc_omic_cohort = GDCOmicset('TCGA-BRCA', 'htsep_counts')
     
     # Won't check if the ID is of TCGA program or not.
-    tcga_pheno_cohort = TCGAPhenoset('TCGA-BRCA')
+    tcga_pheno_cohort = GDCPhenoset('TCGA-BRCA')
     
     # Won't check if the ID is of TARGET program or not.
-    target_pheno_cohort = TARGETPhenoset('TARGET-NBL')
+    target_pheno_cohort = GDCPhenoset('TARGET-NBL')
     
     gdc_survival_cohort = GDCSurvivalset('TCGA-BRCA')
   
@@ -258,11 +258,11 @@ Advanced usage with XenaDataset and its subclasses
   
   \1. GDC API Available File Fields: https://docs.gdc.cancer.gov/API/Users_Guide/Appendix_A_Available_Fields/#file-fields
   
-  - **Customize** ``TCGAPhenoset``
+  - **Customize** ``GDCPhenoset``
   
     TCGA phenotype data for Xena includes both clinical data and biospecimen data, as `detailed below <#transform-phenotype>`_. Downloading and transformation of clinical data and biospecimen data are in fact delegated by two independent ``GDCOmicset`` object respecitively. Corresponding subdatasets can be accessed through ``clin_dataset`` and ``bio_dataset`` attributes and hence can be customized as mentioned above. Because of such complexity of TCGA phenotype data, the ``download`` and ``transform`` methods are coded specifically and overrode corresponding methods of the base class, ``XenaDataset``. Customization for downloading and matrix transformation is very limited and should be done in the following steps:
     
-    1. Instantiate a ``TCGAPhenoset``;
+    1. Instantiate a ``GDCPhenoset``;
     2. Instantiate and customize one or two ``GDCOmicset`` objects for clinical data and/or biospecimen data as needed;
     3. Assign customized ``GDCOmicset`` objects to corresponding attributes, ``clin_dataset`` and ``bio_dataset``;
     4. Call desired method(s) (``download`` and/or ``transform``).
@@ -277,12 +277,15 @@ Advanced usage with XenaDataset and its subclasses
       
     - Customize ``metadata`` step
     
-      Different from ``download`` and ``transform``, there is no special settings for the ``metadata`` method of ``TCGAPhenoset``. Therefore, similar to that of ``GDCOmicset``, this step can be customized through ``metadata_template``, ``metadata_vars`` and ``gdc_release`` properties. And to call just the ``metadata`` method, an existing ``matrix`` is enough.
-    
-  - **Customize** ``TARGETPhenoset``
-  
-    TARGET phenotype data for Xena contains only the clinical data (no biospecimen data), as `detailed below <#transform-phenotype>`_. The importing process is quite similar to that of a ``GDCOmicset``. You can customize ``TARGETPhenoset`` with ``download_map``, ``read_raw``, ``raws2matrix``, ``metadata_template``, ``metadata_vars`` and ``gdc_release`` in the same way as that of `GDCOmicset <#customize-gdcomicset>`_.
-    
+      Different from ``download`` and ``transform``, there is no special settings for the ``metadata`` method of ``GDCPhenoset``. Therefore, similar to that of ``GDCOmicset``, this step can be customized through ``metadata_template``, ``metadata_vars`` and ``gdc_release`` properties. And to call just the ``metadata`` method, an existing ``matrix`` is enough.
+
+    TARGET phenotype data for Xena contains only the clinical data (no
+    biospecimen data), as `detailed below <#transform-phenotype>`_. The importing
+    process is quite similar to that of a ``GDCOmicset``. You can customize
+    ``GDCPhenoset`` with ``download_map``, ``read_raw``, ``raws2matrix``,
+    ``metadata_template``, ``metadata_vars`` and ``gdc_release`` in the same way
+    as that of `GDCOmicset <#customize-gdcomicset>`_.
+
   - **Customize** ``GDCSurvivalset``
   
     GDC data supporting Xena survival matrix does not come any GDC files. It comes from the "analysis/survival" endpoint of GDC API. Therefore, the ``download`` and ``transform`` methods are re-designed, overriding those of the base class, ``XenaDataset``. Aside from redefining ``download`` and ``transform`` methods, there is no simple way to customize ``download`` and ``transform`` steps. You can still call ``transform`` without ``download`` by just defining a valid list of raw data with ``raw_data_list`` or ``raw_data_dir``. However, only this first file in the list will be read and used.
