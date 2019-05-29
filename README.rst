@@ -11,6 +11,7 @@ Extract, transform and load `GDC data <https://portal.gdc.cancer.gov/>`__ onto `
 - `Dependencies`_
 - `Installation`_
 - `Basic usage with command line tools`_
+- `Command line utilities`_
 - `Advanced usage with XenaDataset and its subclasses`_
 - `GDC ETL settings`_
 - `Documentation`_
@@ -126,6 +127,9 @@ Basic usage with command line tools
     HTSeq - FPKM              TARGET-NBL                  Gene Expression Quantification
     HTSeq - FPKM-UQ           TARGET-NBL                  Gene Expression Quantification
     HTSeq - Counts            TARGET-NBL                  Gene Expression Quantification
+
+Command line utilities
+--------------------------------------------------------------------------------
 
 .. _xena-eql:
 
