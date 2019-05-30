@@ -29,8 +29,22 @@ jobs:
     - *lint
     - python: 3.6
       env: MINREQ=1
+      <<: *disable_global
+      script:
+        - pip install -r min-requirements.txt
+        - pip install pytest~=3.6.1 pytest-cov~=2.4
+        - pytest --cov=xena_gdc_etl
+        - pip install .
+        - pip freeze
     - python: 2.7
       env: MINREQ=1
+      <<: *disable_global
+      script:
+        - pip install -r min-requirements.txt
+        - pip install pytest~=3.6.1 pytest-cov~=2.4
+        - pytest --cov=xena_gdc_etl
+        - pip install .
+        - pip freeze
   allow_failures:
     - *lint
 
@@ -42,8 +56,5 @@ script:
   - pip freeze
 
 before_install:
-  - if [[ -f min-requirements.txt && "$MINREQ" -eq 1 ]]; then
-      mv min-requirements.txt requirements.txt;
-    fi
   - pip install -r requirements.txt
   - pip install pytest~=3.6.1 pytest-cov~=2.4
