@@ -17,7 +17,10 @@ import warnings
 import pandas as pd
 import requests
 
-from .utils import mkdir_p
+from .utils import (
+    mkdir_p,
+    reduce_json_array,
+)
 
 GDC_API_BASE = 'https://api.gdc.cancer.gov'
 _SUPPORTED_FILE_TYPES = {'txt', 'vcf', 'bam', 'tsv', 'xml', 'maf', 'xlsx',
@@ -124,29 +127,6 @@ def simple_and_filter(in_dict={}, exclude_dict={}):
         operation_list.append({"op": "exclude",
                                "content": {"field": key, "value": value}})
     return {"op": "and", "content": operation_list}
-
-
-def reduce_json_array(j):
-    """Recursively go over a JSON and unpack arrays which have only one item,
-    i.e. remove unnecessary arrays (brackets).
-
-    Args:
-        j (list of dict): A JSON to be reduced.
-
-    Returns:
-        list or dict: a reduced JSON with unnecessary array removed.
-    """
-
-    if isinstance(j, list):
-        if len(j) == 1:
-            reduced = reduce_json_array(j[0])
-        else:
-            reduced = [reduce_json_array(e) for e in j]
-    elif isinstance(j, dict):
-        reduced = {k: reduce_json_array(v) for k, v in j.items()}
-    else:
-        reduced = j
-    return reduced
 
 
 def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
@@ -327,7 +307,8 @@ def download(uuids, download_dir='.', chunk_size=4096):
                     f.write(chunk)
                     downloaded = downloaded + chunk_size
                     print(status.format(count, total, path,
-                                        min(1, downloaded/file_size)), end='')
+                                        min(1, downloaded / file_size)),
+                          end='')
                     sys.stdout.flush()
             download_list.append(path)
         else:
@@ -408,3 +389,39 @@ def get_samples_clinical(projects=None):
             record_prefix='samples.'
         )
     return pd.merge(cases_df, samples_df, how='inner', on='id')
+
+
+def gdc_check_new(new_file_uuids):
+    """
+    This function help check a list of GDC's updated files and summarize
+    impacted project(s), data_type(s) and analysis.workflow_type(s).
+    """
+
+    df_list = []
+    for uuids in (new_file_uuids[i:i + 20000]
+                  for i in range(0, len(new_file_uuids), 20000)):
+        df = search(
+                'files',
+                in_filter={'access': 'open', 'file_id': uuids},
+                fields=['cases.project.project_id', 'data_type',
+                        'analysis.workflow_type'],
+                method='POST'
+            )
+        try:
+            df['cases'] = df['cases'].map(
+                    lambda c: ', '.join({p['project']['project_id']
+                                         for p in c})
+                )
+        except:
+            pass
+        df_list.append(df)
+    df = pd.concat(df_list, axis=0)
+    try:
+        df = df.drop('id', axis=1)
+    except:
+        pass
+    try:
+        df = df.drop_duplicates()
+    except:
+        pass
+    df.to_csv(sys.stdout, sep='\t', index=False)

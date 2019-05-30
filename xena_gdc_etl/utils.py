@@ -7,7 +7,6 @@ import time
 import timeit
 
 import pandas as pd
-from pandas.util.testing import assert_frame_equal
 import jinja2
 
 from .constants import METADATA_TEMPLATE, METADATA_VARIABLES, valid_dtype
@@ -30,61 +29,6 @@ def mkdir_p(dir_name):
         if not os.path.isdir(dir_path):
             raise
     return dir_path
-
-
-def equal_matrices(df1, df2):
-    """This function is used for testing the equality of 2 Xena matrices
-
-    Args:
-        xena matrices df1 and df2 whose equality is to be checked
-    """
-    df1 = pd.read_csv(df1, sep='\t', header=0,
-                      index_col=0).sort_index(axis=0).sort_index(axis=1)
-    df2 = pd.read_csv(df2, sep='\t', header=0,
-                      index_col=0).sort_index(axis=0).sort_index(axis=1)
-    try:
-        assert_frame_equal(df1, df2)
-        print('Equal.')
-    except:  # appeantly AssertionError doesn't catch all
-        print('Not equal.')
-
-
-def metadata(matrix, xena_dtypes):
-    """Generating Xena metadata for a Xena matrix.
-
-    Args:
-        matrix (str): The path, including the filename, of the Xena matrix.
-        xena_dtypes (str): One data type code indication the data type in
-            matrices to be merged. Supported data type codes include (without
-            quotation marks): "htseq_counts", "htseq_fpkm", "htseq_fpkm-uq",
-            "mirna", "masked_cnv", "muse_snv", "mutect2_snv",
-            "somaticsniper_snv", "varscan2_snv", "GDC_phenotype", "survival",
-            "methylation27".
-    """
-
-    # Generate metadata.
-    print('Creating metadata file ...', end='')
-    sys.stdout.flush()
-    jinja2_env = jinja2.Environment(
-            loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
-        )
-    metadata_template = jinja2_env.get_template(METADATA_TEMPLATE[xena_dtypes])
-    matrix_date = time.strftime("%m-%d-%Y",
-                                time.gmtime(os.path.getmtime(matrix)))
-    variables = {
-            'project_id': 'GDC-PANCAN',
-            'date': matrix_date,
-            'gdc_release': 'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-90', # noqa
-            'xena_cohort': 'GDC Pan-Cancer (PANCAN)'
-        }
-    try:
-        variables.update(METADATA_VARIABLES[xena_dtypes])
-    except KeyError:
-        pass
-    outmetadata = matrix + '.json'
-    with open(outmetadata, 'w') as f:
-        f.write(metadata_template.render(**variables))
-    print('\rMetadata JSON is saved at {}.'.format(outmetadata))
 
 
 def handle_merge_xena(name, files, cohort, datatype, outdir):
@@ -193,3 +137,26 @@ def merge(filelist, xena_dtypes, out_matrix):
     m, s = divmod(int(end_time - start_time), 60)
     h, m = divmod(m, 60)
     print('Finish in {:d}:{:02d}:{:02d}.'.format(h, m, s))
+
+
+def reduce_json_array(j):
+    """Recursively go over a JSON and unpack arrays which have only one item,
+    i.e. remove unnecessary arrays (brackets).
+
+    Args:
+        j (list of dict): A JSON to be reduced.
+
+    Returns:
+        list or dict: a reduced JSON with unnecessary array removed.
+    """
+
+    if isinstance(j, list):
+        if len(j) == 1:
+            reduced = reduce_json_array(j[0])
+        else:
+            reduced = [reduce_json_array(e) for e in j]
+    elif isinstance(j, dict):
+        reduced = {k: reduce_json_array(v) for k, v in j.items()}
+    else:
+        reduced = j
+    return reduced

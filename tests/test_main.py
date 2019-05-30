@@ -12,12 +12,6 @@ class ParserTest(unittest.TestCase):
         assert parsed.df1 == "df1"
         assert parsed.df2 == "df2"
 
-    def test_make_metadata(self):
-        parsed = self.parser.parse_args(["make-metadata", "-m",
-                                        "path/to/matrix", "-t", "datatype"])
-        assert parsed.matrix == "path/to/matrix"
-        assert parsed.datatype == "datatype"
-
     def test_gdc_check_new(self):
         parsed = self.parser.parse_args(["gdc-check-new",
                                         "https://example.com/data.gz"])
