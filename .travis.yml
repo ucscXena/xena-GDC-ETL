@@ -1,9 +1,7 @@
 sudo: required
 language: python
 python:
-  - 3.7-dev
   - 3.6
-  - 3.5
   - 2.7
 notifications:
   email: false
@@ -29,6 +27,8 @@ stages:
 jobs:
   include:
     - *lint
+    - python: 3.6
+      env: MINREQ=1
     - python: 2.7
       env: MINREQ=1
   allow_failures:
