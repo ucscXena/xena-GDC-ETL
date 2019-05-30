@@ -30,45 +30,7 @@ import requests
 
 from xena_gdc_etl import gdc
 from .utils import mkdir_p
-from .constants import METADATA_TEMPLATE, METADATA_VARIABLES
-
-
-# Map GDC project_id to Xena specific cohort name.
-GDC_XENA_COHORT = {
-        'TCGA-BRCA': 'GDC TCGA Breast Cancer (BRCA)',
-        'TCGA-LUAD': 'GDC TCGA Lung Adenocarcinoma (LUAD)',
-        'TCGA-UCEC': 'GDC TCGA Endometrioid Cancer (UCEC)',
-        'TCGA-LGG': 'GDC TCGA Lower Grade Glioma (LGG)',
-        'TCGA-HNSC': 'GDC TCGA Head and Neck Cancer (HNSC)',
-        'TCGA-PRAD': 'GDC TCGA Prostate Cancer (PRAD)',
-        'TCGA-LUSC': 'GDC TCGA Lung Squamous Cell Carcinoma (LUSC)',
-        'TCGA-THCA': 'GDC TCGA Thyroid Cancer (THCA)',
-        'TCGA-SKCM': 'GDC TCGA Melanoma (SKCM)',
-        'TCGA-OV': 'GDC TCGA Ovarian Cancer (OV)',
-        'TCGA-STAD': 'GDC TCGA Stomach Cancer (STAD)',
-        'TCGA-COAD': 'GDC TCGA Colon Cancer (COAD)',
-        'TCGA-BLCA': 'GDC TCGA Bladder Cancer (BLCA)',
-        'TCGA-GBM': 'GDC TCGA Glioblastoma (GBM)',
-        'TCGA-LIHC': 'GDC TCGA Liver Cancer (LIHC)',
-        'TCGA-KIRC': 'GDC TCGA Kidney Clear Cell Carcinoma (KIRC)',
-        'TCGA-CESC': 'GDC TCGA Cervical Cancer (CESC)',
-        'TCGA-KIRP': 'GDC TCGA Kidney Papillary Cell Carcinoma (KIRP)',
-        'TCGA-SARC': 'GDC TCGA Sarcoma (SARC)',
-        'TCGA-ESCA': 'GDC TCGA Esophageal Cancer (ESCA)',
-        'TCGA-PAAD': 'GDC TCGA Pancreatic Cancer (PAAD)',
-        'TCGA-PCPG': 'GDC TCGA Pheochromocytoma & Paraganglioma (PCPG)',
-        'TCGA-READ': 'GDC TCGA Rectal Cancer (READ)',
-        'TCGA-TGCT': 'GDC TCGA Testicular Cancer (TGCT)',
-        'TCGA-LAML': 'GDC TCGA Acute Myeloid Leukemia (LAML)',
-        'TCGA-THYM': 'GDC TCGA Thymoma (THYM)',
-        'TCGA-ACC': 'GDC TCGA Adrenocortical Cancer (ACC)',
-        'TCGA-MESO': 'GDC TCGA Mesothelioma (MESO)',
-        'TCGA-UVM': 'GDC TCGA Ocular melanomas (UVM)',
-        'TCGA-KICH': 'GDC TCGA Kidney Chromophobe (KICH)',
-        'TCGA-UCS': 'GDC TCGA Uterine Carcinosarcoma (UCS)',
-        'TCGA-CHOL': 'GDC TCGA Bile Duct Cancer (CHOL)',
-        'TCGA-DLBC': 'GDC TCGA Large B-cell Lymphoma (DLBC)'
-    }
+from .constants import GDC_XENA_COHORT, METADATA_TEMPLATE, METADATA_VARIABLES
 
 
 def read_by_ext(filename, mode='r'):
@@ -880,7 +842,7 @@ class GDCOmicset(XenaDataset):
             ['methylation27', 'methylation450'],
             functools.partial(merge_sample_cols, header=0, log2TF=False,
                               index_name='Composite Element REF')
-        ))   
+        ))
 
     @property
     def xena_dtype(self):
@@ -1668,7 +1630,7 @@ def main():
                          root_dir=r'/mnt/e/GitHub/xena-GDC-ETL/gitignore/test',
                          xena_dtype='methylation450')
     dataset.download().transform().metadata()
-    print(time.time()-start)
+    print(time.time() - start)
 
 
 if __name__ == '__main__':

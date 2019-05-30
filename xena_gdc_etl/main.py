@@ -2,8 +2,11 @@ from __future__ import print_function
 import argparse
 from datetime import date
 
-from .utils import equal_matrices, metadata, handle_merge_xena
-from .gdc_check_new import gdc_check_new
+import pandas as pd
+from pandas.util.testing import assert_frame_equal
+
+from .utils import handle_merge_xena
+from .gdc import gdc_check_new
 from .constants import valid_dtype
 
 
@@ -15,13 +18,22 @@ def main():
     options = parser.parse_args()
     # handle check xena equality matrices
     if options.subcomm == "xena-eql":
-        equal_matrices(options.df1, options.df2)
-    # handle make metadata
-    elif options.subcomm == "make-metadata":
-        metadata(options.matrix, options.datatype)
+        df1 = pd.read_csv(options.df1, sep='\t', header=0,
+                          index_col=0).sort_index(axis=0).sort_index(axis=1)
+        df2 = pd.read_csv(options.df2, sep='\t', header=0,
+                          index_col=0).sort_index(axis=0).sort_index(axis=1)
+        try:
+            assert_frame_equal(df1, df2)
+            print('Equal.')
+        except:  # appeantly AssertionError doesn't catch all
+            print('Not equal.')
     # handle gdc_check_new
     elif options.subcomm == "gdc-check-new":
-        gdc_check_new(options.url)
+        new_file_uuids = pd.read_csv(
+            options.url,
+            sep='\t'
+        )['New File UUID'].tolist()
+        gdc_check_new(new_file_uuids)
     # handle merge_xena
     elif options.subcomm == "merge-xena":
         handle_merge_xena(options.name, options.files, options.cohort,
@@ -49,22 +61,6 @@ def create_parser():
     equality_parser.add_argument(
         "df2", type=str,
         help='Directory for the second matrix.'
-    )
-    # make_metadata subparser
-    make_metadata_parser = subparsers.add_parser(
-        "make-metadata",
-        help="Generating Xena metadata for a Xena matrix."
-    )
-    make_metadata_parser.add_argument(
-        '-m', '--matrix', type=str, required=True,
-        help='The path, including the filename, of the Xena matrix.'
-    )
-    make_metadata_parser.add_argument(
-        '-t', '--datatype', type=str, required=True,
-        help='One data type code indication the data type in matrices to be '
-        'merged. Supported data type codes include: {}'.format(
-            str(valid_dtype)
-        )
     )
     # gdc_check_new subparser
     gdc_check_new_parser = subparsers.add_parser(

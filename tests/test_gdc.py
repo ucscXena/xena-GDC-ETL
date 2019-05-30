@@ -1,5 +1,10 @@
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 import os
 
+import pandas as pd
 import pytest
 
 from xena_gdc_etl import gdc
@@ -102,3 +107,16 @@ def test_search():
                    method="PUT")
     error_str = 'Invalid method: PUT\n method must be either "GET" or "POST".'
     assert exception_info.value.args[0] == error_str
+
+
+@pytest.mark.CI
+def test_gdc_check_new(capfd):
+    url = "https://docs.gdc.cancer.gov/Data/Release_Notes/DR9.0_files_swap.txt.gz"  # noqa
+    new_file_uuids = pd.read_csv(url, sep='\t')['New File UUID'].tolist()
+    gdc.gdc_check_new(new_file_uuids)
+    out, err = capfd.readouterr()
+    actual = pd.read_csv(StringIO(out), sep='\t')
+    expected = pd.read_csv("tests/fixtures/gdc_check_new_DR9.0_files_swap.csv",
+                           sep='\t')
+    expected = expected.head()
+    actual.equals(expected)
