@@ -27,12 +27,12 @@ jobs:
   include:
     - *lint
     - python: 3.6
-      env: MINREQ=1
+      name: "python-3-min-req"
       <<: *disable_global
       install: make min-req-install
       script: make test
     - python: 2.7
-      env: MINREQ=1
+      name: "python-3-min-req"
       <<: *disable_global
       install: make min-req-install
       script: make test
