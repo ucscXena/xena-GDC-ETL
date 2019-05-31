@@ -1,3 +1,5 @@
+__version__ = "0.2.0"
+
 # Map GDC project_id to Xena specific cohort name.
 GDC_XENA_COHORT = {
         'TCGA-BRCA': 'GDC TCGA Breast Cancer (BRCA)',
