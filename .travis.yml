@@ -20,8 +20,7 @@ stages:
   <<: *disable_global
   python: 3.6
   stage: lint
-  install: pip install flake8
-  script: flake8
+  script: make lint
 
 
 jobs:
@@ -30,30 +29,18 @@ jobs:
     - python: 3.6
       env: MINREQ=1
       <<: *disable_global
-      script:
-        - pip install -r min-requirements.txt
-        - pip install pytest~=3.6.1 pytest-cov~=2.4
-        - pytest --cov=xena_gdc_etl
-        - pip install .
-        - pip freeze
+      install: make min-req-install
+      script: make test
     - python: 2.7
       env: MINREQ=1
       <<: *disable_global
-      script:
-        - pip install -r min-requirements.txt
-        - pip install pytest~=3.6.1 pytest-cov~=2.4
-        - pytest --cov=xena_gdc_etl
-        - pip install .
-        - pip freeze
+      install: make min-req-install
+      script: make test
   allow_failures:
     - *lint
 
 stage: test
 
+install: make install
 script:
-  - pytest --cov=xena_gdc_etl
-  - pip install .
-  - pip freeze
-
-before_script:
-  - pip install pytest~=3.6.1 pytest-cov~=2.4
+  - make test
