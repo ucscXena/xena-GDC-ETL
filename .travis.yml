@@ -1,9 +1,7 @@
 sudo: required
 language: python
 python:
-  - 3.7-dev
   - 3.6
-  - 3.5
   - 2.7
 notifications:
   email: false
@@ -22,23 +20,27 @@ stages:
   <<: *disable_global
   python: 3.6
   stage: lint
-  install: pip install flake8
-  script: flake8
+  script: make lint
 
 
 jobs:
   include:
     - *lint
+    - python: 3.6
+      name: "python-3-min-req"
+      <<: *disable_global
+      install: make min-req-install
+      script: make test
+    - python: 2.7
+      name: "python-2-min-req"
+      <<: *disable_global
+      install: make min-req-install
+      script: make test
   allow_failures:
     - *lint
 
 stage: test
 
+install: make install
 script:
-  - pytest --cov=xena_gdc_etl
-  - pip install .
-
-before_install:
-  - if [[ $TRAVIS_PYTHON_VERSION == "2.6" ]]; then pip install flake8==2.6.2; fi
-  - pip install -r requirements.txt
-  - pip install pytest~=3.6.1 pytest-cov~=2.4
+  - make test
