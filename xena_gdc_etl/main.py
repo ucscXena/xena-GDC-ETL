@@ -48,7 +48,8 @@ def create_parser():
         prog="xge",
         description="Extract, transform and load GDC data onto UCSC Xena"
     )
-    subparsers = parser.add_subparsers(help="Sub-parsers for xena-gdc-ETL")
+    subparsers = parser.add_subparsers(help="Sub-parsers for xena-gdc-ETL",
+                                       dest="subcomm")
     # equal_matrices subparser
     equality_parser = subparsers.add_parser(
         "xena-eql",
