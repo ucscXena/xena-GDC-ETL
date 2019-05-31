@@ -32,7 +32,7 @@ jobs:
       install: make min-req-install
       script: make test
     - python: 2.7
-      name: "python-3-min-req"
+      name: "python-2-min-req"
       <<: *disable_global
       install: make min-req-install
       script: make test
