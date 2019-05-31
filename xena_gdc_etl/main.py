@@ -1,13 +1,17 @@
 from __future__ import print_function
 import argparse
 from datetime import date
+import os
+import sys
 
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
 
 from .utils import handle_merge_xena
-from .gdc import gdc_check_new
-from .constants import valid_dtype
+from .gdc import gdc_check_new, get_project_info
+from .constants import valid_dtype, __version__
+from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
+from .gdc2xena import gdc2xena
 
 
 def main():
@@ -38,6 +42,49 @@ def main():
     elif options.subcomm == "merge-xena":
         handle_merge_xena(options.name, options.files, options.cohort,
                           options.datatype, options.outdir)
+    # handle etl
+    elif options.subcomm == 'etl':
+        root_dir = os.path.abspath(options.root)
+        projects = options.projects
+        if 'all' in [p.lower() for p in projects]:
+            projects = [str(x) for x in get_project_info().index]
+        for p in options.not_projects:
+            projects.remove(p)
+        xena_dtypes = options.datatype
+        if 'all' in [t.lower() for t in xena_dtypes]:
+            xena_dtypes = valid_dtype
+        for t in options.not_datatype:
+            xena_dtypes.remove(t)
+        print('#### GDC to Xena Importing Settings ####')
+        total_projects = len(projects)
+        print('Import the following {} projects:'.format(total_projects))
+        print(repr(projects), end='\n\n')
+        print('for the following {} types of data:'.format(len(xena_dtypes)))
+        print(str(xena_dtypes), end='\n\n')
+        print('into this directory: {}'.format(root_dir))
+        print('########################################', end='\n\n')
+        gdc2xena(root_dir, projects, xena_dtypes)
+    # handle metadata
+    elif options.subcomm == 'metadata':
+        root_dir = os.path.dirname(options.matrix)
+        if options.datatype == 'survival':
+            dataset = GDCSurvivalset(options.project, root_dir)
+        elif options.datatype == 'raw_phenotype':
+            if options.project.startswith('TCGA'):
+                dataset = GDCPhenoset(options.project, 'raw_phenotype',
+                                      root_dir)
+            if options.project.startswith('TARGET'):
+                dataset = GDCPhenoset(options.project, 'clinical', root_dir)
+        elif options.datatype == 'GDC_phenotype':
+            dataset = GDCPhenoset(options.project, 'GDC_phenotype', root_dir)
+        else:
+            dataset = GDCOmicset(options.project, options.datatype, root_dir)
+        dataset.matrix = options.matrix
+        dataset.gdc_release = (
+                'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-' +  # noqa
+                str(options.release).replace('.', '')
+            )
+        dataset.metadata()
 
 
 def create_parser():
@@ -47,6 +94,11 @@ def create_parser():
     parser = argparse.ArgumentParser(
         prog="xge",
         description="Extract, transform and load GDC data onto UCSC Xena"
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s {v}".format(v=__version__),
     )
     subparsers = parser.add_subparsers(help="Sub-parsers for xena-gdc-ETL",
                                        dest="subcomm")
@@ -113,4 +165,51 @@ def create_parser():
             date.today().strftime('%m%d%Y')
         )
     )
+    # Subcommand for full ETL (download, transform, and metadata)
+    etlparser = subparsers.add_parser(
+        'etl',
+        help='Download and transform GDC data into Xena matrix, '
+                'and generate corresponding metadata.',
+        epilog='Supported data types are: {}'.format(str(valid_dtype))
+    )
+    etlparser.add_argument('-r', '--root', type=str, default='.',
+                           help='Root directory for imported data.')
+    projects_group = etlparser.add_mutually_exclusive_group()
+    projects_group.add_argument('-p', '--projects', type=str, nargs='+',
+                                help='GDC project ID(s) to be imported; or '
+                                     '"all" if all projects on GDC are going '
+                                     'to be imported. Defaults to "all".',
+                                default=['all'])
+    projects_group.add_argument('-P', '--not-projects', type=str, nargs='+',
+                                help='Import all projects on GDC except '
+                                     'projects specified by this option. '
+                                     'This option and the "-p" option are '
+                                     'mutually exclusive.',
+                                default=[])
+    datatype_group = etlparser.add_mutually_exclusive_group()
+    datatype_group.add_argument('-t', '--datatype', type=str, nargs='+',
+                                help='Data type code(s) to be imported; or '
+                                     '"all" if all supported types are going '
+                                     'to be imported. Defaults to "all".',
+                                default=['all'])
+    datatype_group.add_argument('-T', '--not-datatype', type=str, nargs='+',
+                                help='Import all supported types except '
+                                     'projects specified by this option. '
+                                     'This option and the "-t" option are '
+                                     'mutually exclusive.',
+                                default=[])
+    # Subcommand for making metadata
+    metaparser = subparsers.add_parser(
+            'metadata',
+            help='Generate metadata for a Xena matrix',
+            epilog='Supported data types are: {}'.format(str(valid_dtype))
+        )
+    metaparser.add_argument('-p', '--project', type=str, required=True,
+                            help='The project of the matrix.')
+    metaparser.add_argument('-t', '--datatype', type=str, required=True,
+                            help='One data type code for the matrix.')
+    metaparser.add_argument('-m', '--matrix', type=str, required=True,
+                            help='Path to a Xena matrix')
+    metaparser.add_argument('-r', '--release', type=float, required=True,
+                            help='GDC data release number.')
     return parser

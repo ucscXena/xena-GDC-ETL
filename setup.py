@@ -5,6 +5,9 @@ import glob
 import os
 from setuptools import setup, find_packages
 
+__version__ = "0.2.0"
+
+
 with open('requirements.txt') as f_requires:
     install_requires = [req for req in f_requires if not req.startswith('#')]
 with open('README.rst') as f_readme:
@@ -37,11 +40,10 @@ setup(
     entry_points={
         'console_scripts': [
             'xge = xena_gdc_etl.main:main',
-            'gdc2xena = xena_gdc_etl.gdc2xena:main',
         ],
     },
     license='Apache License 2.0',
     keywords='Xena Genomic Data Commons GDC',
     url='https://github.com/yunhailuo/xena-GDC-ETL',
-    version='0.2.0',
+    version=__version__,
 )
