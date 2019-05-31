@@ -1,46 +1,30 @@
-sudo: required
+dist: xenial
 language: python
 python:
-  - 3.6
-  - 2.7
-notifications:
-  email: false
-stages:
-  - test
-  - lint
+  - "3.7"
+  - "2.7"
+env:
+  - MINIMUM_INSTALL=false
+  - MINIMUM_INSTALL=true
 
-.disable_global: &disable_global
-  before_install: false
-  install: true
-  before_script: false
-  after_success: false
-  after_failure: false
-
-.lint: &lint
-  <<: *disable_global
-  python: 3.6
-  stage: lint
-  script: make lint
-
+before_install:
+  - if [[ "$MINIMUM_INSTALL" = true ]]; then
+      pip install -r min-requirements.txt;
+    fi
+install: pip install .
+script:
+  - pip install pytest~=3.6.1 pytest-cov~=2.4
+  - pytest --cov=xena_gdc_etl
+  - pip freeze
 
 jobs:
   include:
-    - *lint
-    - python: 3.6
-      name: "python-3-min-req"
-      <<: *disable_global
-      install: make min-req-install
-      script: make test
-    - python: 2.7
-      name: "python-2-min-req"
-      <<: *disable_global
-      install: make min-req-install
-      script: make test
+    - stage: lint
+      script: 
+        - pip install flake8
+        - flake8
   allow_failures:
-    - *lint
+    - stage: lint
 
-stage: test
-
-install: make install
-script:
-  - make test
+notifications:
+  email: false
