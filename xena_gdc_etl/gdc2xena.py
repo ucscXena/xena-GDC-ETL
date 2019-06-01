@@ -22,14 +22,11 @@ Please check help message with "-h" option for details.
 from __future__ import division
 from __future__ import print_function
 
-import argparse
-import logging
 import os
+import logging
 import timeit
 
-import xena_gdc_etl.gdc as gdc
 from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
-from .constants import valid_dtype
 
 
 def gdc2xena(root_dir, projects, xena_dtypes):

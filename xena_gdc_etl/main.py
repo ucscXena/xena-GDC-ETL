@@ -2,16 +2,19 @@ from __future__ import print_function
 import argparse
 from datetime import date
 import os
-import sys
+import pkg_resources
 
 import pandas as pd
 from pandas.util.testing import assert_frame_equal
 
 from .utils import handle_merge_xena
 from .gdc import gdc_check_new, get_project_info
-from .constants import valid_dtype, __version__
+from .constants import valid_dtype
 from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
 from .gdc2xena import gdc2xena
+
+
+__version__ = pkg_resources.get_distribution("xena_gdc_etl").version
 
 
 def main():
@@ -169,7 +172,7 @@ def create_parser():
     etlparser = subparsers.add_parser(
         'etl',
         help='Download and transform GDC data into Xena matrix, '
-                'and generate corresponding metadata.',
+             'and generate corresponding metadata.',
         epilog='Supported data types are: {}'.format(str(valid_dtype))
     )
     etlparser.add_argument('-r', '--root', type=str, default='.',
