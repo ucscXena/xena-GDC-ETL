@@ -1,4 +1,7 @@
 import unittest
+import pkg_resources
+
+import pytest
 
 from xena_gdc_etl import main
 
@@ -6,6 +9,10 @@ from xena_gdc_etl import main
 class ParserTest(unittest.TestCase):
     def setUp(self):
         self.parser = main.create_parser()
+
+    @pytest.fixture(autouse=True)
+    def _capture(self, capfd):
+        self.capfd = capfd
 
     def test_xena_eql(self):
         parsed = self.parser.parse_args(["xena-eql", "df1", "df2"])
@@ -77,3 +84,10 @@ class ParserTest(unittest.TestCase):
         assert parsed.datatype == "datatype"
         assert parsed.matrix == "path/to/matrix"
         assert parsed.release == 10.0
+
+    def test_version(self):
+        with pytest.raises(SystemExit):
+            self.parser.parse_args(['--version'])
+            out, _ = self.capfd.readouterr()
+            __version__ = pkg_resources.get_distribution("xena_gdc_etl").version
+            assert out == "xge " + __version__ + "\n"

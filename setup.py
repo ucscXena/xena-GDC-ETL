@@ -5,9 +5,6 @@ import glob
 import os
 from setuptools import setup, find_packages
 
-__version__ = "0.2.0"
-
-
 with open('requirements.txt') as f_requires:
     install_requires = [req for req in f_requires if not req.startswith('#')]
 with open('README.rst') as f_readme:
@@ -45,5 +42,5 @@ setup(
     license='Apache License 2.0',
     keywords='Xena Genomic Data Commons GDC',
     url='https://github.com/yunhailuo/xena-GDC-ETL',
-    version=__version__,
+    version='0.2.0',
 )
