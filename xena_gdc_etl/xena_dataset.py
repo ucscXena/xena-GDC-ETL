@@ -86,12 +86,14 @@ def read_biospecimen(fileobj):
     if ext == '.xlsx':
         # Design specifically for TARGET biospecimen
         try:
-            df = pd.read_excel(filename, sheet_name='Sample Names',
-                               header=None)
+            df = pd.read_excel(
+                filename, sheet_name='Sample Names', header=None
+            )
         except Exception:
             try:
-                df = pd.read_excel(filename, sheet_name='SampleNames',
-                                   header=None)
+                df = pd.read_excel(
+                    filename, sheet_name='SampleNames', header=None
+                )
             except Exception:
                 raise
         df.iloc[0].fillna(method='ffill', inplace=True)
@@ -102,8 +104,10 @@ def read_biospecimen(fileobj):
 
     root = etree.parse(fileobj).getroot()
     ns = root.nsmap
-    assert 'biospecimen' in root.xpath('@xsi:schemaLocation',
-                                       namespaces=ns)[0].lower()
+    assert (
+        'biospecimen'
+        in root.xpath('@xsi:schemaLocation', namespaces=ns)[0].lower()
+    )
     samples_common = {}
     for child in root.find('admin:admin', ns):
         try:
@@ -130,9 +134,7 @@ def read_biospecimen(fileobj):
         record.update(samples_common)
         samples[record['bcr_sample_barcode']] = record
     df = pd.DataFrame(samples).T
-    sample_mask = df.bcr_sample_barcode.map(
-        lambda s: s[-3:-1] not in ['10']
-    )
+    sample_mask = df.bcr_sample_barcode.map(lambda s: s[-3:-1] not in ['10'])
     df = df[sample_mask]
     df['bcr_patient_barcode'] = root.find(
         'bio:patient/shared:bcr_patient_barcode', ns
@@ -163,8 +165,10 @@ def read_clinical(fileobj):
 
     root = etree.parse(fileobj).getroot()
     ns = root.nsmap
-    assert 'clinical' in root.xpath('@xsi:schemaLocation',
-                                    namespaces=ns)[0].lower()
+    assert (
+        'clinical'
+        in root.xpath('@xsi:schemaLocation', namespaces=ns)[0].lower()
+    )
     patient = {}
     # "Dirty" extraction
     for child in root.xpath('.//*[not(*)]'):
@@ -177,9 +181,11 @@ def read_clinical(fileobj):
         del patient['race_list']
     try:
         patient['race'] = ','.join(
-            [child.text.strip()
+            [
+                child.text.strip()
                 for child in root.find('.//clin_shared:race_list', ns)
-                if child.text and child.text.strip()]
+                if child.text and child.text.strip()
+            ]
         )
     except Exception:
         patient['race'] = ''
@@ -214,9 +220,11 @@ def merge_cnv(filelist):
     total = len(filelist)
     count = 0
     for path in filelist:
-        xena_matrix = xena_matrix.append(pd.read_table(
-            path, header=0, usecols=[1, 2, 3, 5]
-        ).assign(sample=os.path.basename(path).split('.', 1)[0]))
+        xena_matrix = xena_matrix.append(
+            pd.read_table(path, header=0, usecols=[1, 2, 3, 5]).assign(
+                sample=os.path.basename(path).split('.', 1)[0]
+            )
+        )
         count += 1
         print('\rProcessed {}/{} file...'.format(count, total), end='')
         sys.stdout.flush()
@@ -245,8 +253,10 @@ def snv_maf_matrix(filelist):
     assert len(filelist) == 1
     print('\rProcessing 1/1 file...', end='')
     df = pd.read_table(
-        filelist[0], header=0, comment='#',
-        usecols=[12, 36, 4, 5, 6, 39, 41, 51, 0, 10, 15, 110]
+        filelist[0],
+        header=0,
+        comment='#',
+        usecols=[12, 36, 4, 5, 6, 39, 41, 51, 0, 10, 15, 110],
     )
     print('\rCalculating "dna_vaf" ...', end='')
     df['dna_vaf'] = df['t_alt_count'] / df['t_depth']
@@ -255,26 +265,38 @@ def snv_maf_matrix(filelist):
         lambda x: '-'.join(x.split('-', 4)[0:4])
     )
     print('\rRe-organizing matrix ...', end='')
-    df = (df.drop(['t_alt_count', 't_depth'], axis=1)
-            .set_index('Tumor_Sample_Barcode')
-            .rename(columns={'Hugo_Symbol': 'gene',
-                             'Chromosome': 'chrom',
-                             'Start_Position': 'start',
-                             'End_Position': 'end',
-                             'Reference_Allele': 'ref',
-                             'Tumor_Seq_Allele2': 'alt',
-                             'Tumor_Sample_Barcode': 'sampleid',
-                             'HGVSp_Short': 'Amino_Acid_Change',
-                             'Consequence': 'effect',
-                             'FILTER': 'filter'}))
+    df = (
+        df.drop(['t_alt_count', 't_depth'], axis=1)
+        .set_index('Tumor_Sample_Barcode')
+        .rename(
+            columns={
+                'Hugo_Symbol': 'gene',
+                'Chromosome': 'chrom',
+                'Start_Position': 'start',
+                'End_Position': 'end',
+                'Reference_Allele': 'ref',
+                'Tumor_Seq_Allele2': 'alt',
+                'Tumor_Sample_Barcode': 'sampleid',
+                'HGVSp_Short': 'Amino_Acid_Change',
+                'Consequence': 'effect',
+                'FILTER': 'filter',
+            }
+        )
+    )
     df.index.name = 'Sample_ID'
     return df
 
 
-def merge_sample_cols(filelist, header='infer', index_col=0,
-                      usecols=[0, 1], comment=None, index_name='id',
-                      get_sid=lambda f: os.path.basename(f).split('.', 1)[0],
-                      log2TF=True):
+def merge_sample_cols(
+    filelist,
+    header='infer',
+    index_col=0,
+    usecols=[0, 1],
+    comment=None,
+    index_name='id',
+    get_sid=lambda f: os.path.basename(f).split('.', 1)[0],
+    log2TF=True,
+):
     """Merge and process a list of raw data files to make a Xena data matrix.
 
     Each file will be considered as data from one sample and will be extracted
@@ -311,14 +333,24 @@ def merge_sample_cols(filelist, header='infer', index_col=0,
     total = len(filelist)
     count = 0
     for sample_id in sample_dict:
-        df_list = [pd.read_table(f, header=header, index_col=index_col,
-                                 usecols=usecols, comment=comment,
-                                 names=[index_name, sample_id])
-                   for f in sample_dict[sample_id]]
+        df_list = [
+            pd.read_table(
+                f,
+                header=header,
+                index_col=index_col,
+                usecols=usecols,
+                comment=comment,
+                names=[index_name, sample_id],
+            )
+            for f in sample_dict[sample_id]
+        ]
         if len(sample_dict[sample_id]) > 1:
-            df_list = [xena_matrix,
-                       pd.concat(df_list, axis=1,
-                                 copy=False).mean(1).rename(sample_id)]
+            df_list = [
+                xena_matrix,
+                pd.concat(df_list, axis=1, copy=False)
+                .mean(1)
+                .rename(sample_id),
+            ]
         else:
             df_list.insert(0, xena_matrix)
         xena_matrix = pd.concat(df_list, axis=1, copy=False)
@@ -334,7 +366,7 @@ def merge_sample_cols(filelist, header='infer', index_col=0,
 
 
 class XenaDataset(object):
-    """XenaDataset represents for one Xena matrix in a Xena cohort.
+    r"""XenaDataset represents for one Xena matrix in a Xena cohort.
 
     This class provides a set of method for downloading and transforming data
     into Xena matrix, as well as generating associated metadata. It also
@@ -465,8 +497,10 @@ class XenaDataset(object):
             return self._raw_data_dir
         except AttributeError:
             self._raw_data_dir = os.path.join(
-                self.root_dir, '_'.join(self.projects), 'Raw_Data',
-                str(self.xena_dtype)
+                self.root_dir,
+                '_'.join(self.projects),
+                'Raw_Data',
+                str(self.xena_dtype),
             )
             return self._raw_data_dir
 
@@ -502,8 +536,9 @@ class XenaDataset(object):
         if isinstance(d, dict):
             self._download_map = d
         else:
-            raise TypeError('download_map should be a dict, '
-                            'not {}'.format(type(d)))
+            raise TypeError(
+                'download_map should be a dict, ' 'not {}'.format(type(d))
+            )
 
     # Raw data list: try to get the list from ``raw_data_dir`` if unavailable.
     @property
@@ -538,7 +573,7 @@ class XenaDataset(object):
         except (AttributeError, AssertionError):
             self._matrix = os.path.join(
                 self.matrix_dir,
-                '{}.{}.tsv'.format('_'.join(self.projects), self.xena_dtype)
+                '{}.{}.tsv'.format('_'.join(self.projects), self.xena_dtype),
             )
             return self._matrix
 
@@ -549,8 +584,7 @@ class XenaDataset(object):
 
     @property
     def metadata_template(self):
-        assert isinstance(self._metadata_template,
-                          jinja2.environment.Template)
+        assert isinstance(self._metadata_template, jinja2.environment.Template)
         return self._metadata_template
 
     @metadata_template.setter
@@ -563,12 +597,21 @@ class XenaDataset(object):
             )
             self._metadata_template = jinja2_env.get_template(template)
         else:
-            raise TypeError('metadata_template should be a jinja2 template '
-                            'or an existing path to a template JSON file, '
-                            'not a :{}.'.format(type(template)))
+            raise TypeError(
+                'metadata_template should be a jinja2 template or an existing '
+                'path to a template JSON file, not a :{}.'.format(
+                    type(template)
+                )
+            )
 
-    def __init__(self, projects, xena_dtype, root_dir='.',
-                 raw_data_dir=None, matrix_dir=None):
+    def __init__(
+        self,
+        projects,
+        xena_dtype,
+        root_dir='.',
+        raw_data_dir=None,
+        matrix_dir=None,
+    ):
         self.projects = projects
         self.xena_dtype = xena_dtype
         self.root_dir = root_dir
@@ -615,8 +658,11 @@ class XenaDataset(object):
                 raise IOError('\nFail to download file {}.'.format(url))
         print('')
         self.raw_data_list = download_list
-        print('Raw {} data for {} is ready.'.format(self.projects,
-                                                    self.xena_dtype))
+        print(
+            'Raw {} data for {} is ready.'.format(
+                self.projects, self.xena_dtype
+            )
+        )
         return self
 
     def transform(self):
@@ -663,9 +709,11 @@ class XenaDataset(object):
         try:
             assert os.path.isfile(self.matrix)
         except AttributeError:
-            raise IOError('Xena matrix for this dataset is unknown; please '
-                          'create a matrix or assign an existing matrix file '
-                          'to the "matrix" property before making metadata.')
+            raise IOError(
+                'Xena matrix for this dataset is unknown; please create a '
+                'matrix or assign an existing matrix file to the "matrix" '
+                'property before making metadata.'
+            )
         except AssertionError:
             raise IOError('{} is not an existing file.'.format(self.matrix))
 
@@ -680,7 +728,7 @@ class XenaDataset(object):
 
 
 class GDCOmicset(XenaDataset):
-    """GDCOmicset is derived from the ``XenaDataset`` class and represents for
+    r"""GDCOmicset is derived from the ``XenaDataset`` class and represents for
     a Xena matrix whose data is genomic data from GDC.
 
     This class provides a set of default configurations for downloading and
@@ -761,50 +809,82 @@ class GDCOmicset(XenaDataset):
 
     # Map Xena dtype code to GDC data query dict
     _XENA_GDC_DTYPE = {
-        'htseq_counts': {'data_type': 'Gene Expression Quantification',
-                         'analysis.workflow_type': 'HTSeq - Counts'},
-        'htseq_fpkm': {'data_type': 'Gene Expression Quantification',
-                       'analysis.workflow_type': 'HTSeq - FPKM'},
-        'htseq_fpkm-uq': {'data_type': 'Gene Expression Quantification',
-                          'analysis.workflow_type': 'HTSeq - FPKM-UQ'},
-        'mirna': {'data_type': 'miRNA Expression Quantification',
-                  'analysis.workflow_type': 'BCGSC miRNA Profiling'},
+        'htseq_counts': {
+            'data_type': 'Gene Expression Quantification',
+            'analysis.workflow_type': 'HTSeq - Counts',
+        },
+        'htseq_fpkm': {
+            'data_type': 'Gene Expression Quantification',
+            'analysis.workflow_type': 'HTSeq - FPKM',
+        },
+        'htseq_fpkm-uq': {
+            'data_type': 'Gene Expression Quantification',
+            'analysis.workflow_type': 'HTSeq - FPKM-UQ',
+        },
+        'mirna': {
+            'data_type': 'miRNA Expression Quantification',
+            'analysis.workflow_type': 'BCGSC miRNA Profiling',
+        },
         'mirna_isoform': {
             'data_type': 'Isoform Expression Quantification',
-            'analysis.workflow_type': 'BCGSC miRNA Profiling'
+            'analysis.workflow_type': 'BCGSC miRNA Profiling',
         },
-        'cnv': {'data_type': 'Copy Number Segment',
-                'analysis.workflow_type': 'DNAcopy'},
-        'masked_cnv': {'data_type': 'Masked Copy Number Segment',
-                       'analysis.workflow_type': 'DNAcopy',
-                       'cases.samples.sample_type_id':
-                       (['01', '02', '03', '04', '05', '06', '07', '08', '09',
-                        '15', '16', '20', '40', '50', '60', '61', '99'])},
+        'cnv': {
+            'data_type': 'Copy Number Segment',
+            'analysis.workflow_type': 'DNAcopy',
+        },
+        'masked_cnv': {
+            'data_type': 'Masked Copy Number Segment',
+            'analysis.workflow_type': 'DNAcopy',
+            'cases.samples.sample_type_id': (
+                [
+                    '01',
+                    '02',
+                    '03',
+                    '04',
+                    '05',
+                    '06',
+                    '07',
+                    '08',
+                    '09',
+                    '15',
+                    '16',
+                    '20',
+                    '40',
+                    '50',
+                    '60',
+                    '61',
+                    '99',
+                ]
+            ),
+        },
         'muse_snv': {
             'data_type': 'Masked Somatic Mutation',
-            'analysis.workflow_type':
-            'MuSE Variant Aggregation and Masking'
+            'analysis.workflow_type': 'MuSE Variant Aggregation and Masking',
         },
         'mutect2_snv': {
             'data_type': 'Masked Somatic Mutation',
             'analysis.workflow_type':
-            'MuTect2 Variant Aggregation and Masking'
+            'MuTect2 Variant Aggregation and Masking',
         },
         'somaticsniper_snv': {
             'data_type': 'Masked Somatic Mutation',
             'analysis.workflow_type':
-            'SomaticSniper Variant Aggregation and Masking'
+            'SomaticSniper Variant Aggregation and Masking',
         },
         'varscan2_snv': {
             'data_type': 'Masked Somatic Mutation',
             'analysis.workflow_type':
-            'VarScan2 Variant Aggregation and Masking'
+            'VarScan2 Variant Aggregation and Masking',
         },
-        'methylation27': {'data_type': 'Methylation Beta Value',
-                          'platform': 'Illumina Human Methylation 27'},
-        'methylation450': {'data_type': 'Methylation Beta Value',
-                           'platform': 'Illumina Human Methylation 450'}
-
+        'methylation27': {
+            'data_type': 'Methylation Beta Value',
+            'platform': 'Illumina Human Methylation 27',
+        },
+        'methylation450': {
+            'data_type': 'Methylation Beta Value',
+            'platform': 'Illumina Human Methylation 450',
+        },
     }
 
     # Prefix in filenames for downloaded files
@@ -827,29 +907,37 @@ class GDCOmicset(XenaDataset):
     # Settings for making Xena matrix from GDC data
     _RAWS2MATRIX_FUNCS = dict.fromkeys(
         ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq'],
-        functools.partial(merge_sample_cols, header=None,
-                          index_name='Ensembl_ID')
+        functools.partial(
+            merge_sample_cols, header=None, index_name='Ensembl_ID'
+        ),
     )
-    _RAWS2MATRIX_FUNCS['mirna'] = functools.partial(merge_sample_cols,
-                                                    header=0, usecols=[0, 2],
-                                                    index_name='miRNA_ID')
+    _RAWS2MATRIX_FUNCS['mirna'] = functools.partial(
+        merge_sample_cols, header=0, usecols=[0, 2], index_name='miRNA_ID'
+    )
     _RAWS2MATRIX_FUNCS['mirna_isoform'] = functools.partial(
-        merge_sample_cols, header=0, usecols=[1, 3],
-        index_name='isoform_coords'
+        merge_sample_cols,
+        header=0,
+        usecols=[1, 3],
+        index_name='isoform_coords',
     )
-    _RAWS2MATRIX_FUNCS.update(dict.fromkeys(
-        ['cnv', 'masked_cnv'],
-        merge_cnv
-    ))
-    _RAWS2MATRIX_FUNCS.update(dict.fromkeys(
-        ['muse_snv', 'mutect2_snv', 'somaticsniper_snv', 'varscan2_snv'],
-        snv_maf_matrix
-    ))
-    _RAWS2MATRIX_FUNCS.update(dict.fromkeys(
-        ['methylation27', 'methylation450'],
-        functools.partial(merge_sample_cols, header=0, log2TF=False,
-                          index_name='Composite Element REF')
-    ))
+    _RAWS2MATRIX_FUNCS.update(dict.fromkeys(['cnv', 'masked_cnv'], merge_cnv))
+    _RAWS2MATRIX_FUNCS.update(
+        dict.fromkeys(
+            ['muse_snv', 'mutect2_snv', 'somaticsniper_snv', 'varscan2_snv'],
+            snv_maf_matrix,
+        )
+    )
+    _RAWS2MATRIX_FUNCS.update(
+        dict.fromkeys(
+            ['methylation27', 'methylation450'],
+            functools.partial(
+                merge_sample_cols,
+                header=0,
+                log2TF=False,
+                index_name='Composite Element REF',
+            ),
+        )
+    )
 
     @property
     def xena_dtype(self):
@@ -874,9 +962,13 @@ class GDCOmicset(XenaDataset):
             return self.__gdc_release
         except AttributeError:
             data_release = gdc.search('status', typ='json')['data_release']
-            anchor = re.match(
-                r'(Data Release [^\s]+)\s', data_release
-            ).group(1).replace(' ', '-').replace('.', '').lower()
+            anchor = (
+                re.match(r'(Data Release [^\s]+)\s', data_release)
+                .group(1)
+                .replace(' ', '-')
+                .replace('.', '')
+                .lower()
+            )
             self.__gdc_release = GDC_RELEASE_URL + '#' + anchor
             return self.__gdc_release
 
@@ -891,8 +983,10 @@ class GDCOmicset(XenaDataset):
             assert self.__gdc_filter
             return self.__gdc_filter
         except (AttributeError, AssertionError):
-            self.__gdc_filter = {'access': 'open',
-                                 'cases.project.project_id': self.projects}
+            self.__gdc_filter = {
+                'access': 'open',
+                'cases.project.project_id': self.projects,
+            }
             self.__gdc_filter.update(self._XENA_GDC_DTYPE[self.xena_dtype])
             return self.__gdc_filter
 
@@ -923,28 +1017,34 @@ class GDCOmicset(XenaDataset):
             fields = ['file_id', 'file_name', self.gdc_prefix]
             try:
                 print('Searching for raw data ...', end='')
-                file_df = gdc.search('files', in_filter=self.gdc_filter,
-                                     fields=fields)
+                file_df = gdc.search(
+                    'files', in_filter=self.gdc_filter, fields=fields
+                )
             except Exception:
                 file_dict = {}
             else:
                 file_df.set_index('file_id', drop=False, inplace=True)
                 file_dict = (
                     file_df[self.gdc_prefix].astype(str)
-                    + '.' + file_df['file_id'].astype(str)
-                    + '.' + file_df['file_name'].apply(gdc.get_ext)
+                    + '.'
+                    + file_df['file_id'].astype(str)
+                    + '.'
+                    + file_df['file_name'].apply(gdc.get_ext)
                 ).to_dict()
             if not file_dict:
                 msg = '\rNo {} data found for project {}.'
                 gdc_dtype = self._XENA_GDC_DTYPE[self.xena_dtype]
-                print(msg.format(' - '.join(sorted(gdc_dtype.values())),
-                                 str(self.projects)))
+                print(
+                    msg.format(
+                        ' - '.join(sorted(gdc_dtype.values())),
+                        str(self.projects),
+                    )
+                )
                 return None
             file_dict = {
-                '{}/data/{}'.format(
-                    gdc.GDC_API_BASE,
-                    uuid
-                ): os.path.join(self.raw_data_dir, name)
+                '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): os.path.join(
+                    self.raw_data_dir, name
+                )
                 for uuid, name in file_dict.items()
             }
             self._download_map = file_dict
@@ -967,8 +1067,9 @@ class GDCOmicset(XenaDataset):
     @XenaDataset.metadata_template.getter
     def metadata_template(self):
         try:
-            assert isinstance(self._metadata_template,
-                              jinja2.environment.Template)
+            assert isinstance(
+                self._metadata_template, jinja2.environment.Template
+            )
             return self._metadata_template
         except (AttributeError, AssertionError):
             template_json = METADATA_TEMPLATE[self.xena_dtype]
@@ -981,17 +1082,20 @@ class GDCOmicset(XenaDataset):
     @property
     def metadata_vars(self):
         try:
-            assert (self.__metadata_vars
-                    and isinstance(self.__metadata_vars, dict))
+            assert self.__metadata_vars and isinstance(
+                self.__metadata_vars, dict
+            )
             return self.__metadata_vars
         except (AttributeError, AssertionError):
             matrix_date = time.strftime(
                 "%m-%d-%Y", time.gmtime(os.path.getmtime(self.matrix))
             )
             projects = ','.join(self.projects)
-            variables = {'project_id': projects,
-                         'date': matrix_date,
-                         'gdc_release': self.gdc_release}
+            variables = {
+                'project_id': projects,
+                'date': matrix_date,
+                'gdc_release': self.gdc_release,
+            }
             if projects in GDC_XENA_COHORT:
                 variables['xena_cohort'] = GDC_XENA_COHORT[projects]
             else:
@@ -1001,22 +1105,35 @@ class GDCOmicset(XenaDataset):
             except KeyError:
                 pass
             # Data type specific jinja2 Variables
-            if self.xena_dtype in ['muse_snv', 'mutect2_snv',
-                                   'somaticsniper_snv', 'varscan2_snv']:
+            if self.xena_dtype in [
+                'muse_snv',
+                'mutect2_snv',
+                'somaticsniper_snv',
+                'varscan2_snv',
+            ]:
                 try:
-                    print('\rSearching the specific URL for raw MAF data ...',
-                          end='')
-                    res_df = gdc.search('files', in_filter=self.gdc_filter,
-                                        fields='file_id')
+                    print(
+                        '\rSearching the specific URL for raw MAF data ...',
+                        end='',
+                    )
+                    res_df = gdc.search(
+                        'files', in_filter=self.gdc_filter, fields='file_id'
+                    )
                     if res_df['file_id'].shape == (1,):
                         variables['maf_uuid'] = str(res_df['file_id'][0])
                 except Exception:
-                    message = ('Fail to get a specific URL for the MAF file '
-                               'for: matrix "{}"; "{}" data of cohort "{}".')
-                    warnings.warn(message.format(self.matrix,
-                                                 variables['project_id'],
-                                                 variables['xena_cohort']),
-                                  stacklevel=2)
+                    message = (
+                        'Fail to get a specific URL for the MAF file '
+                        'for: matrix "{}"; "{}" data of cohort "{}".'
+                    )
+                    warnings.warn(
+                        message.format(
+                            self.matrix,
+                            variables['project_id'],
+                            variables['xena_cohort'],
+                        ),
+                        stacklevel=2,
+                    )
             self.__metadata_vars = variables
             return self.__metadata_vars
 
@@ -1026,7 +1143,7 @@ class GDCOmicset(XenaDataset):
 
 
 class GDCPhenoset(XenaDataset):
-    """GDCPhenoset is derived from the ``XenaDataset`` class and represents for
+    r"""GDCPhenoset is derived from the ``XenaDataset`` class and represents for
     a Xena matrix whose data is phenotype data from GDC.
 
     This class provides a set of default configurations for downloading and
@@ -1087,20 +1204,17 @@ class GDCPhenoset(XenaDataset):
     _XENA_GDC_DTYPE = {
         'biospecimen': {
             'data_category': 'Biospecimen',
-            'data_format': 'BCR XML'
+            'data_format': 'BCR XML',
         },
-        'clinical': {
-            'data_category': 'Clinical',
-            'data_format': 'BCR XML'
-        },
+        'clinical': {'data_category': 'Clinical', 'data_format': 'BCR XML'},
         'raw_phenotype': {
             'data_category': ['Biospecimen', 'Clinical'],
-            'data_format': 'BCR XML'
+            'data_format': 'BCR XML',
         },
         'GDC_phenotype': {
             'data_category': ['Biospecimen', 'Clinical'],
-            'data_format': 'BCR XML'
-        }
+            'data_format': 'BCR XML',
+        },
     }
     # To resovle overlapping between raw data and API data, remove columns
     # according to the following lists.
@@ -1110,40 +1224,32 @@ class GDCPhenoset(XenaDataset):
         'state',
         'created_datetime',
         'updated_datetime',
-
         'demographic_id.demographic',
         'submitter_id.demographic',
         'state.demographic',
         'created_datetime.demographic',
         'updated_datetime.demographic',
-
         'diagnosis_id.diagnoses',
         'submitter_id.diagnoses',
         'state.diagnoses',
         'created_datetime.diagnoses',
         'updated_datetime.diagnoses',
-
         'treatment_id.treatments.diagnoses',
         'submitter_id.treatments.diagnoses',
         'state.treatments.diagnoses',
         'created_datetime.treatments.diagnoses',
         'updated_datetime.treatments.diagnoses',
-
         'exposure_id.exposures',
         'submitter_id.exposures',
         'state.exposures',
         'created_datetime.exposures',
         'updated_datetime.exposures',
-
         'pathology_report_uuid.samples',
-
         'state.project',
         'released.project',
-
         'sample_id.samples',
         'created_datetime.samples',
         'updated_datetime.samples',
-
         'tissue_source_site_id.tissue_source_site',
     ]
     _RAW_DROPS = [
@@ -1204,9 +1310,13 @@ class GDCPhenoset(XenaDataset):
             return self.__gdc_release
         except AttributeError:
             data_release = gdc.search('status', typ='json')['data_release']
-            anchor = re.match(
-                r'(Data Release [^\s]+)\s', data_release
-            ).group(1).replace(' ', '-').replace('.', '').lower()
+            anchor = (
+                re.match(r'(Data Release [^\s]+)\s', data_release)
+                .group(1)
+                .replace(' ', '-')
+                .replace('.', '')
+                .lower()
+            )
             self.__gdc_release = GDC_RELEASE_URL + '#' + anchor
             return self.__gdc_release
 
@@ -1221,8 +1331,10 @@ class GDCPhenoset(XenaDataset):
             assert self.__gdc_filter
             return self.__gdc_filter
         except (AttributeError, AssertionError):
-            self.__gdc_filter = {'access': 'open',
-                                 'cases.project.project_id': self.projects}
+            self.__gdc_filter = {
+                'access': 'open',
+                'cases.project.project_id': self.projects,
+            }
             self.__gdc_filter.update(self._XENA_GDC_DTYPE[self.xena_dtype])
             return self.__gdc_filter
 
@@ -1239,28 +1351,34 @@ class GDCPhenoset(XenaDataset):
             fields = ['file_id', 'file_name', 'data_category']
             try:
                 print('Searching for raw data ...', end='')
-                file_df = gdc.search('files', in_filter=self.gdc_filter,
-                                     fields=fields)
+                file_df = gdc.search(
+                    'files', in_filter=self.gdc_filter, fields=fields
+                )
             except Exception:
                 file_dict = {}
             else:
                 file_df.set_index('file_id', drop=False, inplace=True)
                 file_dict = (
                     file_df['data_category'].astype(str)
-                    + '.' + file_df['file_id'].astype(str)
-                    + '.' + file_df['file_name'].apply(gdc.get_ext)
+                    + '.'
+                    + file_df['file_id'].astype(str)
+                    + '.'
+                    + file_df['file_name'].apply(gdc.get_ext)
                 ).to_dict()
             if not file_dict:
                 msg = '\rNo {} data found for project {}.'
                 gdc_dtype = self._XENA_GDC_DTYPE[self.xena_dtype]
-                print(msg.format(' - '.join(sorted(gdc_dtype.values())),
-                                 str(self.projects)))
+                print(
+                    msg.format(
+                        ' - '.join(sorted(gdc_dtype.values())),
+                        str(self.projects),
+                    )
+                )
                 return None
             file_dict = {
-                '{}/data/{}'.format(
-                    gdc.GDC_API_BASE,
-                    uuid
-                ): os.path.join(self.raw_data_dir, name)
+                '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): os.path.join(
+                    self.raw_data_dir, name
+                )
                 for uuid, name in file_dict.items()
             }
             self._download_map = file_dict
@@ -1271,17 +1389,20 @@ class GDCPhenoset(XenaDataset):
     @property
     def metadata_vars(self):
         try:
-            assert (self.__metadata_vars
-                    and isinstance(self.__metadata_vars, dict))
+            assert self.__metadata_vars and isinstance(
+                self.__metadata_vars, dict
+            )
             return self.__metadata_vars
         except (AttributeError, AssertionError):
             matrix_date = time.strftime(
                 "%m-%d-%Y", time.gmtime(os.path.getmtime(self.matrix))
             )
             projects = ','.join(self.projects)
-            variables = {'project_id': projects,
-                         'date': matrix_date,
-                         'gdc_release': self.gdc_release}
+            variables = {
+                'project_id': projects,
+                'date': matrix_date,
+                'gdc_release': self.gdc_release,
+            }
             if projects in GDC_XENA_COHORT:
                 variables['xena_cohort'] = GDC_XENA_COHORT[projects]
             else:
@@ -1293,8 +1414,14 @@ class GDCPhenoset(XenaDataset):
     def metadata_vars(self, variables):
         self.__metadata_vars = variables
 
-    def __init__(self, projects, xena_dtype=None, root_dir='.',
-                 raw_data_dir=None, matrix_dir=None):
+    def __init__(
+        self,
+        projects,
+        xena_dtype=None,
+        root_dir='.',
+        raw_data_dir=None,
+        matrix_dir=None,
+    ):
         self.projects = projects
         if xena_dtype is not None:
             self.xena_dtype = xena_dtype
@@ -1352,17 +1479,21 @@ class GDCPhenoset(XenaDataset):
                     raise TypeError('Fail to process file {}.'.format(path))
         print('\rAll {} files have been processed. '.format(total))
         try:
-            bio_matrix = (pd.concat(bio_dfs, axis=0)
-                            .replace(r'\r\n', ' ', regex=True)
-                            .replace(r'^\s*$', np.nan, regex=True)
-                            .dropna(axis=1, how='all'))
+            bio_matrix = (
+                pd.concat(bio_dfs, axis=0)
+                .replace(r'\r\n', ' ', regex=True)
+                .replace(r'^\s*$', np.nan, regex=True)
+                .dropna(axis=1, how='all')
+            )
         except Exception:
             bio_matrix = pd.DataFrame()
         try:
-            clin_matrix = (pd.concat(clin_dfs, axis=0)
-                             .replace(r'\r\n', ' ', regex=True)
-                             .replace(r'^\s*$', np.nan, regex=True)
-                             .dropna(axis=1, how='all'))
+            clin_matrix = (
+                pd.concat(clin_dfs, axis=0)
+                .replace(r'\r\n', ' ', regex=True)
+                .replace(r'^\s*$', np.nan, regex=True)
+                .dropna(axis=1, how='all')
+            )
         except Exception:
             clin_matrix = pd.DataFrame()
         if self.xena_dtype == 'clinical':
@@ -1372,32 +1503,45 @@ class GDCPhenoset(XenaDataset):
                 xena_matrix = clin_matrix
             print('\rMapping clinical info to individual samples...', end='')
             cases = gdc.search(
-                'cases', in_filter={'project.project_id': self.projects},
-                fields=['submitter_id', 'samples.submitter_id'], typ='json'
+                'cases',
+                in_filter={'project.project_id': self.projects},
+                fields=['submitter_id', 'samples.submitter_id'],
+                typ='json',
             )
             cases_samples = [c for c in cases if 'samples' in c]
             from pandas.io.json import json_normalize
+
             cases_samples_map = json_normalize(
-                cases_samples, 'samples', ['submitter_id'],
-                meta_prefix='cases.'
+                cases_samples,
+                'samples',
+                ['submitter_id'],
+                meta_prefix='cases.',
             )
             if all([i.startswith('TCGA-') for i in self.projects]):
                 cases_samples_map = cases_samples_map.rename(
-                    columns={'submitter_id': 'sample_id',
-                             'cases.submitter_id': 'bcr_patient_barcode'}
+                    columns={
+                        'submitter_id': 'sample_id',
+                        'cases.submitter_id': 'bcr_patient_barcode',
+                    }
                 )
                 xena_matrix = pd.merge(
-                    xena_matrix.reset_index(), cases_samples_map,
-                    how='inner', on='bcr_patient_barcode'
+                    xena_matrix.reset_index(),
+                    cases_samples_map,
+                    how='inner',
+                    on='bcr_patient_barcode',
                 ).set_index('sample_id')
             elif all([i.startswith('TARGET-') for i in self.projects]):
                 cases_samples_map = cases_samples_map.rename(
-                    columns={'submitter_id': 'sample_id',
-                             'cases.submitter_id': 'TARGET USI'}
+                    columns={
+                        'submitter_id': 'sample_id',
+                        'cases.submitter_id': 'TARGET USI',
+                    }
                 )
                 xena_matrix = pd.merge(
-                    xena_matrix.reset_index(), cases_samples_map,
-                    how='inner', on='TARGET USI'
+                    xena_matrix.reset_index(),
+                    cases_samples_map,
+                    how='inner',
+                    on='TARGET USI',
                 ).set_index('sample_id')
             else:
                 warnings.warn('Fail to get per sample based clinical matrix.')
@@ -1406,27 +1550,32 @@ class GDCPhenoset(XenaDataset):
                 xena_matrix = bio_matrix.set_index('bcr_sample_barcode')
             except Exception:
                 xena_matrix = bio_matrix
-        elif (self.xena_dtype in ['raw_phenotype', 'GDC_phenotype']
-              and all([i.startswith('TCGA-') for i in self.projects])):
-            bio_columns = (bio_matrix.columns.difference(clin_matrix.columns)
-                                             .insert(0, 'bcr_patient_barcode'))
+        elif self.xena_dtype in ['raw_phenotype', 'GDC_phenotype'] and all(
+            [i.startswith('TCGA-') for i in self.projects]
+        ):
+            bio_columns = bio_matrix.columns.difference(
+                clin_matrix.columns
+            ).insert(0, 'bcr_patient_barcode')
             xena_matrix = (
                 pd.merge(
                     clin_matrix,
                     bio_matrix[bio_columns],
-                    how='outer', on='bcr_patient_barcode').replace(
-                        r'^\s*$', np.nan, regex=True
-                ).set_index('bcr_sample_barcode').fillna(
-                    bio_matrix.set_index('bcr_sample_barcode')
+                    how='outer',
+                    on='bcr_patient_barcode',
                 )
+                .replace(r'^\s*$', np.nan, regex=True)
+                .set_index('bcr_sample_barcode')
+                .fillna(bio_matrix.set_index('bcr_sample_barcode'))
             )
         if self.xena_dtype == 'GDC_phenotype':
             # Query GDC API for GDC harmonized phenotype info
             api_clin = gdc.get_samples_clinical(self.projects)
             # Revert hierarchy order in column names
             api_clin = api_clin.rename(
-                columns={n: '.'.join(reversed(n.split('.')))
-                            for n in api_clin.columns}
+                columns={
+                    n: '.'.join(reversed(n.split('.')))
+                    for n in api_clin.columns
+                }
             )
             if all([i.startswith('TCGA-') for i in self.projects]):
                 # Remove code 10, Blood Derived Normal, sample:
@@ -1459,18 +1608,21 @@ class GDCPhenoset(XenaDataset):
                     pd.merge(
                         xena_matrix,
                         api_clin.reset_index(),
-                        how='outer', on='submitter_id.samples').replace(
-                            r'^\s*$', np.nan, regex=True
-                    ).set_index('submitter_id.samples')
+                        how='outer',
+                        on='submitter_id.samples',
+                    )
+                    .replace(r'^\s*$', np.nan, regex=True)
+                    .set_index('submitter_id.samples')
                 )
             elif all([i.startswith('TARGET-') for i in self.projects]):
-                xena_matrix = api_clin.dropna(
-                    axis=1, how='all'
-                ).set_index('submitter_id.samples')
+                xena_matrix = api_clin.dropna(axis=1, how='all').set_index(
+                    'submitter_id.samples'
+                )
             else:
-                raise ValueError('Getting "GDC_phenotype" for a cohort with '
-                                 'mixed TCGA and TARGET projects is not '
-                                 'currently suppported.')
+                raise ValueError(
+                    'Getting "GDC_phenotype" for a cohort with mixed TCGA and '
+                    'TARGET projects is not currently suppported.'
+                )
         # Transformation done
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
@@ -1480,7 +1632,7 @@ class GDCPhenoset(XenaDataset):
 
 
 class GDCSurvivalset(XenaDataset):
-    """GDCSurvivalset is derived from the ``XenaDataset`` class and represents
+    r"""GDCSurvivalset is derived from the ``XenaDataset`` class and represents
     for a Xena matrix of GDC survival data for project(s) of interest.
 
     In general, survival data is retrieved from GDC API's "analysis/survival"
@@ -1509,9 +1661,13 @@ class GDCSurvivalset(XenaDataset):
             return self.__gdc_release
         except AttributeError:
             data_release = gdc.search('status', typ='json')['data_release']
-            anchor = re.match(
-                r'(Data Release [^\s]+)\s', data_release
-            ).group(1).replace(' ', '-').replace('.', '').lower()
+            anchor = (
+                re.match(r'(Data Release [^\s]+)\s', data_release)
+                .group(1)
+                .replace(' ', '-')
+                .replace('.', '')
+                .lower()
+            )
             self.__gdc_release = GDC_RELEASE_URL + '#' + anchor
             return self.__gdc_release
 
@@ -1522,17 +1678,20 @@ class GDCSurvivalset(XenaDataset):
     @property
     def metadata_vars(self):
         try:
-            assert (self.__metadata_vars
-                    and isinstance(self.__metadata_vars, dict))
+            assert self.__metadata_vars and isinstance(
+                self.__metadata_vars, dict
+            )
             return self.__metadata_vars
         except (AttributeError, AssertionError):
             matrix_date = time.strftime(
                 "%m-%d-%Y", time.gmtime(os.path.getmtime(self.matrix))
             )
             projects = ','.join(self.projects)
-            variables = {'project_id': projects,
-                         'date': matrix_date,
-                         'gdc_release': self.gdc_release}
+            variables = {
+                'project_id': projects,
+                'date': matrix_date,
+                'gdc_release': self.gdc_release,
+            }
             if projects in GDC_XENA_COHORT:
                 variables['xena_cohort'] = GDC_XENA_COHORT[projects]
             else:
@@ -1544,10 +1703,12 @@ class GDCSurvivalset(XenaDataset):
     def metadata_vars(self, variables):
         self.__metadata_vars = variables
 
-    def __init__(self, projects, root_dir='.', raw_data_dir=None,
-                 matrix_dir=None):
-        super(GDCSurvivalset, self).__init__(projects, 'survival', root_dir,
-                                             raw_data_dir, matrix_dir)
+    def __init__(
+        self, projects, root_dir='.', raw_data_dir=None, matrix_dir=None
+    ):
+        super(GDCSurvivalset, self).__init__(
+            projects, 'survival', root_dir, raw_data_dir, matrix_dir
+        )
 
         jinja2_env = jinja2.Environment(
             loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
@@ -1569,18 +1730,23 @@ class GDCSurvivalset(XenaDataset):
             self: allow method chaining.
         """
 
-        survival = gdc.search('analysis/survival',
-                              in_filter={'project.project_id': self.projects},
-                              typ='json')['results'][0]['donors']
+        survival = gdc.search(
+            'analysis/survival',
+            in_filter={'project.project_id': self.projects},
+            typ='json',
+        )['results'][0]['donors']
         mkdir_p(self.raw_data_dir)
         path = os.path.join(
             self.raw_data_dir,
-            '{}.GDC_survival.tsv'.format(','.join(self.projects))
+            '{}.GDC_survival.tsv'.format(','.join(self.projects)),
         )
         pd.DataFrame(survival).set_index('id').to_csv(path, sep='\t')
         self.raw_data_list = [path]
-        print('Raw {} data for {} is ready.'.format(self.projects,
-                                                    self.xena_dtype))
+        print(
+            'Raw {} data for {} is ready.'.format(
+                self.projects, self.xena_dtype
+            )
+        )
         return self
 
     def transform(self):
@@ -1604,18 +1770,22 @@ class GDCSurvivalset(XenaDataset):
         # Transform GDC data according to Xena survival data spec
         survival_df = raw_df.drop(
             ['project_id', 'survivalEstimate'], axis=1
-        ).rename(columns={
-            'censored': '_EVENT',
-            'time': '_TIME_TO_EVENT',
-            'submitter_id': '_PATIENT'
-        })
+        ).rename(
+            columns={
+                'censored': '_EVENT',
+                'time': '_TIME_TO_EVENT',
+                'submitter_id': '_PATIENT',
+            }
+        )
         survival_df['_OS_IND'] = (~survival_df['_EVENT']).map(int)
         survival_df['_EVENT'] = survival_df['_OS_IND']
         survival_df['_OS'] = survival_df['_TIME_TO_EVENT']
         # Get samples to case map
         case_samples = gdc.search(
-            'cases', in_filter={'project.project_id': self.projects},
-            fields='submitter_sample_ids', typ='json'
+            'cases',
+            in_filter={'project.project_id': self.projects},
+            fields='submitter_sample_ids',
+            typ='json',
         )
         case_samples = [c for c in case_samples if 'submitter_sample_ids' in c]
         samples_df = pd.io.json.json_normalize(
@@ -1626,9 +1796,11 @@ class GDCSurvivalset(XenaDataset):
         )
         samples_df = samples_df[sample_mask]
         # Make sample indexed survival matrix
-        df = (pd.merge(survival_df, samples_df, how='inner', on='id')
-                .drop('id', axis=1)
-                .set_index('sample'))
+        df = (
+            pd.merge(survival_df, samples_df, how='inner', on='id')
+            .drop('id', axis=1)
+            .set_index('sample')
+        )
         mkdir_p(os.path.dirname(self.matrix))
         df.to_csv(self.matrix, sep='\t')
         print('\rXena matrix is saved at {}.'.format(self.matrix))
@@ -1638,9 +1810,11 @@ class GDCSurvivalset(XenaDataset):
 def main():
     print('A python module of Xena specific importing pipeline for GDC data.')
     start = time.time()
-    dataset = GDCOmicset(projects='TCGA-BRCA',
-                         root_dir=r'/mnt/e/GitHub/xena-GDC-ETL/gitignore/test',
-                         xena_dtype='methylation450')
+    dataset = GDCOmicset(
+        projects='TCGA-BRCA',
+        root_dir=r'/mnt/e/GitHub/xena-GDC-ETL/gitignore/test',
+        xena_dtype='methylation450',
+    )
     dataset.download().transform().metadata()
     print(time.time() - start)
 

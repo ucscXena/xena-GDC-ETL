@@ -54,13 +54,14 @@ def metadata(matrix, xena_dtypes):
         loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
     )
     metadata_template = jinja2_env.get_template(METADATA_TEMPLATE[xena_dtypes])
-    matrix_date = time.strftime("%m-%d-%Y",
-                                time.gmtime(os.path.getmtime(matrix)))
+    matrix_date = time.strftime(
+        "%m-%d-%Y", time.gmtime(os.path.getmtime(matrix))
+    )
     variables = {
         'project_id': 'GDC-PANCAN',
         'date': matrix_date,
         'gdc_release': GDC_RELEASE_URL + '#data-release-90',
-        'xena_cohort': 'GDC Pan-Cancer (PANCAN)'
+        'xena_cohort': 'GDC Pan-Cancer (PANCAN)',
     }
     try:
         variables.update(METADATA_VARIABLES[xena_dtypes])
@@ -75,13 +76,22 @@ def metadata(matrix, xena_dtypes):
 def main():
     root_dir = r'/mnt/gdc/updates'
     out_dir = r'/mnt/gdc/updates/GDC-PANCAN/Xena_Matrices'
-    datatypes = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna',
-                 'masked_cnv', 'muse_snv', 'mutect2_snv', 'somaticsniper_snv',
-                 'varscan2_snv', 'survival']
+    datatypes = [
+        'htseq_counts',
+        'htseq_fpkm',
+        'htseq_fpkm-uq',
+        'mirna',
+        'masked_cnv',
+        'muse_snv',
+        'mutect2_snv',
+        'somaticsniper_snv',
+        'varscan2_snv',
+        'survival',
+    ]
     gdc_release = GDC_RELEASE_URL + '#data-release-100'
     meta_templates_dir = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        'Resources'
+        'Resources',
     )
     meta_templates = {
         k: os.path.join(meta_templates_dir, v)
@@ -91,22 +101,40 @@ def main():
     for dtype in datatypes:
         if dtype in ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna']:
             merge_axis = 1
-        elif dtype in ['masked_cnv', 'muse_snv', 'mutect2_snv',
-                       'somaticsniper_snv', 'varscan2_snv',
-                       'raw_phenotype', 'GDC_phenotype', 'survival']:
+        elif dtype in [
+            'masked_cnv',
+            'muse_snv',
+            'mutect2_snv',
+            'somaticsniper_snv',
+            'varscan2_snv',
+            'raw_phenotype',
+            'GDC_phenotype',
+            'survival',
+        ]:
             merge_axis = 0
         else:
             msg = 'Invalid datatype: {}\nSupported data types are: {}'
-            valid_dtype = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq',
-                           'mirna', 'masked_cnv', 'muse_snv', 'mutect2_snv',
-                           'somaticsniper_snv', 'varscan2_snv',
-                           'raw_phenotype', 'GDC_phenotype', 'survival']
+            valid_dtype = [
+                'htseq_counts',
+                'htseq_fpkm',
+                'htseq_fpkm-uq',
+                'mirna',
+                'masked_cnv',
+                'muse_snv',
+                'mutect2_snv',
+                'somaticsniper_snv',
+                'varscan2_snv',
+                'raw_phenotype',
+                'GDC_phenotype',
+                'survival',
+            ]
             raise ValueError(msg.format(dtype, valid_dtype))
             return
         print('\n########################################')
         # Gather the list of matrices to be merged
-        pathpattern = os.path.join(root_dir, 'TCGA-*', 'Xena_Matrices',
-                                   '*.{}.tsv'.format(dtype))
+        pathpattern = os.path.join(
+            root_dir, 'TCGA-*', 'Xena_Matrices', '*.{}.tsv'.format(dtype)
+        )
         matrices = []
         for path in glob.glob(pathpattern):
             print('\rReading {} ...'.format(path), end='')
@@ -137,7 +165,7 @@ def main():
                 "%m-%d-%Y", time.gmtime(os.path.getmtime(outmatrix))
             ),
             'gdc_release': gdc_release,
-            'xena_cohort': 'GDC Pan-Cancer (PANCAN)'
+            'xena_cohort': 'GDC Pan-Cancer (PANCAN)',
         }
         try:
             variables.update(METADATA_VARIABLES[dtype])

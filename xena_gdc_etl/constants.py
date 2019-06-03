@@ -1,4 +1,6 @@
-GDC_RELEASE_URL = 'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/'  # noqa: E501
+GDC_RELEASE_URL = (
+    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/'
+)
 
 # Map GDC project_id to Xena specific cohort name.
 GDC_XENA_COHORT = {
@@ -34,7 +36,7 @@ GDC_XENA_COHORT = {
     'TCGA-KICH': 'GDC TCGA Kidney Chromophobe (KICH)',
     'TCGA-UCS': 'GDC TCGA Uterine Carcinosarcoma (UCS)',
     'TCGA-CHOL': 'GDC TCGA Bile Duct Cancer (CHOL)',
-    'TCGA-DLBC': 'GDC TCGA Large B-cell Lymphoma (DLBC)'
+    'TCGA-DLBC': 'GDC TCGA Large B-cell Lymphoma (DLBC)',
 }
 
 # Map xena_dtype to corresponding metadata template.
@@ -53,36 +55,39 @@ METADATA_TEMPLATE = {
     'GDC_phenotype': 'template.phenotype.meta.json',
     'survival': 'template.survival.meta.json',
     'methylation27': 'template.methylation.meta.json',
-    'methylation450': 'template.methylation.meta.json'
+    'methylation450': 'template.methylation.meta.json',
 }
 
 # Jinja2 template variables for corresponding "xena_dtype".
 METADATA_VARIABLES = {
     'htseq_counts': {'gdc_type': 'HTSeq - Counts'},
-    'htseq_fpkm': {'gdc_type': 'HTSeq - FPKM',
-                   'unit': 'fpkm'},
-    'htseq_fpkm-uq': {'gdc_type': 'HTSeq - FPKM-UQ',
-                      'unit': 'fpkm-uq'},
+    'htseq_fpkm': {'gdc_type': 'HTSeq - FPKM', 'unit': 'fpkm'},
+    'htseq_fpkm-uq': {'gdc_type': 'HTSeq - FPKM-UQ', 'unit': 'fpkm-uq'},
     'mirna': {'gdc_type': 'miRNA Expression Quantification'},
     'mirna_isoform': {'gdc_type': 'Isoform Expression Quantification'},
     'cnv': {'gdc_type': 'Copy Number Segment'},
     'masked_cnv': {'gdc_type': 'Masked Copy Number Segment'},
     'muse_snv': {'gdc_type': 'MuSE Variant Aggregation and Masking'},
-    'mutect2_snv': {
-        'gdc_type': 'MuTect2 Variant Aggregation and Masking'
-    },
+    'mutect2_snv': {'gdc_type': 'MuTect2 Variant Aggregation and Masking'},
     'somaticsniper_snv': {
         'gdc_type': 'SomaticSniper Variant Aggregation and Masking'
     },
-    'varscan2_snv': {
-        'gdc_type': 'VarScan2 Variant Aggregation and Masking'
-    },
+    'varscan2_snv': {'gdc_type': 'VarScan2 Variant Aggregation and Masking'},
     'methylation27': {'platform_num': '27'},
-    'methylation450': {'platform_num': '450'}
+    'methylation450': {'platform_num': '450'},
 }
 valid_dtype = [
-    'htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna',
-    'masked_cnv', 'muse_snv', 'mutect2_snv',
-    'somaticsniper_snv', 'varscan2_snv', 'GDC_phenotype',
-    'survival', 'methylation27', 'methylation450'
+    'htseq_counts',
+    'htseq_fpkm',
+    'htseq_fpkm-uq',
+    'mirna',
+    'masked_cnv',
+    'muse_snv',
+    'mutect2_snv',
+    'somaticsniper_snv',
+    'varscan2_snv',
+    'GDC_phenotype',
+    'survival',
+    'methylation27',
+    'methylation450',
 ]

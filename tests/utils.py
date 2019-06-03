@@ -17,5 +17,6 @@ def compare_dict(dict_1, dict_2):
     >>> compare_dict({'a': 'b'}, {'a': 'b'})
     True
     """
-    return json.dumps(dict_1, sort_keys=True) == json.dumps(dict_2,
-                                                            sort_keys=True)
+    return json.dumps(dict_1, sort_keys=True) == json.dumps(
+        dict_2, sort_keys=True
+    )

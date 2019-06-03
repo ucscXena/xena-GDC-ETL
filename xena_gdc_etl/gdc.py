@@ -17,14 +17,22 @@ import warnings
 import pandas as pd
 import requests
 
-from .utils import (
-    mkdir_p,
-    reduce_json_array,
-)
+from .utils import mkdir_p, reduce_json_array
 
 GDC_API_BASE = 'https://api.gdc.cancer.gov'
-_SUPPORTED_FILE_TYPES = {'txt', 'vcf', 'bam', 'tsv', 'xml', 'maf', 'xlsx',
-                         'tar', 'gz', 'md5', 'xls'}
+_SUPPORTED_FILE_TYPES = {
+    'txt',
+    'vcf',
+    'bam',
+    'tsv',
+    'xml',
+    'maf',
+    'xlsx',
+    'tar',
+    'gz',
+    'md5',
+    'xls',
+}
 _SUPPORTED_DATASETS = [
     {'data_type': 'Copy Number Segment'},
     {'data_type': 'Masked Copy Number Segment'},
@@ -36,11 +44,13 @@ _SUPPORTED_DATASETS = [
     {'analysis.workflow_type': 'HTSeq - FPKM-UQ'},
     {'analysis.workflow_type': 'MuSE Variant Aggregation and Masking'},
     {'analysis.workflow_type': 'MuTect2 Variant Aggregation and Masking'},
-    {'analysis.workflow_type':
-        'SomaticSniper Variant Aggregation and Masking'},
+    {
+        'analysis.workflow_type':
+        'SomaticSniper Variant Aggregation and Masking'
+    },
     {'analysis.workflow_type': 'VarScan2 Variant Aggregation and Masking'},
     {'data_type': 'Biospecimen Supplement'},
-    {'data_type': 'Clinical Supplement'}
+    {'data_type': 'Clinical Supplement'},
 ]
 # https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tcga-study-abbreviations
 TCGA_STUDY_ABBR = {
@@ -49,8 +59,9 @@ TCGA_STUDY_ABBR = {
     'BLCA': 'Bladder Urothelial Carcinoma',
     'LGG': 'Brain Lower Grade Glioma',
     'BRCA': 'Breast invasive carcinoma',
-    'CESC': ('Cervical squamous cell carcinoma and endocervical '
-             'adenocarcinoma'),
+    'CESC': (
+        'Cervical squamous cell carcinoma and endocervical adenocarcinoma'
+    ),
     'CHOL': 'Cholangiocarcinoma',
     'LCML': 'Chronic Myelogenous Leukemia',
     'COAD': 'Colon adenocarcinoma',
@@ -118,19 +129,28 @@ def simple_and_filter(in_dict={}, exclude_dict={}):
         value = in_dict[key]
         if not isinstance(value, list):
             value = [value]
-        operation_list.append({"op": "in",
-                               "content": {"field": key, "value": value}})
+        operation_list.append(
+            {"op": "in", "content": {"field": key, "value": value}}
+        )
     for key in exclude_dict:
         value = exclude_dict[key]
         if not isinstance(value, list):
             value = [value]
-        operation_list.append({"op": "exclude",
-                               "content": {"field": key, "value": value}})
+        operation_list.append(
+            {"op": "exclude", "content": {"field": key, "value": value}}
+        )
     return {"op": "and", "content": operation_list}
 
 
-def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
-           typ='dataframe', method='GET'):
+def search(
+    endpoint,
+    in_filter={},
+    exclude_filter={},
+    fields=[],
+    expand=[],
+    typ='dataframe',
+    method='GET',
+):
     """Search one GDC endpoints and return searching results in a pandas
     DataFrame if possible.
 
@@ -172,10 +192,11 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
     try:
         assert typ.lower() in ['json', 'dataframe']
     except (AttributeError, AssertionError):
-        raise ValueError('typ should be a string of either JSON or dataframe, '
-                         'not {}'.format(typ))
-    filters = simple_and_filter(in_dict=in_filter,
-                                exclude_dict=exclude_filter)
+        raise ValueError(
+            'typ should be a string of either JSON or dataframe, '
+            'not {}'.format(typ)
+        )
+    filters = simple_and_filter(in_dict=in_filter, exclude_dict=exclude_filter)
     if isinstance(fields, str):
         fields = [fields]
     if isinstance(expand, str):
@@ -193,8 +214,10 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
     elif method.upper() == 'GET':
         response = requests.get(url, params=payload)
     else:
-        raise ValueError('Invalid method: {}\n method must be either "GET" '
-                         'or "POST".'.format(method))
+        raise ValueError(
+            'Invalid method: {}\n method must be either "GET" '
+            'or "POST".'.format(method)
+        )
     try:
         payload['size'] = response.json()['data']['pagination']['total']
     except KeyError:
@@ -203,8 +226,11 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
         if typ.lower() == 'json':
             return response.json()
         else:
-            warnings.warn('Fail to get a table of results. JSON returned. '
-                          'Please check the result carefully.', stacklevel=2)
+            warnings.warn(
+                'Fail to get a table of results. JSON returned. '
+                'Please check the result carefully.',
+                stacklevel=2,
+            )
             return response.json()
     if method.upper() == 'POST':
         response = requests.post(url, data=payload)
@@ -217,12 +243,18 @@ def search(endpoint, in_filter={}, exclude_filter={}, fields=[], expand=[],
         try:
             return pd.io.json.json_normalize(reduce_json_array(results))
         except Exception:
-            warnings.warn('Fail to convert searching results into table. '
-                          'JSON will be returned.', stacklevel=2)
+            warnings.warn(
+                'Fail to convert searching results into table. '
+                'JSON will be returned.',
+                stacklevel=2,
+            )
             return results
     else:
-        warnings.warn('Searching failed with HTTP status code: '
-                      '{}'.format(response.status_code), stacklevel=2)
+        warnings.warn(
+            'Searching failed with HTTP status code: '
+            '{}'.format(response.status_code),
+            stacklevel=2,
+        )
         return None
 
 
@@ -278,8 +310,10 @@ def download(uuids, download_dir='.', chunk_size=4096):
     elif isinstance(uuids, list):
         uuids = {uuid: None for uuid in uuids}
     elif not isinstance(uuids, dict):
-        raise TypeError('uuids is a {}; it should be a string, a list or a '
-                        'dict'.format(type(uuids)))
+        raise TypeError(
+            'uuids is a {}; it should be a string, a list or a '
+            'dict'.format(type(uuids))
+        )
     total = len(uuids)
     count = 0
     download_list = []
@@ -291,10 +325,11 @@ def download(uuids, download_dir='.', chunk_size=4096):
             file_size = int(response.headers['Content-Length'])
             if uuids[uuid] is None:
                 content_disp = response.headers['Content-Disposition']
-                ori_name = content_disp[content_disp.find('filename=') + 9:]
+                ori_name = content_disp[content_disp.find('filename=') + 9 :]  # noqa: E203, E501
                 new_filename = uuid + '.' + get_ext(ori_name)
-                path = os.path.join(os.path.abspath(download_dir),
-                                    new_filename)
+                path = os.path.join(
+                    os.path.abspath(download_dir), new_filename
+                )
             else:
                 path = os.path.abspath(uuids[uuid])
             status = '\r[{:d}/{:d}] Download to "{}": {:4.0%}'
@@ -306,9 +341,11 @@ def download(uuids, download_dir='.', chunk_size=4096):
                 for chunk in response.iter_content(chunk_size):
                     f.write(chunk)
                     downloaded = downloaded + chunk_size
-                    print(status.format(
-                        count, total, path, min(1, downloaded / file_size)),
-                        end=''
+                    print(
+                        status.format(
+                            count, total, path, min(1, downloaded / file_size)
+                        ),
+                        end='',
                     )
                     sys.stdout.flush()
             download_list.append(path)
@@ -338,9 +375,11 @@ def get_project_info(projects=None):
             in_filter = {'projects.project_id': projects}
         else:
             in_filter = {'projects.project_id': [projects]}
-    project_df = search('projects', in_filter=in_filter,
-                        fields=['name', 'primary_site', 'project_id',
-                                'program.name'])
+    project_df = search(
+        'projects',
+        in_filter=in_filter,
+        fields=['name', 'primary_site', 'project_id', 'program.name'],
+    )
     return project_df.set_index('id')
 
 
@@ -366,12 +405,29 @@ def get_samples_clinical(projects=None):
             in_filter = {'project.project_id': projects}
         else:
             in_filter = {'project.project_id': [projects]}
-    fields = ['case_id', 'created_datetime', 'disease_type', 'id',
-              'primary_site', 'state', 'submitter_id', 'updated_datetime']
-    expand = ['demographic', 'diagnoses', 'diagnoses.treatments', 'exposures',
-              'family_histories', 'project', 'samples', 'tissue_source_site']
-    res = search('cases', in_filter=in_filter, fields=fields, expand=expand,
-                 typ='json')
+    fields = [
+        'case_id',
+        'created_datetime',
+        'disease_type',
+        'id',
+        'primary_site',
+        'state',
+        'submitter_id',
+        'updated_datetime',
+    ]
+    expand = [
+        'demographic',
+        'diagnoses',
+        'diagnoses.treatments',
+        'exposures',
+        'family_histories',
+        'project',
+        'samples',
+        'tissue_source_site',
+    ]
+    res = search(
+        'cases', in_filter=in_filter, fields=fields, expand=expand, typ='json'
+    )
     reduced_no_samples_json = reduce_json_array(
         [{k: v for k, v in d.items() if k != 'samples'} for d in res]
     )
@@ -382,12 +438,14 @@ def get_samples_clinical(projects=None):
     # correctly with ``record_path `` "samples". Use the raw json instead.
     # Besides, there are cases (34 by 12/11/2017) which doesn't have any
     # samples and thus doesn't have the key "samples". Ignore them.
-#    for r in res:
-#        r.setdefault('samples', [{}])
-#        samples_json.append(r)
+    #    for r in res:
+    #        r.setdefault('samples', [{}])
+    #        samples_json.append(r)
     samples_df = pd.io.json.json_normalize(
-        [r for r in res if 'samples' in r], 'samples', 'id',
-        record_prefix='samples.'
+        [r for r in res if 'samples' in r],
+        'samples',
+        'id',
+        record_prefix='samples.',
     )
     return pd.merge(cases_df, samples_df, how='inner', on='id')
 
@@ -399,14 +457,19 @@ def gdc_check_new(new_file_uuids):
     """
 
     df_list = []
-    for uuids in (new_file_uuids[i:i + 20000]
-                  for i in range(0, len(new_file_uuids), 20000)):
+    for uuids in (
+        new_file_uuids[i : i + 20000]  # noqa: E203
+        for i in range(0, len(new_file_uuids), 20000)
+    ):
         df = search(
             'files',
             in_filter={'access': 'open', 'file_id': uuids},
-            fields=['cases.project.project_id', 'data_type',
-                    'analysis.workflow_type'],
-            method='POST'
+            fields=[
+                'cases.project.project_id',
+                'data_type',
+                'analysis.workflow_type',
+            ],
+            method='POST',
         )
         try:
             df['cases'] = df['cases'].map(

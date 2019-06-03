@@ -77,7 +77,7 @@ def merge(filelist, xena_dtypes, out_matrix):
 
     meta_templates_dir = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        'Resources'
+        'Resources',
     )
     meta_templates = {
         k: os.path.join(meta_templates_dir, v)
@@ -85,12 +85,23 @@ def merge(filelist, xena_dtypes, out_matrix):
     }
     gdc_release = GDC_RELEASE_URL + '#data-release-90'
     start_time = timeit.default_timer()
-    if xena_dtypes in ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq',
-                       'mirna', 'methylation27']:
+    if xena_dtypes in [
+        'htseq_counts',
+        'htseq_fpkm',
+        'htseq_fpkm-uq',
+        'mirna',
+        'methylation27',
+    ]:
         merge_axis = 1
-    elif xena_dtypes in ['masked_cnv', 'muse_snv', 'mutect2_snv',
-                         'somaticsniper_snv', 'varscan2_snv',
-                         'GDC_phenotype', 'survival']:
+    elif xena_dtypes in [
+        'masked_cnv',
+        'muse_snv',
+        'mutect2_snv',
+        'somaticsniper_snv',
+        'varscan2_snv',
+        'GDC_phenotype',
+        'survival',
+    ]:
         merge_axis = 0
     else:
         msg = 'Invalid datatype: {}\nSupported data types are: {}'
@@ -105,14 +116,16 @@ def merge(filelist, xena_dtypes, out_matrix):
         sys.stdout.flush()
         merged = pd.concat(
             [merged, pd.read_csv(path, sep='\t', header=0, index_col=0)],
-            axis=merge_axis, copy=False
+            axis=merge_axis,
+            copy=False,
         )
     print('\rSaving merged matrix to {} ...'.format(out_matrix), end='')
     sys.stdout.flush()
     merged.to_csv(out_matrix, sep='\t', encoding='utf-8')
     del merged  # Prevent from doubling memory usage
-    print('\rMerged "{}" matrix is ready at {}'.format(xena_dtypes,
-                                                       out_matrix))
+    print(
+        '\rMerged "{}" matrix is ready at {}'.format(xena_dtypes, out_matrix)
+    )
     return
     # Generate metadata.
     print('Creating metadata file ...', end='')
@@ -128,7 +141,7 @@ def merge(filelist, xena_dtypes, out_matrix):
     variables = {
         'date': matrix_date,
         'gdc_release': gdc_release,
-        'xena_cohort': 'GDC Pan-Cancer (PANCAN)'
+        'xena_cohort': 'GDC Pan-Cancer (PANCAN)',
     }
     try:
         variables.update(METADATA_VARIABLES[xena_dtypes])
