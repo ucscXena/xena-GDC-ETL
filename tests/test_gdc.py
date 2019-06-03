@@ -19,22 +19,18 @@ def test_simple_and_filter():
     in_dict_2 = {'a': 'b'}
     exclude_dict_2 = {'c': 'd'}
     expected = {
-            "content": [
-                {"content": {"field": "a", "value": ["b"]}, "op": "in"},
-                {"content": {"field": "c", "value": ["d"]}, "op": "exclude"}
-            ],
-            "op": "and"
-        }
+        "content": [
+            {"content": {"field": "a", "value": ["b"]}, "op": "in"},
+            {"content": {"field": "c", "value": ["d"]}, "op": "exclude"},
+        ],
+        "op": "and",
+    }
     actual = gdc.simple_and_filter(in_dict_2, exclude_dict_2)
     compare_dict(expected, actual)
 
 
 def test_reduce_json_array():
-    input_1 = [{
-        'a': 'hello',
-        'b': [1, 2, 3],
-        'c': [10]
-    }]
+    input_1 = [{'a': 'hello', 'b': [1, 2, 3], 'c': [10]}]
     input_2 = [{'a': 'b'}]
     actual_1 = gdc.reduce_json_array(input_1)
     expected_1 = {"a": "hello", "b": [1, 2, 3], "c": 10}
@@ -79,7 +75,7 @@ def test_get_project_info():
         "name": "Cystadenocarcinoma",
         "primary_site": "Ovary",
         "program.name": "TCGA",
-        "project_id": "TCGA-OV"
+        "project_id": "TCGA-OV",
     }
     actual.equals(expected)
 
@@ -99,12 +95,13 @@ def test_search():
     actual = gdc.search(endpoint=endpoint, in_filter=in_filter, fields=fields)
     expected = {
         "id": "d1a15919-f5e2-5e60-aed9-cb52a8b4a7a1",
-        "target": "TARGET-51-PAKWMM"
+        "target": "TARGET-51-PAKWMM",
     }
     actual.equals(expected)
     with pytest.raises(ValueError) as exception_info:
-        gdc.search(endpoint=endpoint, in_filter=in_filter, fields=fields,
-                   method="PUT")
+        gdc.search(
+            endpoint=endpoint, in_filter=in_filter, fields=fields, method="PUT"
+        )
     error_str = 'Invalid method: PUT\n method must be either "GET" or "POST".'
     assert exception_info.value.args[0] == error_str
 
@@ -116,7 +113,8 @@ def test_gdc_check_new(capfd):
     gdc.gdc_check_new(new_file_uuids)
     out, err = capfd.readouterr()
     actual = pd.read_csv(StringIO(out), sep='\t')
-    expected = pd.read_csv("tests/fixtures/gdc_check_new_DR9.0_files_swap.csv",
-                           sep='\t')
+    expected = pd.read_csv(
+        "tests/fixtures/gdc_check_new_DR9.0_files_swap.csv", sep='\t'
+    )
     expected = expected.head()
     actual.equals(expected)

@@ -31,7 +31,7 @@ import time
 import jinja2
 import pandas as pd
 
-from ..constants import METADATA_TEMPLATE, METADATA_VARIABLES  # noqa
+from ..constants import METADATA_TEMPLATE, METADATA_VARIABLES, GDC_RELEASE_URL
 
 
 def metadata(matrix, xena_dtypes):
@@ -51,17 +51,18 @@ def metadata(matrix, xena_dtypes):
     print('Creating metadata file ...', end='')
     sys.stdout.flush()
     jinja2_env = jinja2.Environment(
-            loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
-        )
+        loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
+    )
     metadata_template = jinja2_env.get_template(METADATA_TEMPLATE[xena_dtypes])
-    matrix_date = time.strftime("%m-%d-%Y",
-                                time.gmtime(os.path.getmtime(matrix)))
+    matrix_date = time.strftime(
+        "%m-%d-%Y", time.gmtime(os.path.getmtime(matrix))
+    )
     variables = {
-            'project_id': 'GDC-PANCAN',
-            'date': matrix_date,
-            'gdc_release': 'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-90', # noqa
-            'xena_cohort': 'GDC Pan-Cancer (PANCAN)'
-        }
+        'project_id': 'GDC-PANCAN',
+        'date': matrix_date,
+        'gdc_release': GDC_RELEASE_URL + '#data-release-90',
+        'xena_cohort': 'GDC Pan-Cancer (PANCAN)',
+    }
     try:
         variables.update(METADATA_VARIABLES[xena_dtypes])
     except KeyError:
@@ -75,37 +76,65 @@ def metadata(matrix, xena_dtypes):
 def main():
     root_dir = r'/mnt/gdc/updates'
     out_dir = r'/mnt/gdc/updates/GDC-PANCAN/Xena_Matrices'
-    datatypes = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna',
-                 'masked_cnv', 'muse_snv', 'mutect2_snv', 'somaticsniper_snv',
-                 'varscan2_snv', 'survival']
-    gdc_release = 'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-100'
+    datatypes = [
+        'htseq_counts',
+        'htseq_fpkm',
+        'htseq_fpkm-uq',
+        'mirna',
+        'masked_cnv',
+        'muse_snv',
+        'mutect2_snv',
+        'somaticsniper_snv',
+        'varscan2_snv',
+        'survival',
+    ]
+    gdc_release = GDC_RELEASE_URL + '#data-release-100'
     meta_templates_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            'Resources')
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        'Resources',
+    )
     meta_templates = {
-            k: os.path.join(meta_templates_dir, v)
-            for k, v in METADATA_TEMPLATE.items()
-        }
+        k: os.path.join(meta_templates_dir, v)
+        for k, v in METADATA_TEMPLATE.items()
+    }
 
     for dtype in datatypes:
         if dtype in ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna']:
             merge_axis = 1
-        elif dtype in ['masked_cnv', 'muse_snv', 'mutect2_snv',
-                       'somaticsniper_snv', 'varscan2_snv',
-                       'raw_phenotype', 'GDC_phenotype', 'survival']:
+        elif dtype in [
+            'masked_cnv',
+            'muse_snv',
+            'mutect2_snv',
+            'somaticsniper_snv',
+            'varscan2_snv',
+            'raw_phenotype',
+            'GDC_phenotype',
+            'survival',
+        ]:
             merge_axis = 0
         else:
             msg = 'Invalid datatype: {}\nSupported data types are: {}'
-            valid_dtype = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq',
-                           'mirna', 'masked_cnv', 'muse_snv', 'mutect2_snv',
-                           'somaticsniper_snv', 'varscan2_snv',
-                           'raw_phenotype', 'GDC_phenotype', 'survival']
+            valid_dtype = [
+                'htseq_counts',
+                'htseq_fpkm',
+                'htseq_fpkm-uq',
+                'mirna',
+                'masked_cnv',
+                'muse_snv',
+                'mutect2_snv',
+                'somaticsniper_snv',
+                'varscan2_snv',
+                'raw_phenotype',
+                'GDC_phenotype',
+                'survival',
+            ]
             raise ValueError(msg.format(dtype, valid_dtype))
             return
         print('\n########################################')
         # Gather the list of matrices to be merged
-        pathpattern = os.path.join(root_dir, 'TCGA-*', 'Xena_Matrices',
-                                   '*.{}.tsv'.format(dtype))
+        pathpattern = os.path.join(
+            root_dir, 'TCGA-*', 'Xena_Matrices', '*.{}.tsv'.format(dtype)
+        )
         matrices = []
         for path in glob.glob(pathpattern):
             print('\rReading {} ...'.format(path), end='')
@@ -127,17 +156,17 @@ def main():
         file_dir = os.path.dirname(template_json)
         file_name = os.path.basename(template_json)
         jinja2_env = jinja2.Environment(
-                loader=jinja2.FileSystemLoader(file_dir)
-            )
+            loader=jinja2.FileSystemLoader(file_dir)
+        )
         metadata_template = jinja2_env.get_template(file_name)
         variables = {
-                'project_id': 'GDC-PANCAN',
-                'date': time.strftime(
-                        "%m-%d-%Y", time.gmtime(os.path.getmtime(outmatrix))
-                    ),
-                'gdc_release': gdc_release,
-                'xena_cohort': 'GDC Pan-Cancer (PANCAN)'
-            }
+            'project_id': 'GDC-PANCAN',
+            'date': time.strftime(
+                "%m-%d-%Y", time.gmtime(os.path.getmtime(outmatrix))
+            ),
+            'gdc_release': gdc_release,
+            'xena_cohort': 'GDC Pan-Cancer (PANCAN)',
+        }
         try:
             variables.update(METADATA_VARIABLES[dtype])
         except KeyError:

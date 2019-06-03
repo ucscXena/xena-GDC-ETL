@@ -57,10 +57,13 @@ def gdc2xena(root_dir, projects, xena_dtypes):
     counts = 0
     total_projects = len(projects)
     log_format = '%(asctime)-15s [%(levelname)s]: %(message)s'
-    logging.basicConfig(level=logging.WARNING, format=log_format,
-                        datefmt='%Y-%m-%d %H:%M:%S',
-                        filename=os.path.join(root_dir, 'etl.err'),
-                        filemode='w')
+    logging.basicConfig(
+        level=logging.WARNING,
+        format=log_format,
+        datefmt='%Y-%m-%d %H:%M:%S',
+        filename=os.path.join(root_dir, 'etl.err'),
+        filemode='w',
+    )
     logger = logging.getLogger('Xena-GDC-ETL')
     for project in projects:
         counts += 1

@@ -20,11 +20,9 @@ script:
 jobs:
   include:
     - stage: lint
-      script: 
-        - pip install flake8
-        - flake8
-  allow_failures:
-    - stage: lint
+      before_install: false
+      install: pip install flake8
+      script: flake8
 
 notifications:
   email: false
