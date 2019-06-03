@@ -90,6 +90,6 @@ class ParserTest(unittest.TestCase):
             self.parser.parse_args(['--version'])
             out, _ = self.capfd.readouterr()
             __version__ = pkg_resources.get_distribution(
-                            "xena_gdc_etl"
-                        ).version
+                "xena_gdc_etl"
+            ).version
             assert out == "xge " + __version__ + "\n"

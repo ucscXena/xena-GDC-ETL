@@ -51,17 +51,17 @@ def metadata(matrix, xena_dtypes):
     print('Creating metadata file ...', end='')
     sys.stdout.flush()
     jinja2_env = jinja2.Environment(
-            loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
-        )
+        loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
+    )
     metadata_template = jinja2_env.get_template(METADATA_TEMPLATE[xena_dtypes])
     matrix_date = time.strftime("%m-%d-%Y",
                                 time.gmtime(os.path.getmtime(matrix)))
     variables = {
-            'project_id': 'GDC-PANCAN',
-            'date': matrix_date,
-            'gdc_release': GDC_RELEASE_URL + '#data-release-90',
-            'xena_cohort': 'GDC Pan-Cancer (PANCAN)'
-        }
+        'project_id': 'GDC-PANCAN',
+        'date': matrix_date,
+        'gdc_release': GDC_RELEASE_URL + '#data-release-90',
+        'xena_cohort': 'GDC Pan-Cancer (PANCAN)'
+    }
     try:
         variables.update(METADATA_VARIABLES[xena_dtypes])
     except KeyError:
@@ -80,12 +80,13 @@ def main():
                  'varscan2_snv', 'survival']
     gdc_release = GDC_RELEASE_URL + '#data-release-100'
     meta_templates_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            'Resources')
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        'Resources'
+    )
     meta_templates = {
-            k: os.path.join(meta_templates_dir, v)
-            for k, v in METADATA_TEMPLATE.items()
-        }
+        k: os.path.join(meta_templates_dir, v)
+        for k, v in METADATA_TEMPLATE.items()
+    }
 
     for dtype in datatypes:
         if dtype in ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna']:
@@ -127,17 +128,17 @@ def main():
         file_dir = os.path.dirname(template_json)
         file_name = os.path.basename(template_json)
         jinja2_env = jinja2.Environment(
-                loader=jinja2.FileSystemLoader(file_dir)
-            )
+            loader=jinja2.FileSystemLoader(file_dir)
+        )
         metadata_template = jinja2_env.get_template(file_name)
         variables = {
-                'project_id': 'GDC-PANCAN',
-                'date': time.strftime(
-                        "%m-%d-%Y", time.gmtime(os.path.getmtime(outmatrix))
-                    ),
-                'gdc_release': gdc_release,
-                'xena_cohort': 'GDC Pan-Cancer (PANCAN)'
-            }
+            'project_id': 'GDC-PANCAN',
+            'date': time.strftime(
+                "%m-%d-%Y", time.gmtime(os.path.getmtime(outmatrix))
+            ),
+            'gdc_release': gdc_release,
+            'xena_cohort': 'GDC Pan-Cancer (PANCAN)'
+        }
         try:
             variables.update(METADATA_VARIABLES[dtype])
         except KeyError:

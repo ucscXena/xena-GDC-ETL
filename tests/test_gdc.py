@@ -19,12 +19,12 @@ def test_simple_and_filter():
     in_dict_2 = {'a': 'b'}
     exclude_dict_2 = {'c': 'd'}
     expected = {
-            "content": [
-                {"content": {"field": "a", "value": ["b"]}, "op": "in"},
-                {"content": {"field": "c", "value": ["d"]}, "op": "exclude"}
-            ],
-            "op": "and"
-        }
+        "content": [
+            {"content": {"field": "a", "value": ["b"]}, "op": "in"},
+            {"content": {"field": "c", "value": ["d"]}, "op": "exclude"}
+        ],
+        "op": "and"
+    }
     actual = gdc.simple_and_filter(in_dict_2, exclude_dict_2)
     compare_dict(expected, actual)
 

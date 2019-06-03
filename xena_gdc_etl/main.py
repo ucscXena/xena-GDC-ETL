@@ -85,9 +85,9 @@ def main():
             dataset = GDCOmicset(options.project, options.datatype, root_dir)
         dataset.matrix = options.matrix
         dataset.gdc_release = (
-                GDC_RELEASE_URL + '#data-release-'
-                + str(options.release).replace('.', '')
-            )
+            GDC_RELEASE_URL + '#data-release-'
+            + str(options.release).replace('.', '')
+        )
         dataset.metadata()
 
 
@@ -204,10 +204,10 @@ def create_parser():
                                 default=[])
     # Subcommand for making metadata
     metaparser = subparsers.add_parser(
-            'metadata',
-            help='Generate metadata for a Xena matrix',
-            epilog='Supported data types are: {}'.format(str(valid_dtype))
-        )
+        'metadata',
+        help='Generate metadata for a Xena matrix',
+        epilog='Supported data types are: {}'.format(str(valid_dtype))
+    )
     metaparser.add_argument('-p', '--project', type=str, required=True,
                             help='The project of the matrix.')
     metaparser.add_argument('-t', '--datatype', type=str, required=True,

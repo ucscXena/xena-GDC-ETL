@@ -2,40 +2,40 @@ GDC_RELEASE_URL = 'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_N
 
 # Map GDC project_id to Xena specific cohort name.
 GDC_XENA_COHORT = {
-        'TCGA-BRCA': 'GDC TCGA Breast Cancer (BRCA)',
-        'TCGA-LUAD': 'GDC TCGA Lung Adenocarcinoma (LUAD)',
-        'TCGA-UCEC': 'GDC TCGA Endometrioid Cancer (UCEC)',
-        'TCGA-LGG': 'GDC TCGA Lower Grade Glioma (LGG)',
-        'TCGA-HNSC': 'GDC TCGA Head and Neck Cancer (HNSC)',
-        'TCGA-PRAD': 'GDC TCGA Prostate Cancer (PRAD)',
-        'TCGA-LUSC': 'GDC TCGA Lung Squamous Cell Carcinoma (LUSC)',
-        'TCGA-THCA': 'GDC TCGA Thyroid Cancer (THCA)',
-        'TCGA-SKCM': 'GDC TCGA Melanoma (SKCM)',
-        'TCGA-OV': 'GDC TCGA Ovarian Cancer (OV)',
-        'TCGA-STAD': 'GDC TCGA Stomach Cancer (STAD)',
-        'TCGA-COAD': 'GDC TCGA Colon Cancer (COAD)',
-        'TCGA-BLCA': 'GDC TCGA Bladder Cancer (BLCA)',
-        'TCGA-GBM': 'GDC TCGA Glioblastoma (GBM)',
-        'TCGA-LIHC': 'GDC TCGA Liver Cancer (LIHC)',
-        'TCGA-KIRC': 'GDC TCGA Kidney Clear Cell Carcinoma (KIRC)',
-        'TCGA-CESC': 'GDC TCGA Cervical Cancer (CESC)',
-        'TCGA-KIRP': 'GDC TCGA Kidney Papillary Cell Carcinoma (KIRP)',
-        'TCGA-SARC': 'GDC TCGA Sarcoma (SARC)',
-        'TCGA-ESCA': 'GDC TCGA Esophageal Cancer (ESCA)',
-        'TCGA-PAAD': 'GDC TCGA Pancreatic Cancer (PAAD)',
-        'TCGA-PCPG': 'GDC TCGA Pheochromocytoma & Paraganglioma (PCPG)',
-        'TCGA-READ': 'GDC TCGA Rectal Cancer (READ)',
-        'TCGA-TGCT': 'GDC TCGA Testicular Cancer (TGCT)',
-        'TCGA-LAML': 'GDC TCGA Acute Myeloid Leukemia (LAML)',
-        'TCGA-THYM': 'GDC TCGA Thymoma (THYM)',
-        'TCGA-ACC': 'GDC TCGA Adrenocortical Cancer (ACC)',
-        'TCGA-MESO': 'GDC TCGA Mesothelioma (MESO)',
-        'TCGA-UVM': 'GDC TCGA Ocular melanomas (UVM)',
-        'TCGA-KICH': 'GDC TCGA Kidney Chromophobe (KICH)',
-        'TCGA-UCS': 'GDC TCGA Uterine Carcinosarcoma (UCS)',
-        'TCGA-CHOL': 'GDC TCGA Bile Duct Cancer (CHOL)',
-        'TCGA-DLBC': 'GDC TCGA Large B-cell Lymphoma (DLBC)'
-    }
+    'TCGA-BRCA': 'GDC TCGA Breast Cancer (BRCA)',
+    'TCGA-LUAD': 'GDC TCGA Lung Adenocarcinoma (LUAD)',
+    'TCGA-UCEC': 'GDC TCGA Endometrioid Cancer (UCEC)',
+    'TCGA-LGG': 'GDC TCGA Lower Grade Glioma (LGG)',
+    'TCGA-HNSC': 'GDC TCGA Head and Neck Cancer (HNSC)',
+    'TCGA-PRAD': 'GDC TCGA Prostate Cancer (PRAD)',
+    'TCGA-LUSC': 'GDC TCGA Lung Squamous Cell Carcinoma (LUSC)',
+    'TCGA-THCA': 'GDC TCGA Thyroid Cancer (THCA)',
+    'TCGA-SKCM': 'GDC TCGA Melanoma (SKCM)',
+    'TCGA-OV': 'GDC TCGA Ovarian Cancer (OV)',
+    'TCGA-STAD': 'GDC TCGA Stomach Cancer (STAD)',
+    'TCGA-COAD': 'GDC TCGA Colon Cancer (COAD)',
+    'TCGA-BLCA': 'GDC TCGA Bladder Cancer (BLCA)',
+    'TCGA-GBM': 'GDC TCGA Glioblastoma (GBM)',
+    'TCGA-LIHC': 'GDC TCGA Liver Cancer (LIHC)',
+    'TCGA-KIRC': 'GDC TCGA Kidney Clear Cell Carcinoma (KIRC)',
+    'TCGA-CESC': 'GDC TCGA Cervical Cancer (CESC)',
+    'TCGA-KIRP': 'GDC TCGA Kidney Papillary Cell Carcinoma (KIRP)',
+    'TCGA-SARC': 'GDC TCGA Sarcoma (SARC)',
+    'TCGA-ESCA': 'GDC TCGA Esophageal Cancer (ESCA)',
+    'TCGA-PAAD': 'GDC TCGA Pancreatic Cancer (PAAD)',
+    'TCGA-PCPG': 'GDC TCGA Pheochromocytoma & Paraganglioma (PCPG)',
+    'TCGA-READ': 'GDC TCGA Rectal Cancer (READ)',
+    'TCGA-TGCT': 'GDC TCGA Testicular Cancer (TGCT)',
+    'TCGA-LAML': 'GDC TCGA Acute Myeloid Leukemia (LAML)',
+    'TCGA-THYM': 'GDC TCGA Thymoma (THYM)',
+    'TCGA-ACC': 'GDC TCGA Adrenocortical Cancer (ACC)',
+    'TCGA-MESO': 'GDC TCGA Mesothelioma (MESO)',
+    'TCGA-UVM': 'GDC TCGA Ocular melanomas (UVM)',
+    'TCGA-KICH': 'GDC TCGA Kidney Chromophobe (KICH)',
+    'TCGA-UCS': 'GDC TCGA Uterine Carcinosarcoma (UCS)',
+    'TCGA-CHOL': 'GDC TCGA Bile Duct Cancer (CHOL)',
+    'TCGA-DLBC': 'GDC TCGA Large B-cell Lymphoma (DLBC)'
+}
 
 # Map xena_dtype to corresponding metadata template.
 METADATA_TEMPLATE = {
@@ -69,14 +69,14 @@ METADATA_VARIABLES = {
     'masked_cnv': {'gdc_type': 'Masked Copy Number Segment'},
     'muse_snv': {'gdc_type': 'MuSE Variant Aggregation and Masking'},
     'mutect2_snv': {
-            'gdc_type': 'MuTect2 Variant Aggregation and Masking'
-        },
+        'gdc_type': 'MuTect2 Variant Aggregation and Masking'
+    },
     'somaticsniper_snv': {
-            'gdc_type': 'SomaticSniper Variant Aggregation and Masking'
-        },
+        'gdc_type': 'SomaticSniper Variant Aggregation and Masking'
+    },
     'varscan2_snv': {
-            'gdc_type': 'VarScan2 Variant Aggregation and Masking'
-        },
+        'gdc_type': 'VarScan2 Variant Aggregation and Masking'
+    },
     'methylation27': {'platform_num': '27'},
     'methylation450': {'platform_num': '450'}
 }

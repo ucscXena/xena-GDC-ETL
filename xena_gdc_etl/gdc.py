@@ -26,63 +26,63 @@ GDC_API_BASE = 'https://api.gdc.cancer.gov'
 _SUPPORTED_FILE_TYPES = {'txt', 'vcf', 'bam', 'tsv', 'xml', 'maf', 'xlsx',
                          'tar', 'gz', 'md5', 'xls'}
 _SUPPORTED_DATASETS = [
-        {'data_type': 'Copy Number Segment'},
-        {'data_type': 'Masked Copy Number Segment'},
-        {'data_type': 'Isoform Expression Quantification'},
-        {'data_type': 'miRNA Expression Quantification'},
-        {'data_type': 'Methylation Beta Value'},
-        {'analysis.workflow_type': 'HTSeq - Counts'},
-        {'analysis.workflow_type': 'HTSeq - FPKM'},
-        {'analysis.workflow_type': 'HTSeq - FPKM-UQ'},
-        {'analysis.workflow_type': 'MuSE Variant Aggregation and Masking'},
-        {'analysis.workflow_type': 'MuTect2 Variant Aggregation and Masking'},
-        {'analysis.workflow_type':
-            'SomaticSniper Variant Aggregation and Masking'},
-        {'analysis.workflow_type': 'VarScan2 Variant Aggregation and Masking'},
-        {'data_type': 'Biospecimen Supplement'},
-        {'data_type': 'Clinical Supplement'}
-    ]
+    {'data_type': 'Copy Number Segment'},
+    {'data_type': 'Masked Copy Number Segment'},
+    {'data_type': 'Isoform Expression Quantification'},
+    {'data_type': 'miRNA Expression Quantification'},
+    {'data_type': 'Methylation Beta Value'},
+    {'analysis.workflow_type': 'HTSeq - Counts'},
+    {'analysis.workflow_type': 'HTSeq - FPKM'},
+    {'analysis.workflow_type': 'HTSeq - FPKM-UQ'},
+    {'analysis.workflow_type': 'MuSE Variant Aggregation and Masking'},
+    {'analysis.workflow_type': 'MuTect2 Variant Aggregation and Masking'},
+    {'analysis.workflow_type':
+        'SomaticSniper Variant Aggregation and Masking'},
+    {'analysis.workflow_type': 'VarScan2 Variant Aggregation and Masking'},
+    {'data_type': 'Biospecimen Supplement'},
+    {'data_type': 'Clinical Supplement'}
+]
 # https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tcga-study-abbreviations
 TCGA_STUDY_ABBR = {
-        'LAML': 'Acute Myeloid Leukemia',
-        'ACC': 'Adrenocortical carcinoma',
-        'BLCA': 'Bladder Urothelial Carcinoma',
-        'LGG': 'Brain Lower Grade Glioma',
-        'BRCA': 'Breast invasive carcinoma',
-        'CESC': ('Cervical squamous cell carcinoma and endocervical '
-                 'adenocarcinoma'),
-        'CHOL': 'Cholangiocarcinoma',
-        'LCML': 'Chronic Myelogenous Leukemia',
-        'COAD': 'Colon adenocarcinoma',
-        'CNTL': 'Controls',
-        'ESCA': 'Esophageal carcinoma',
-        'FPPP': 'FFPE Pilot Phase II',
-        'GBM': 'Glioblastoma multiforme',
-        'HNSC': 'Head and Neck squamous cell carcinoma',
-        'KICH': 'Kidney Chromophobe',
-        'KIRC': 'Kidney renal clear cell carcinoma',
-        'KIRP': 'Kidney renal papillary cell carcinoma',
-        'LIHC': 'Liver hepatocellular carcinoma',
-        'LUAD': 'Lung adenocarcinoma',
-        'LUSC': 'Lung squamous cell carcinoma',
-        'DLBC': 'Lymphoid Neoplasm Diffuse Large B-cell Lymphoma',
-        'MESO': 'Mesothelioma',
-        'MISC': 'Miscellaneous',
-        'OV': 'Ovarian serous cystadenocarcinoma',
-        'PAAD': 'Pancreatic adenocarcinoma',
-        'PCPG': 'Pheochromocytoma and Paraganglioma',
-        'PRAD': 'Prostate adenocarcinoma',
-        'READ': 'Rectum adenocarcinoma',
-        'SARC': 'Sarcoma',
-        'SKCM': 'Skin Cutaneous Melanoma',
-        'STAD': 'Stomach adenocarcinoma',
-        'TGCT': 'Testicular Germ Cell Tumors',
-        'THYM': 'Thymoma',
-        'THCA': 'Thyroid carcinoma',
-        'UCS': 'Uterine Carcinosarcoma',
-        'UCEC': 'Uterine Corpus Endometrial Carcinoma',
-        'UVM': 'Uveal Melanoma',
-    }
+    'LAML': 'Acute Myeloid Leukemia',
+    'ACC': 'Adrenocortical carcinoma',
+    'BLCA': 'Bladder Urothelial Carcinoma',
+    'LGG': 'Brain Lower Grade Glioma',
+    'BRCA': 'Breast invasive carcinoma',
+    'CESC': ('Cervical squamous cell carcinoma and endocervical '
+             'adenocarcinoma'),
+    'CHOL': 'Cholangiocarcinoma',
+    'LCML': 'Chronic Myelogenous Leukemia',
+    'COAD': 'Colon adenocarcinoma',
+    'CNTL': 'Controls',
+    'ESCA': 'Esophageal carcinoma',
+    'FPPP': 'FFPE Pilot Phase II',
+    'GBM': 'Glioblastoma multiforme',
+    'HNSC': 'Head and Neck squamous cell carcinoma',
+    'KICH': 'Kidney Chromophobe',
+    'KIRC': 'Kidney renal clear cell carcinoma',
+    'KIRP': 'Kidney renal papillary cell carcinoma',
+    'LIHC': 'Liver hepatocellular carcinoma',
+    'LUAD': 'Lung adenocarcinoma',
+    'LUSC': 'Lung squamous cell carcinoma',
+    'DLBC': 'Lymphoid Neoplasm Diffuse Large B-cell Lymphoma',
+    'MESO': 'Mesothelioma',
+    'MISC': 'Miscellaneous',
+    'OV': 'Ovarian serous cystadenocarcinoma',
+    'PAAD': 'Pancreatic adenocarcinoma',
+    'PCPG': 'Pheochromocytoma and Paraganglioma',
+    'PRAD': 'Prostate adenocarcinoma',
+    'READ': 'Rectum adenocarcinoma',
+    'SARC': 'Sarcoma',
+    'SKCM': 'Skin Cutaneous Melanoma',
+    'STAD': 'Stomach adenocarcinoma',
+    'TGCT': 'Testicular Germ Cell Tumors',
+    'THYM': 'Thymoma',
+    'THCA': 'Thyroid carcinoma',
+    'UCS': 'Uterine Carcinosarcoma',
+    'UCEC': 'Uterine Corpus Endometrial Carcinoma',
+    'UVM': 'Uveal Melanoma',
+}
 
 
 def simple_and_filter(in_dict={}, exclude_dict={}):
@@ -373,8 +373,8 @@ def get_samples_clinical(projects=None):
     res = search('cases', in_filter=in_filter, fields=fields, expand=expand,
                  typ='json')
     reduced_no_samples_json = reduce_json_array(
-            [{k: v for k, v in d.items() if k != 'samples'} for d in res]
-        )
+        [{k: v for k, v in d.items() if k != 'samples'} for d in res]
+    )
     cases_df = pd.io.json.json_normalize(reduced_no_samples_json)
     # In the list of reduced json, "samples" fields for each case are not
     # consistently ``list`` (if there is only 1 sample for the case, it will
@@ -386,9 +386,9 @@ def get_samples_clinical(projects=None):
 #        r.setdefault('samples', [{}])
 #        samples_json.append(r)
     samples_df = pd.io.json.json_normalize(
-            [r for r in res if 'samples' in r], 'samples', 'id',
-            record_prefix='samples.'
-        )
+        [r for r in res if 'samples' in r], 'samples', 'id',
+        record_prefix='samples.'
+    )
     return pd.merge(cases_df, samples_df, how='inner', on='id')
 
 
@@ -402,17 +402,16 @@ def gdc_check_new(new_file_uuids):
     for uuids in (new_file_uuids[i:i + 20000]
                   for i in range(0, len(new_file_uuids), 20000)):
         df = search(
-                'files',
-                in_filter={'access': 'open', 'file_id': uuids},
-                fields=['cases.project.project_id', 'data_type',
-                        'analysis.workflow_type'],
-                method='POST'
-            )
+            'files',
+            in_filter={'access': 'open', 'file_id': uuids},
+            fields=['cases.project.project_id', 'data_type',
+                    'analysis.workflow_type'],
+            method='POST'
+        )
         try:
             df['cases'] = df['cases'].map(
-                    lambda c: ', '.join({p['project']['project_id']
-                                         for p in c})
-                )
+                lambda c: ', '.join({p['project']['project_id'] for p in c})
+            )
         except:  # noqa: E722
             pass
         df_list.append(df)

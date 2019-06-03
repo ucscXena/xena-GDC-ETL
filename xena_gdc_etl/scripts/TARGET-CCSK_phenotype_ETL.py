@@ -27,16 +27,16 @@ def ccsk_clin_dfs2matrix(df_list):
     clin_df = clin_df.rename(index=lambda x: 'TARGET-51-' + x)
     print('\rMapping clinical info to individual samples...', end='')
     cases = gdc.search(
-            'cases', in_filter={'project.project_id': 'TARGET-CCSK'},
-            fields=['submitter_id', 'samples.submitter_id'], typ='json'
-        )
+        'cases', in_filter={'project.project_id': 'TARGET-CCSK'},
+        fields=['submitter_id', 'samples.submitter_id'], typ='json'
+    )
     cases_samples = [c for c in cases if 'samples' in c]
     from pandas.io.json import json_normalize
     cases_samples_map = json_normalize(
-            cases_samples, 'samples', ['submitter_id'],
-            meta_prefix='cases.'
-        ).rename(columns={'submitter_id': 'sample_id',
-                          'cases.submitter_id': 'TARGET USI'})
+        cases_samples, 'samples', ['submitter_id'],
+        meta_prefix='cases.'
+    ).rename(columns={'submitter_id': 'sample_id',
+                      'cases.submitter_id': 'TARGET USI'})
     return pd.merge(clin_df.reset_index(), cases_samples_map, how='inner',
                     on='TARGET USI').set_index('sample_id')
 
