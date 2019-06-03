@@ -11,7 +11,6 @@ Extract, transform and load `GDC data <https://portal.gdc.cancer.gov/>`__ onto `
 - `Dependencies`_
 - `Installation`_
 - `Basic usage with command line tools`_
-- `Command line utilities`_
 - `Advanced usage with XenaDataset and its subclasses`_
 - `GDC ETL settings`_
 - `Documentation`_
@@ -68,9 +67,9 @@ Basic usage with command line tools
 
   .. code:: bash
 
-    gdc2xena [-h] [-r ROOT]
-             [-p PROJECTS [PROJECTS ...] | -P NOT_PROJECTS [NOT_PROJECTS ...]]
-             [-t DATATYPE [DATATYPE ...] | -T NOT_DATATYPE [NOT_DATATYPE ...]]
+    xge etl [-h] [-r ROOT]
+            [-p PROJECTS [PROJECTS ...] | -P NOT_PROJECTS [NOT_PROJECTS ...]]
+            [-t DATATYPE [DATATYPE ...] | -T NOT_DATATYPE [NOT_DATATYPE ...]]
 
   This tool will perform a full import of dataset(s) into the root directory (specified by the ``-r`` option) with a default directory tree. In general, a full import has 3 steps: downloading raw data, making Xena matrix from raw data and generating matrix associated metadata. Data from each step will be saved to corresponding directories, whose structure is like this:
 
@@ -98,12 +97,23 @@ Basic usage with command line tools
   .. code:: bash
 
     mkdir -p /home/user/xena_root
-    gdc2xena -P FM-AD -t htseq_counts htseq_fpkm htseq_fpkm-uq
+    xge etl -P FM-AD -t htseq_counts htseq_fpkm htseq_fpkm-uq
 
   Notes:
 
   1. Root directory must be existing
   2. Please check the next section for `advanced usage with XenaDataset and its subclasses`_, if you want to customize the importing process with selected (rather than all possible) combinations of your input projects and data types or selected (rather than all 3) importing step(s).
+
+- **Generate metadata of a xena matrix**
+
+  .. code:: bash
+
+    xge metadata --project TCGA-BRCA --datatype htseq_counts --matrix path/to/matrix.tsv --release 10
+
+  This tool generates metadata for a xena matrix. For the shown example, metadata
+  is generated for the matrix ``matrix.tsv`` for release ``10``, project
+  ``TCGA-BRCA`` and datatype ``htsep_counts``. Note that, metadata JSON file is
+  saved at the same directory as the ``matrix.tsv`` file.
 
 .. _gdc_check_new:
 
@@ -113,7 +123,7 @@ Basic usage with command line tools
 
     xge gdc_check_new [-h] URL
 
-  This tool takes in a file (either a URL or a local file readable by ``pandas.read_table``) of table and read one of its columns named as "New File UUID". It then checks all file UUIDs in this table on GDC and summarize all their associated project(s), data type(s) and analysis workflow type(s). Such tables are usually provided in GDC's data release note. With the summarized info, you can design specific imports to just update datasets which are updated on GDC. For example, the following command:
+  This tool takes in a file (either a URL or a local file readable by ``pandas.read_csv``) of table and read one of its columns named as "New File UUID". It then checks all file UUIDs in this table on GDC and summarize all their associated project(s), data type(s) and analysis workflow type(s). Such tables are usually provided in GDC's data release note. With the summarized info, you can design specific imports to just update datasets which are updated on GDC. For example, the following command:
 
   .. code:: bash
 
@@ -128,8 +138,13 @@ Basic usage with command line tools
     HTSeq - FPKM-UQ           TARGET-NBL                  Gene Expression Quantification
     HTSeq - Counts            TARGET-NBL                  Gene Expression Quantification
 
-Command line utilities
---------------------------------------------------------------------------------
+.. _version:
+
+- **Shows the current version of xena_gdc_etl**
+
+  .. code:: bash
+
+    xge --version
 
 .. _xena-eql:
 
@@ -140,16 +155,6 @@ Command line utilities
     xge xena-eql path/to/matrix1.tsv path/to/matrix2.tsv
 
   This tool takes path to two xena matrices and output if they are equal or not.
-
-.. _make-metadata:
-
-- **Generate metadata of a xena-matrix**
-
-  .. code:: bash
-
-    xge make-metadata -m path/to/matrix.tsv -d datatype
-
-  This tool generates metadata for a xena matrix.
 
 .. _merge-xena:
 
@@ -258,7 +263,7 @@ Advanced usage with XenaDataset and its subclasses
   
   \1. GDC API Available File Fields: https://docs.gdc.cancer.gov/API/Users_Guide/Appendix_A_Available_Fields/#file-fields
   
-  - **Customize** ``GDCPhenoset``
+  - **Customize** ``GDCPhenoset`` **for TCGA projects**
   
     TCGA phenotype data for Xena includes both clinical data and biospecimen data, as `detailed below <#transform-phenotype>`_. Downloading and transformation of clinical data and biospecimen data are in fact delegated by two independent ``GDCOmicset`` object respecitively. Corresponding subdatasets can be accessed through ``clin_dataset`` and ``bio_dataset`` attributes and hence can be customized as mentioned above. Because of such complexity of TCGA phenotype data, the ``download`` and ``transform`` methods are coded specifically and overrode corresponding methods of the base class, ``XenaDataset``. Customization for downloading and matrix transformation is very limited and should be done in the following steps:
     
@@ -278,6 +283,8 @@ Advanced usage with XenaDataset and its subclasses
     - Customize ``metadata`` step
     
       Different from ``download`` and ``transform``, there is no special settings for the ``metadata`` method of ``GDCPhenoset``. Therefore, similar to that of ``GDCOmicset``, this step can be customized through ``metadata_template``, ``metadata_vars`` and ``gdc_release`` properties. And to call just the ``metadata`` method, an existing ``matrix`` is enough.
+
+  - **Customize** ``GDCPhenoset`` for **TARGET projects**
 
     TARGET phenotype data for Xena contains only the clinical data (no
     biospecimen data), as `detailed below <#transform-phenotype>`_. The importing
