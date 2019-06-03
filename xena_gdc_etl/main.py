@@ -32,7 +32,8 @@ def main():
         try:
             assert_frame_equal(df1, df2)
             print('Equal.')
-        except:  # appeantly AssertionError doesn't catch all
+        # apparently AssertionError doesn't catch all
+        except:  # noqa: E722
             print('Not equal.')
     # handle gdc_check_new
     elif options.subcomm == "gdc-check-new":

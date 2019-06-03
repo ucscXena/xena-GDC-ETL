@@ -413,16 +413,16 @@ def gdc_check_new(new_file_uuids):
                     lambda c: ', '.join({p['project']['project_id']
                                          for p in c})
                 )
-        except:
+        except:  # noqa: E722
             pass
         df_list.append(df)
     df = pd.concat(df_list, axis=0)
     try:
         df = df.drop('id', axis=1)
-    except:
+    except KeyError:
         pass
     try:
         df = df.drop_duplicates()
-    except:
+    except:  # noqa: E722
         pass
     df.to_csv(sys.stdout, sep='\t', index=False)
