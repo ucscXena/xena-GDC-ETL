@@ -1,3 +1,5 @@
+GDC_RELEASE_URL = 'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/'  # noqa: E501
+
 # Map GDC project_id to Xena specific cohort name.
 GDC_XENA_COHORT = {
         'TCGA-BRCA': 'GDC TCGA Breast Cancer (BRCA)',

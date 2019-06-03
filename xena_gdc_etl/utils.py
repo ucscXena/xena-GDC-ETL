@@ -9,7 +9,12 @@ import timeit
 import pandas as pd
 import jinja2
 
-from .constants import METADATA_TEMPLATE, METADATA_VARIABLES, valid_dtype
+from .constants import (
+    METADATA_TEMPLATE,
+    METADATA_VARIABLES,
+    valid_dtype,
+    GDC_RELEASE_URL,
+)
 
 
 def mkdir_p(dir_name):
@@ -78,7 +83,7 @@ def merge(filelist, xena_dtypes, out_matrix):
         k: os.path.join(meta_templates_dir, v)
         for k, v in METADATA_TEMPLATE.items()
     }
-    gdc_release = 'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-90'  # noqa
+    gdc_release = GDC_RELEASE_URL + '#data-release-90'
     start_time = timeit.default_timer()
     if xena_dtypes in ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq',
                        'mirna', 'methylation27']:

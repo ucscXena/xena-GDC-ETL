@@ -9,7 +9,7 @@ from pandas.util.testing import assert_frame_equal
 
 from .utils import handle_merge_xena
 from .gdc import gdc_check_new, get_project_info
-from .constants import valid_dtype
+from .constants import valid_dtype, GDC_RELEASE_URL
 from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
 from .gdc2xena import gdc2xena
 
@@ -84,8 +84,8 @@ def main():
             dataset = GDCOmicset(options.project, options.datatype, root_dir)
         dataset.matrix = options.matrix
         dataset.gdc_release = (
-                'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-' +  # noqa
-                str(options.release).replace('.', '')
+                GDC_RELEASE_URL + '#data-release-'
+                + str(options.release).replace('.', '')
             )
         dataset.metadata()
 

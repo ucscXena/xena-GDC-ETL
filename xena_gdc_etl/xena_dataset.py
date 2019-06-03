@@ -30,7 +30,12 @@ import requests
 
 from xena_gdc_etl import gdc
 from .utils import mkdir_p
-from .constants import GDC_XENA_COHORT, METADATA_TEMPLATE, METADATA_VARIABLES
+from .constants import (
+    GDC_XENA_COHORT,
+    METADATA_TEMPLATE,
+    METADATA_VARIABLES,
+    GDC_RELEASE_URL,
+)
 
 
 def read_by_ext(filename, mode='r'):
@@ -706,7 +711,8 @@ class GDCOmicset(XenaDataset):
             a string or a list of strings. It can be automatically derived
             from ``projects`` and ``xena_dtype`` if it is not assigned
             explicitly by the user when being used. Please check `GDC API
-            documentation <https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query>`_
+            documentation
+            <https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query>`_
             for details.
         gdc_prefix (str): A GDC available file field whost value will be used
             in the filename of corresponding download file. It will be used by
@@ -779,19 +785,23 @@ class GDCOmicset(XenaDataset):
                                  '60', '61', '99'])},
             'muse_snv': {
                     'data_type': 'Masked Somatic Mutation',
-                    'analysis.workflow_type': 'MuSE Variant Aggregation and Masking'
+                    'analysis.workflow_type':
+                    'MuSE Variant Aggregation and Masking'
                 },
             'mutect2_snv': {
                     'data_type': 'Masked Somatic Mutation',
-                    'analysis.workflow_type': 'MuTect2 Variant Aggregation and Masking'
+                    'analysis.workflow_type':
+                    'MuTect2 Variant Aggregation and Masking'
                 },
             'somaticsniper_snv': {
                     'data_type': 'Masked Somatic Mutation',
-                    'analysis.workflow_type': 'SomaticSniper Variant Aggregation and Masking'
+                    'analysis.workflow_type':
+                    'SomaticSniper Variant Aggregation and Masking'
                 },
             'varscan2_snv': {
                     'data_type': 'Masked Somatic Mutation',
-                    'analysis.workflow_type': 'VarScan2 Variant Aggregation and Masking'
+                    'analysis.workflow_type':
+                    'VarScan2 Variant Aggregation and Masking'
                 },
             'methylation27': {'data_type': 'Methylation Beta Value',
                               'platform': 'Illumina Human Methylation 27'},
@@ -870,10 +880,7 @@ class GDCOmicset(XenaDataset):
             anchor = re.match(
                     r'(Data Release [^\s]+)\s', data_release
                 ).group(1).replace(' ', '-').replace('.', '').lower()
-            self.__gdc_release = (
-                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#'
-                    + anchor
-                )
+            self.__gdc_release = GDC_RELEASE_URL + '#' + anchor
             return self.__gdc_release
 
     @gdc_release.setter
@@ -937,7 +944,10 @@ class GDCOmicset(XenaDataset):
                                  str(self.projects)))
                 return None
             file_dict = {
-                    '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): os.path.join(self.raw_data_dir, name)
+                    '{}/data/{}'.format(
+                        gdc.GDC_API_BASE,
+                        uuid
+                    ): os.path.join(self.raw_data_dir, name)
                     for uuid, name in file_dict.items()
                 }
             self._download_map = file_dict
@@ -1048,7 +1058,8 @@ class GDCPhenoset(XenaDataset):
             a string or a list of strings. It can be automatically derived
             from ``projects`` and ``xena_dtype`` if it is not assigned
             explicitly by the user when being used. Please check `GDC API
-            documentation <https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query>`_
+            documentation
+            <https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/#filters-specifying-the-query>`_
             for details.
         download_map (dict): A dict with the key being a URL for one raw data
             to be downloaded and the value being a path for saving downloaded
@@ -1199,10 +1210,7 @@ class GDCPhenoset(XenaDataset):
             anchor = re.match(
                     r'(Data Release [^\s]+)\s', data_release
                 ).group(1).replace(' ', '-').replace('.', '').lower()
-            self.__gdc_release = (
-                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#'
-                    + anchor
-                )
+            self.__gdc_release = GDC_RELEASE_URL + '#' + anchor
             return self.__gdc_release
 
     @gdc_release.setter
@@ -1252,7 +1260,10 @@ class GDCPhenoset(XenaDataset):
                                  str(self.projects)))
                 return None
             file_dict = {
-                    '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): os.path.join(self.raw_data_dir, name)
+                    '{}/data/{}'.format(
+                        gdc.GDC_API_BASE,
+                        uuid
+                    ): os.path.join(self.raw_data_dir, name)
                     for uuid, name in file_dict.items()
                 }
             self._download_map = file_dict
@@ -1499,10 +1510,7 @@ class GDCSurvivalset(XenaDataset):
             anchor = re.match(
                     r'(Data Release [^\s]+)\s', data_release
                 ).group(1).replace(' ', '-').replace('.', '').lower()
-            self.__gdc_release = (
-                    'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#'
-                    + anchor
-                )
+            self.__gdc_release = GDC_RELEASE_URL + '#' + anchor
             return self.__gdc_release
 
     @gdc_release.setter

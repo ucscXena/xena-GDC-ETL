@@ -31,7 +31,7 @@ import time
 import jinja2
 import pandas as pd
 
-from ..constants import METADATA_TEMPLATE, METADATA_VARIABLES  # noqa
+from ..constants import METADATA_TEMPLATE, METADATA_VARIABLES, GDC_RELEASE_URL
 
 
 def metadata(matrix, xena_dtypes):
@@ -59,7 +59,7 @@ def metadata(matrix, xena_dtypes):
     variables = {
             'project_id': 'GDC-PANCAN',
             'date': matrix_date,
-            'gdc_release': 'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-90', # noqa
+            'gdc_release': GDC_RELEASE_URL + '#data-release-90',
             'xena_cohort': 'GDC Pan-Cancer (PANCAN)'
         }
     try:
@@ -78,7 +78,7 @@ def main():
     datatypes = ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna',
                  'masked_cnv', 'muse_snv', 'mutect2_snv', 'somaticsniper_snv',
                  'varscan2_snv', 'survival']
-    gdc_release = 'https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#data-release-100'
+    gdc_release = GDC_RELEASE_URL + '#data-release-100'
     meta_templates_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             'Resources')
