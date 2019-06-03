@@ -286,12 +286,7 @@ Advanced usage with XenaDataset and its subclasses
 
   - **Customize** ``GDCPhenoset`` for **TARGET projects**
 
-    TARGET phenotype data for Xena contains only the clinical data (no
-    biospecimen data), as `detailed below <#transform-phenotype>`_. The importing
-    process is quite similar to that of a ``GDCOmicset``. You can customize
-    ``GDCPhenoset`` with ``download_map``, ``read_raw``, ``raws2matrix``,
-    ``metadata_template``, ``metadata_vars`` and ``gdc_release`` in the same way
-    as that of `GDCOmicset <#customize-gdcomicset>`_.
+    TARGET phenotype data for Xena contains only the clinical data (no biospecimen data), as `detailed below <#transform-phenotype>`_. The importing process is quite similar to that of a ``GDCOmicset``. You can customize ``TARGETPhenoset`` with ``download_map``, ``read_raw``, ``raws2matrix``, ``metadata_template``, ``metadata_vars`` and ``gdc_release`` in the same way as that of `GDCOmicset <#customize-gdcomicset>`_.
 
   - **Customize** ``GDCSurvivalset``
   
