@@ -84,7 +84,13 @@ def test_get_project_info():
 def test_get_samples_clinical():
     project_id = "TCGA-OV"
     actual = gdc.get_samples_clinical(project_id)
-    assert "2038fd65-d8f1-4b16-af90-b1c8f9a379a7" == actual['case_id'][0]
+    in_filter = {"project.project_id": project_id}
+    expected = gdc.search(
+        in_filter=in_filter,
+        fields="case_id",
+        endpoint="cases"
+    )
+    assert expected["case_id"][0] == actual["case_id"][0]
 
 
 @pytest.mark.CI
