@@ -34,6 +34,7 @@ from .constants import (
     METADATA_TEMPLATE,
     METADATA_VARIABLES,
     GDC_RELEASE_URL,
+    CASES_FIELDS_EXPANDS,
 )
 
 
@@ -1265,8 +1266,9 @@ class GDCPhenoset(XenaDataset):
             'data_category': ['Biospecimen', 'Clinical'],
             'data_format': 'BCR XML',
         },
+        'Xena_phenotype': {},
     }
-    # To resovle overlapping between raw data and API data, remove columns
+    # To resolve overlapping between raw data and API data, remove columns
     # according to the following lists.
     _API_DROPS = [
         'id',
@@ -1398,6 +1400,12 @@ class GDCPhenoset(XenaDataset):
             assert self._download_map
             return self._download_map
         except (AttributeError, AssertionError):
+            if self.xena_dtype == "Xena_phenotype":
+                print(
+                    "'Xena_phenotype' datatype is selected, no files will be "
+                    "downloaded"
+                )
+                return {}
             fields = ['file_id', 'file_name', 'data_category']
             try:
                 print('Searching for raw data ...', end='')
@@ -1672,6 +1680,50 @@ class GDCPhenoset(XenaDataset):
                 raise ValueError(
                     'Getting "GDC_phenotype" for a cohort with mixed TCGA and '
                     'TARGET projects is not currently suppported.'
+                )
+        elif self.xena_dtype == "Xena_phenotype":
+            in_filter = {
+                "cases.project.project_id": self.projects,
+                "data_category": "Sequencing Reads",
+            }
+            if all([i.startswith("TCGA-") for i in self.projects]):
+                fields = CASES_FIELDS_EXPANDS["TCGA"]["fields"]
+                expand = CASES_FIELDS_EXPANDS["TCGA"]["expand"]
+                res = gdc.search(
+                    endpoint="files",
+                    in_filter=in_filter,
+                    fields=fields,
+                    expand=expand,
+                    typ="json",
+                )
+                reduced_no_samples_json = gdc.reduce_json_array(res)
+                xena_matrix = pd.io.json.json_normalize(
+                    reduced_no_samples_json
+                )
+                to_drop = list(xena_matrix.filter(regex="datetime"))
+                to_drop.append("id")
+                xena_matrix.drop(
+                    to_drop,
+                    axis=1,
+                    inplace=True,
+                )
+                xena_matrix.drop_duplicates(
+                    subset="cases.samples.submitter_id",
+                    inplace=True,
+                )
+                xena_matrix.set_index(
+                    "cases.samples.submitter_id",
+                    inplace=True,
+                )
+            elif all([i.startswith("TARGET-") for i in self.projects]):
+                raise NotImplementedError(
+                    "'Xena_phenotype' for TARGET projects is not currently "
+                    "implemented."
+                )
+            else:
+                raise ValueError(
+                    "Getting 'Xena_phenotype' for a cohort with mixed TCGA "
+                    "and TARGET projects is not currently suppported."
                 )
         # Transformation done
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
