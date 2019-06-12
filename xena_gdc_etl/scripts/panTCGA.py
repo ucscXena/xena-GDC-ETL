@@ -139,7 +139,7 @@ def main():
         for path in glob.glob(pathpattern):
             print('\rReading {} ...'.format(path), end='')
             sys.stdout.flush()
-            matrices.append(pd.read_table(path, header=0, index_col=0))
+            matrices.append(pd.read_csv(path, sep="\t", header=0, index_col=0))
         # Merge matrices
         print('\rMerging {} "{}" matrices ...'.format(len(matrices), dtype))
         merged = pd.concat(matrices, axis=merge_axis)
