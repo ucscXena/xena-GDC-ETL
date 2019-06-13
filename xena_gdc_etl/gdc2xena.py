@@ -65,7 +65,7 @@ def gdc2xena(root_dir, projects, xena_dtypes):
         format=log_format,
         datefmt='%Y-%m-%d %H:%M:%S',
         filename=os.path.join(
-            root_dir, 'etl.err' + time.strftime("%Y%m%d-%H%M%S")
+            root_dir, 'etl_' + time.strftime("%Y%m%d-%H%M%S") + '.err',
         ),
         filemode='w',
     )
