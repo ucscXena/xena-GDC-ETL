@@ -90,11 +90,11 @@ def gdc2xena(root_dir, projects, xena_dtypes):
                     unfinished[project] = [dtype]
                 else:
                     unfinished[project].append(dtype)
+                with open("unfinished.json", "w") as outfile:
+                    json.dump(unfinished, outfile)
                 msg = 'No {} data for cohort {}.'.format(dtype, project)
                 logger.warning(msg, exc_info=True)
                 print(msg)
-    with open("unfinished.json", "w") as outfile:
-        json.dump(unfinished, outfile)
     logging.shutdown()
     end_time = timeit.default_timer()
     m, s = divmod(int(end_time - start_time), 60)
