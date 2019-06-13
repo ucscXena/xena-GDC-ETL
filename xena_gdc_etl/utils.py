@@ -184,7 +184,7 @@ def reduce_json_array(j):
 
 
 def requests_retry_session(
-    retries=10,
+    retries=5,
     backoff_factor=0.3,
     status_forcelist=(500, 502, 504),
     session=None,
