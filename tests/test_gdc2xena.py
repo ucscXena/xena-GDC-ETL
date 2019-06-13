@@ -10,7 +10,7 @@ PATH = "tests/fixtures/"
 
 
 @pytest.mark.CI
-def test_logging():
+def test_unfinished_generation():
     gdc2xena.gdc2xena(
         root_dir=".",
         projects=["SOME_PROJECT1", "SOME_PROJECT2"],

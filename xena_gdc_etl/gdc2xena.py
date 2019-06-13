@@ -90,7 +90,10 @@ def gdc2xena(root_dir, projects, xena_dtypes):
                     unfinished[project] = [dtype]
                 else:
                     unfinished[project].append(dtype)
-                with open("unfinished.json", "w") as outfile:
+                with open(
+                    os.path.join(root_dir, "unfinished.json"),
+                    "w",
+                ) as outfile:
                     json.dump(unfinished, outfile)
                 msg = 'No {} data for cohort {}.'.format(dtype, project)
                 logger.warning(msg, exc_info=True)
