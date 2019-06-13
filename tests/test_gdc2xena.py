@@ -8,6 +8,7 @@ from xena_gdc_etl import gdc2xena
 
 PATH = "tests/fixtures/"
 
+
 @pytest.mark.CI
 def test_logging():
     gdc2xena.gdc2xena(
