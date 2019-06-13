@@ -25,6 +25,7 @@ from __future__ import print_function
 import os
 import logging
 import timeit
+import json
 
 from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
 
@@ -55,6 +56,7 @@ def gdc2xena(root_dir, projects, xena_dtypes):
     """
     start_time = timeit.default_timer()
     counts = 0
+    unfinished = {}
     total_projects = len(projects)
     log_format = '%(asctime)-15s [%(levelname)s]: %(message)s'
     logging.basicConfig(
@@ -84,6 +86,15 @@ def gdc2xena(root_dir, projects, xena_dtypes):
             try:
                 dataset.download().transform().metadata()
             except Exception:
+                if project not in unfinished:
+                    unfinished[project] = [dtype]
+                else:
+                    unfinished[project].append(dtype)
+                with open(
+                    os.path.join(root_dir, "unfinished.json"),
+                    "w",
+                ) as outfile:
+                    json.dump(unfinished, outfile)
                 msg = 'No {} data for cohort {}.'.format(dtype, project)
                 logger.warning(msg, exc_info=True)
                 print(msg)
