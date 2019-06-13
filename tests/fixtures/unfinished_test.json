@@ -1,0 +1,4 @@
+{
+    "SOME_PROJECT1": ["htseq_counts", "methylation450"],
+    "SOME_PROJECT2": ["htseq_counts", "methylation450"]
+}
