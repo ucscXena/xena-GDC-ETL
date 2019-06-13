@@ -26,10 +26,9 @@ import jinja2
 from lxml import etree
 import numpy as np
 import pandas as pd
-import requests
 
 from xena_gdc_etl import gdc
-from .utils import mkdir_p
+from .utils import mkdir_p, requests_retry_session
 from .constants import (
     GDC_XENA_COHORT,
     METADATA_TEMPLATE,
@@ -643,7 +642,7 @@ class XenaDataset(object):
         download_list = []
         for url, path in self.download_map.items():
             count += 1
-            response = requests.get(url, stream=True)
+            response = requests_retry_session().get(url, stream=True)
             if response.ok:
                 path = os.path.abspath(path)
                 status = '\r[{:d}/{:d}] Downloading to "{}" ...'
