@@ -159,8 +159,7 @@ def create_parser():
         required=True,
         help='A list of paths for Xena matrices files to be merged. All paths '
         'in this list support UNIX style pathname pattern expansion with '
-        '"glob". Files will be read by pandas.read_table or pandas.read_csv '
-        'with sep="\t"',
+        '"glob". Files will be read by or pandas.read_csv with sep="\t"',
     )
     merge_xena_subparser.add_argument(
         '-t',
