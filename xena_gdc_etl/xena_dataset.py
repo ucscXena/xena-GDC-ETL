@@ -220,7 +220,7 @@ def merge_cnv(filelist):
     count = 0
     for path in filelist:
         xena_matrix = xena_matrix.append(
-            pd.read_table(path, header=0, usecols=[1, 2, 3, 5]).assign(
+            pd.read_csv(path, sep="\t", header=0, usecols=[1, 2, 3, 5]).assign(
                 sample=os.path.basename(path).split('.', 1)[0]
             )
         )
@@ -251,8 +251,9 @@ def snv_maf_matrix(filelist):
 
     assert len(filelist) == 1
     print('\rProcessing 1/1 file...', end='')
-    df = pd.read_table(
+    df = pd.read_csv(
         filelist[0],
+        sep="\t",
         header=0,
         comment='#',
         usecols=[12, 36, 4, 5, 6, 39, 41, 51, 0, 10, 15, 110],
@@ -333,8 +334,9 @@ def merge_sample_cols(
     count = 0
     for sample_id in sample_dict:
         df_list = [
-            pd.read_table(
+            pd.read_csv(
                 f,
+                sep="\t",
                 header=header,
                 index_col=index_col,
                 usecols=usecols,
@@ -1765,7 +1767,7 @@ class GDCSurvivalset(XenaDataset):
             self: allow method chaining.
         """
 
-        raw_df = pd.read_table(self.raw_data_list[0])
+        raw_df = pd.read_csv(self.raw_data_list[0], sep="\t")
         # Transform GDC data according to Xena survival data spec
         survival_df = raw_df.drop(
             ['project_id', 'survivalEstimate'], axis=1
