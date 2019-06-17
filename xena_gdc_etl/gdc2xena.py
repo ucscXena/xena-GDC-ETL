@@ -26,6 +26,7 @@ import os
 import logging
 import timeit
 import json
+import time
 
 from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
 
@@ -63,7 +64,9 @@ def gdc2xena(root_dir, projects, xena_dtypes):
         level=logging.WARNING,
         format=log_format,
         datefmt='%Y-%m-%d %H:%M:%S',
-        filename=os.path.join(root_dir, 'etl.err'),
+        filename=os.path.join(
+            root_dir, 'etl_' + time.strftime("%Y%m%d-%H%M%S") + '.err',
+        ),
         filemode='w',
     )
     logger = logging.getLogger('Xena-GDC-ETL')

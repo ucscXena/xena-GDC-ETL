@@ -656,7 +656,11 @@ class XenaDataset(object):
                         f.write(chunk)
                 download_list.append(path)
             else:
-                raise IOError('\nFail to download file {}.'.format(url))
+                raise IOError(
+                    '\nFail to download file {}. Response {}'.format(
+                        url, response.status_code
+                    )
+                )
         print('')
         self.raw_data_list = download_list
         print(
