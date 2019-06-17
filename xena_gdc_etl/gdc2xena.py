@@ -32,7 +32,7 @@ import shutil
 from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
 
 
-def gdc2xena(root_dir, projects, xena_dtypes):
+def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data):
     """Start a pipeline for importing data from GDC to Xena.
 
     Data will be imported on a dataset basis, which is defined by project
@@ -89,9 +89,11 @@ def gdc2xena(root_dir, projects, xena_dtypes):
                 dataset = GDCOmicset(project, dtype, root_dir)
             try:
                 dataset.download().transform().metadata()
-                shutil.rmtree(
-                    os.path.join(root_dir, project, "Raw_Data", dtype)
-                )
+                if delete_raw_data:
+                    print("Deleting raw data ...")
+                    shutil.rmtree(
+                        os.path.join(root_dir, project, "Raw_Data", dtype)
+                    )
             except Exception:
                 if project not in unfinished:
                     unfinished[project] = [dtype]
