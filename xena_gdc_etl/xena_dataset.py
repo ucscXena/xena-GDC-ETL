@@ -1041,7 +1041,7 @@ class GDCOmicset(XenaDataset):
                         str(self.projects),
                     )
                 )
-                return None
+                return file_dict
             file_dict = {
                 '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): os.path.join(
                     self.raw_data_dir, name
@@ -1375,7 +1375,7 @@ class GDCPhenoset(XenaDataset):
                         str(self.projects),
                     )
                 )
-                return None
+                return file_dict
             file_dict = {
                 '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): os.path.join(
                     self.raw_data_dir, name
