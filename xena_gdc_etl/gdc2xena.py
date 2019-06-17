@@ -27,6 +27,7 @@ import logging
 import timeit
 import json
 import time
+import shutil
 
 from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
 
@@ -88,6 +89,9 @@ def gdc2xena(root_dir, projects, xena_dtypes):
                 dataset = GDCOmicset(project, dtype, root_dir)
             try:
                 dataset.download().transform().metadata()
+                shutil.rmtree(
+                    os.path.join(root_dir, project, "Raw_Data", dtype)
+                )
             except Exception:
                 if project not in unfinished:
                     unfinished[project] = [dtype]
