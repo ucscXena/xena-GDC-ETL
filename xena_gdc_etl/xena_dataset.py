@@ -1406,7 +1406,7 @@ class GDCPhenoset(XenaDataset):
                         str(self.projects),
                     )
                 )
-                return file_dict
+                return None
             file_dict = {
                 '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): os.path.join(
                     self.raw_data_dir, name
