@@ -21,6 +21,7 @@ import os
 import re
 import sys
 import warnings
+import logging
 
 import jinja2
 from lxml import etree
@@ -35,6 +36,8 @@ from .constants import (
     METADATA_VARIABLES,
     GDC_RELEASE_URL,
 )
+
+logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
 
 
 def read_by_ext(filename, mode='r'):
@@ -99,7 +102,9 @@ def read_biospecimen(fileobj):
         df.columns = df.iloc[0:2].apply(lambda x: x.str.cat(sep='.'))
         return df.drop(df.index[0:2]).set_index(df.columns[0])
     elif ext != '.xml':
-        raise IOError('Unknown file type for biospecimen data: {}'.format(ext))
+        msg = 'Unknown file type for biospecimen data: {}'.format(ext)
+        logging.exception(msg)
+        raise IOError(msg)
 
     root = etree.parse(fileobj).getroot()
     ns = root.nsmap
@@ -160,7 +165,9 @@ def read_clinical(fileobj):
     if ext == '.xlsx':
         return pd.read_excel(filename, sheet_name='Clinical Data', index_col=0)
     elif ext != '.xml':
-        raise IOError('Unknown file type for clinical data: {}'.format(ext))
+        msg = 'Unknown file type for clinical data: {}'.format(ext)
+        logging.exception(msg)
+        raise IOError(msg)
 
     root = etree.parse(fileobj).getroot()
     ns = root.nsmap
@@ -225,9 +232,9 @@ def merge_cnv(filelist):
             )
         )
         count += 1
-        print('\rProcessed {}/{} file...'.format(count, total), end='')
+        logging.info('\rProcessed {}/{} file...'.format(count, total))
         sys.stdout.flush()
-    print('\rAll {} files have been processed. '.format(total))
+    logging.info('\rAll {} files have been processed. '.format(total))
     return xena_matrix.rename(
         columns={'Chromosome': 'Chrom', 'Segment_Mean': 'value'}
     ).set_index('sample')
@@ -250,7 +257,7 @@ def snv_maf_matrix(filelist):
     """
 
     assert len(filelist) == 1
-    print('\rProcessing 1/1 file...', end='')
+    logging.info('\rProcessing 1/1 file...')
     df = pd.read_csv(
         filelist[0],
         sep="\t",
@@ -258,13 +265,13 @@ def snv_maf_matrix(filelist):
         comment='#',
         usecols=[12, 36, 4, 5, 6, 39, 41, 51, 0, 10, 15, 110],
     )
-    print('\rCalculating "dna_vaf" ...', end='')
+    logging.info('\rCalculating "dna_vaf" ...')
     df['dna_vaf'] = df['t_alt_count'] / df['t_depth']
-    print('\rTrim "Tumor_Sample_Barcode" into Xena sample ID ...', end='')
+    logging.info('\rTrim "Tumor_Sample_Barcode" into Xena sample ID ...')
     df['Tumor_Sample_Barcode'] = df['Tumor_Sample_Barcode'].apply(
         lambda x: '-'.join(x.split('-', 4)[0:4])
     )
-    print('\rRe-organizing matrix ...', end='')
+    logging.info('\rRe-organizing matrix ...')
     df = (
         df.drop(['t_alt_count', 't_depth'], axis=1)
         .set_index('Tumor_Sample_Barcode')
@@ -356,9 +363,9 @@ def merge_sample_cols(
             df_list.insert(0, xena_matrix)
         xena_matrix = pd.concat(df_list, axis=1, copy=False)
         count += len(sample_dict[sample_id])
-        print('\rProcessed {}/{} file...'.format(count, total), end='')
+        logging.info('\rProcessed {}/{} file...'.format(count, total))
         sys.stdout.flush()
-    print('\rAll {} files have been processed. '.format(total))
+    logging.info('\rAll {} files have been processed. '.format(total))
     xena_matrix.index.name = index_name
     if log2TF:
         return np.log2(xena_matrix + 1)
@@ -475,7 +482,9 @@ class XenaDataset(object):
         elif isinstance(projects, list):
             self._projects = projects
         else:
-            raise ValueError('"projects" must be either str or list.')
+            msg = '"projects" must be either str or list.'
+            logging.exception(msg)
+            raise ValueError(msg)
 
     @property
     def root_dir(self):
@@ -490,7 +499,9 @@ class XenaDataset(object):
         if os.path.isdir(path):
             self._root_dir = os.path.abspath(path)
         else:
-            raise IOError('{} is not an existing directory.'.format(path))
+            msg = '{} is not an existing directory.'.format(path)
+            logging.exception(msg)
+            raise IOError(msg)
 
     @property
     def raw_data_dir(self):
@@ -537,9 +548,9 @@ class XenaDataset(object):
         if isinstance(d, dict):
             self._download_map = d
         else:
-            raise TypeError(
-                'download_map should be a dict, ' 'not {}'.format(type(d))
-            )
+            msg = 'download_map should be a dict, ' 'not {}'.format(type(d))
+            logging.exception(msg)
+            raise TypeError(msg)
 
     # Raw data list: try to get the list from ``raw_data_dir`` if unavailable.
     @property
@@ -559,7 +570,9 @@ class XenaDataset(object):
                 else:
                     raise ValueError
             except Exception:
-                raise ValueError('Cannot find raw data.')
+                msg = 'Cannot find raw data.'
+                logging.exception(msg)
+                raise ValueError(msg)
             return self._raw_data_list
 
     @raw_data_list.setter
@@ -598,12 +611,14 @@ class XenaDataset(object):
             )
             self._metadata_template = jinja2_env.get_template(template)
         else:
-            raise TypeError(
+            msg = (
                 'metadata_template should be a jinja2 template or an existing '
                 'path to a template JSON file, not a :{}.'.format(
                     type(template)
                 )
             )
+            logging.exception(msg)
+            raise TypeError(msg)
 
     def __init__(
         self,
@@ -638,7 +653,7 @@ class XenaDataset(object):
             self: allow method chaining.
         """
 
-        print('Starts to download...', end='')
+        logging.info('Starts to download...')
         total = len(self.download_map)
         count = 0
         download_list = []
@@ -648,7 +663,7 @@ class XenaDataset(object):
             if response.ok:
                 path = os.path.abspath(path)
                 status = '\r[{:d}/{:d}] Downloading to "{}" ...'
-                print(status.format(count, total, path), end='')
+                logging.info(status.format(count, total, path))
                 sys.stdout.flush()
                 mkdir_p(os.path.dirname(path))
                 with open(path, 'wb') as f:
@@ -656,14 +671,12 @@ class XenaDataset(object):
                         f.write(chunk)
                 download_list.append(path)
             else:
-                raise IOError(
-                    '\nFail to download file {}. Response {}'.format(
-                        url, response.status_code
-                    )
-                )
-        print('')
+                msg = '\nFail to download file {}.'.format(url)
+                logging.exception(msg)
+                raise IOError(msg)
+        logging.info('')
         self.raw_data_list = download_list
-        print(
+        logging.info(
             'Raw {} data for {} is ready.'.format(
                 self.projects, self.xena_dtype
             )
@@ -684,13 +697,13 @@ class XenaDataset(object):
         """
 
         message = 'Make Xena matrix for {} data of {}.'
-        print(message.format(self.xena_dtype, self.projects))
+        logging.info(message.format(self.xena_dtype, self.projects))
         xena_matrix = self.raws2matrix(self.raw_data_list)
         # Transformation done
-        print('\rSaving matrix to {} ...'.format(self.matrix), end='')
+        logging.info('\rSaving matrix to {} ...'.format(self.matrix))
         mkdir_p(self.matrix_dir)
         xena_matrix.to_csv(self.matrix, sep='\t', encoding='utf-8')
-        print('\rXena matrix is saved at {}.'.format(self.matrix))
+        logging.info('\rXena matrix is saved at {}.'.format(self.matrix))
         return self
 
     def metadata(self):
@@ -710,25 +723,29 @@ class XenaDataset(object):
         """
 
         message = 'Create metadata for {} data matrix of {}.'
-        print(message.format(self.xena_dtype, self.projects))
+        logging.info(message.format(self.xena_dtype, self.projects))
         try:
             assert os.path.isfile(self.matrix)
         except AttributeError:
-            raise IOError(
+            msg = (
                 'Xena matrix for this dataset is unknown; please create a '
                 'matrix or assign an existing matrix file to the "matrix" '
                 'property before making metadata.'
             )
+            logging.exception(msg)
+            raise IOError(msg)
         except AssertionError:
-            raise IOError('{} is not an existing file.'.format(self.matrix))
+            msg = '{} is not an existing file.'.format(self.matrix)
+            logging.exception(msg)
+            raise IOError(msg)
 
         # Start to generate metadata.
         # General jinja2 Variables
-        print('Creating metadata file ...', end='')
+        logging.info('Creating metadata file ...')
         self._metadata = self.matrix + '.json'
         with open(self._metadata, 'w') as f:
             f.write(self.metadata_template.render(**self.metadata_vars))
-        print('\rMetadata JSON is saved at {}.'.format(self._metadata))
+        logging.info('\rMetadata JSON is saved at {}.'.format(self._metadata))
         return self
 
 
@@ -953,7 +970,9 @@ class GDCOmicset(XenaDataset):
         if xena_dtype in self._XENA_GDC_DTYPE:
             self.__xena_dtype = xena_dtype
         else:
-            raise ValueError("Unsupported data type: {}".format(xena_dtype))
+            msg = ("Unsupported data type: {}".format(xena_dtype))
+            logging.exception(msg)
+            raise ValueError(msg)
 
     @classmethod
     def get_supported_dtype(cls):
@@ -1021,12 +1040,13 @@ class GDCOmicset(XenaDataset):
         except (AttributeError, AssertionError):
             fields = ['file_id', 'file_name', self.gdc_prefix]
             try:
-                print('Searching for raw data ...', end='')
+                logging.info('Searching for raw data ...')
                 file_df = gdc.search(
                     'files', in_filter=self.gdc_filter, fields=fields
                 )
             except Exception:
                 file_dict = {}
+                logging.warning("No content in file_dict.")
             else:
                 file_df.set_index('file_id', drop=False, inplace=True)
                 file_dict = (
@@ -1039,7 +1059,7 @@ class GDCOmicset(XenaDataset):
             if not file_dict:
                 msg = '\rNo {} data found for project {}.'
                 gdc_dtype = self._XENA_GDC_DTYPE[self.xena_dtype]
-                print(
+                logging.info(
                     msg.format(
                         ' - '.join(sorted(gdc_dtype.values())),
                         str(self.projects),
@@ -1054,7 +1074,13 @@ class GDCOmicset(XenaDataset):
             }
             self._download_map = file_dict
             msg = '\r{} files found for {} data of {}.'
-            print(msg.format(len(file_dict), self.xena_dtype, self.projects))
+            logging.info(
+                msg.format(
+                    len(file_dict),
+                    self.xena_dtype,
+                    self.projects
+                )
+            )
             return self._download_map
 
     @property
@@ -1117,9 +1143,8 @@ class GDCOmicset(XenaDataset):
                 'varscan2_snv',
             ]:
                 try:
-                    print(
+                    logging.info(
                         '\rSearching the specific URL for raw MAF data ...',
-                        end='',
                     )
                     res_df = gdc.search(
                         'files', in_filter=self.gdc_filter, fields='file_id'
@@ -1307,7 +1332,9 @@ class GDCPhenoset(XenaDataset):
         if xena_dtype in self._XENA_GDC_DTYPE:
             self.__xena_dtype = xena_dtype
         else:
-            raise ValueError("Unsupported data type: {}".format(xena_dtype))
+            msg = "Unsupported data type: {}".format(xena_dtype)
+            logging.exception(msg)
+            raise ValueError(msg)
 
     @property
     def gdc_release(self):
@@ -1355,7 +1382,7 @@ class GDCPhenoset(XenaDataset):
         except (AttributeError, AssertionError):
             fields = ['file_id', 'file_name', 'data_category']
             try:
-                print('Searching for raw data ...', end='')
+                logging.info('Searching for raw data ...')
                 file_df = gdc.search(
                     'files', in_filter=self.gdc_filter, fields=fields
                 )
@@ -1373,7 +1400,7 @@ class GDCPhenoset(XenaDataset):
             if not file_dict:
                 msg = '\rNo {} data found for project {}.'
                 gdc_dtype = self._XENA_GDC_DTYPE[self.xena_dtype]
-                print(
+                logging.info(
                     msg.format(
                         ' - '.join(sorted(gdc_dtype.values())),
                         str(self.projects),
@@ -1388,7 +1415,13 @@ class GDCPhenoset(XenaDataset):
             }
             self._download_map = file_dict
             msg = '\r{} files found for {} data of {}.'
-            print(msg.format(len(file_dict), self.xena_dtype, self.projects))
+            logging.info(
+                msg.format(
+                    len(file_dict),
+                    self.xena_dtype,
+                    self.projects,
+                )
+            )
             return self._download_map
 
     @property
@@ -1463,14 +1496,16 @@ class GDCPhenoset(XenaDataset):
         """
 
         message = 'Make Xena matrix for {} data of {}.'
-        print(message.format(self.xena_dtype, self.projects))
+        logging.info(message.format(self.xena_dtype, self.projects))
         total = len(self.raw_data_list)
         count = 0
         bio_dfs = []
         clin_dfs = []
         for path in self.raw_data_list:
             count = count + 1
-            print('\rProcessing {}/{} file...'.format(count, total), end='')
+            logging.info(
+                '\rProcessing {}/{} file...'.format(count, total),
+            )
             sys.stdout.flush()
             # `read_biospecimen` and `read_clinical` will check file format
             try:
@@ -1482,7 +1517,7 @@ class GDCPhenoset(XenaDataset):
                     bio_dfs.append(df)
                 except Exception:
                     raise TypeError('Fail to process file {}.'.format(path))
-        print('\rAll {} files have been processed. '.format(total))
+        logging.info('\rAll {} files have been processed. '.format(total))
         try:
             bio_matrix = (
                 pd.concat(bio_dfs, axis=0)
@@ -1506,7 +1541,9 @@ class GDCPhenoset(XenaDataset):
                 xena_matrix = clin_matrix.set_index('bcr_patient_barcode')
             except Exception:
                 xena_matrix = clin_matrix
-            print('\rMapping clinical info to individual samples...', end='')
+            logging.info(
+                '\rMapping clinical info to individual samples...',
+            )
             cases = gdc.search(
                 'cases',
                 in_filter={'project.project_id': self.projects},
@@ -1624,15 +1661,17 @@ class GDCPhenoset(XenaDataset):
                     'submitter_id.samples'
                 )
             else:
-                raise ValueError(
+                msg = (
                     'Getting "GDC_phenotype" for a cohort with mixed TCGA and '
                     'TARGET projects is not currently suppported.'
                 )
+                logging.exception(msg)
+                raise ValueError(msg)
         # Transformation done
-        print('\rSaving matrix to {} ...'.format(self.matrix), end='')
+        logging.info('\rSaving matrix to {} ...'.format(self.matrix))
         mkdir_p(self.matrix_dir)
         xena_matrix.to_csv(self.matrix, sep='\t', encoding='utf-8')
-        print('\rXena matrix is saved at {}.'.format(self.matrix))
+        logging.info('\rXena matrix is saved at {}.'.format(self.matrix))
         return self
 
 
@@ -1747,7 +1786,7 @@ class GDCSurvivalset(XenaDataset):
         )
         pd.DataFrame(survival).set_index('id').to_csv(path, sep='\t')
         self.raw_data_list = [path]
-        print(
+        logging.info(
             'Raw {} data for {} is ready.'.format(
                 self.projects, self.xena_dtype
             )
@@ -1808,7 +1847,7 @@ class GDCSurvivalset(XenaDataset):
         )
         mkdir_p(os.path.dirname(self.matrix))
         df.to_csv(self.matrix, sep='\t')
-        print('\rXena matrix is saved at {}.'.format(self.matrix))
+        logging.info('\rXena matrix is saved at {}.'.format(self.matrix))
         return self
 
 
