@@ -93,9 +93,7 @@ def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data=False):
                 dataset.download().transform().metadata()
                 if delete_raw_data:
                     print("Deleting raw data ...")
-                    shutil.rmtree(
-                        os.path.join(root_dir, project, "Raw_Data", dtype)
-                    )
+                    shutil.rmtree(dataset.raw_data_dir)
             except Exception:
                 if project not in unfinished:
                     unfinished[project] = [dtype]
