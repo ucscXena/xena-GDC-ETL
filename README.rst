@@ -70,6 +70,7 @@ Basic usage with command line tools
     xge etl [-h] [-r ROOT]
             [-p PROJECTS [PROJECTS ...] | -P NOT_PROJECTS [NOT_PROJECTS ...]]
             [-t DATATYPE [DATATYPE ...] | -T NOT_DATATYPE [NOT_DATATYPE ...]]
+            [-D DELETE]
 
   This tool will perform a full import of dataset(s) into the root directory (specified by the ``-r`` option) with a default directory tree. In general, a full import has 3 steps: downloading raw data, making Xena matrix from raw data and generating matrix associated metadata. Data from each step will be saved to corresponding directories, whose structure is like this:
 
@@ -98,6 +99,9 @@ Basic usage with command line tools
 
     mkdir -p /home/user/xena_root
     xge etl -P FM-AD -t htseq_counts htseq_fpkm htseq_fpkm-uq
+
+  If `-D` or `--delete` is specified the raw data corresponding to a datatype
+  will be deleted upon generation of the xena matrix.
 
   Notes:
 

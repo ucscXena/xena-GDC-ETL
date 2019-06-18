@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 
 import pytest
 
@@ -22,3 +23,21 @@ def test_unfinished_generation():
         actual = json.load(infile)
     assert actual == expected
     os.unlink("unfinished.json")
+
+
+@pytest.mark.CI
+def test_deletion_of_raw_data():
+    os.mkdir("test_deletion")
+    gdc2xena.gdc2xena(
+        root_dir="test_deletion",
+        projects=["TCGA-ACC"],
+        xena_dtypes=["muse_snv"],
+        delete_raw_data=True,
+    )
+    path = "/test_deletion/TCGA-ACC/Raw-Data/"
+    all_files = []
+    for root, _, files in os.walk(path):
+        for file in files:
+            all_files.append(os.path.join(root, file))
+    assert all_files == []
+    shutil.rmtree("test_deletion")

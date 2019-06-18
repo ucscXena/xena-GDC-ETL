@@ -61,12 +61,14 @@ class ParserTest(unittest.TestCase):
                 "project_name",
                 "-t",
                 "datatype",
+                "-D",
             ]
         )
         assert parsed.subcomm == "etl"
         assert parsed.root == "path/to/dir"
         assert parsed.projects == ["project_name"]
         assert parsed.datatype == ["datatype"]
+        assert parsed.delete is True
         # for mutually exclusive groups
         parsed = self.parser.parse_args(
             [
