@@ -100,7 +100,7 @@ Basic usage with command line tools
     mkdir -p /home/user/xena_root
     xge etl -P FM-AD -t htseq_counts htseq_fpkm htseq_fpkm-uq
 
-  If `-D` or `--delete` is specified the raw data corresponding to a datatype
+  If ``-D`` or ``--delete`` is specified the raw data corresponding to a datatype
   will be deleted upon generation of the xena matrix.
 
   Notes:
