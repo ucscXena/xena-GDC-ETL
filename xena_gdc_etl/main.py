@@ -58,6 +58,7 @@ def main():
         )
     # handle etl
     elif options.subcomm == 'etl':
+        delete_raw_data = options.delete
         root_dir = os.path.abspath(options.root)
         projects = options.projects
         if 'all' in [p.lower() for p in projects]:
@@ -77,7 +78,7 @@ def main():
         print(str(xena_dtypes), end='\n\n')
         print('into this directory: {}'.format(root_dir))
         print('########################################', end='\n\n')
-        gdc2xena(root_dir, projects, xena_dtypes)
+        gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data)
     # handle metadata
     elif options.subcomm == 'metadata':
         root_dir = os.path.dirname(options.matrix)
@@ -212,6 +213,12 @@ def create_parser():
         type=str,
         default='.',
         help='Root directory for imported data.',
+    )
+    etlparser.add_argument(
+        '-D',
+        '--delete',
+        action='store_true',
+        help='Deletes raw data upon generation of Xena_matrix.',
     )
     projects_group = etlparser.add_mutually_exclusive_group()
     projects_group.add_argument(
