@@ -78,6 +78,12 @@ def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data=False):
         msg = 'Importing [{}/{}] projects: {}'
         print(msg.format(counts, total_projects, project))
         for dtype in xena_dtypes:
+            file_name = project + "." + dtype + ".tsv"
+            if os.path.isfile(
+                os.path.join(root_dir, project, "Xena_Matrices", file_name)
+            ):
+                print("Xena Matrix already found, skipping ... ")
+                continue
             if dtype == 'survival':
                 dataset = GDCSurvivalset(project, root_dir)
             elif dtype == 'raw_phenotype':
