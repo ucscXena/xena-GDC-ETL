@@ -27,11 +27,12 @@ import logging
 import timeit
 import json
 import time
+import shutil
 
 from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
 
 
-def gdc2xena(root_dir, projects, xena_dtypes):
+def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data=False):
     """Start a pipeline for importing data from GDC to Xena.
 
     Data will be imported on a dataset basis, which is defined by project
@@ -54,6 +55,8 @@ def gdc2xena(root_dir, projects, xena_dtypes):
             "htseq_fpkm-uq", "mirna", "masked_cnv", "muse_snv", "mutect2_snv",
             "somaticsniper_snv", "varscan2_snv", "phenotype", "survival",
             "methylation27", "methylation450".
+        delete_raw_data (optional, bool): Delete raw data upon generation
+            of xena_matrix.
     """
     start_time = timeit.default_timer()
     counts = 0
@@ -88,6 +91,9 @@ def gdc2xena(root_dir, projects, xena_dtypes):
                 dataset = GDCOmicset(project, dtype, root_dir)
             try:
                 dataset.download().transform().metadata()
+                if delete_raw_data:
+                    print("Deleting raw data ...")
+                    shutil.rmtree(dataset.raw_data_dir)
             except Exception:
                 if project not in unfinished:
                     unfinished[project] = [dtype]
