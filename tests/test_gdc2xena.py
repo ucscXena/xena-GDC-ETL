@@ -30,11 +30,11 @@ def test_deletion_of_raw_data():
     os.mkdir("test_deletion")
     gdc2xena.gdc2xena(
         root_dir="test_deletion",
-        projects=["TCGA-ACC"],
-        xena_dtypes=["muse_snv"],
+        projects=["TCGA-UVM"],
+        xena_dtypes=["somaticsniper_snv"],
         delete_raw_data=True,
     )
-    path = "/test_deletion/TCGA-ACC/Raw-Data/"
+    path = "/test_deletion/TCGA-UVM/Raw-Data/"
     all_files = []
     for root, _, files in os.walk(path):
         for file in files:
