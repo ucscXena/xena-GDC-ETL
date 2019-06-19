@@ -32,7 +32,13 @@ import shutil
 from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
 
 
-def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data=False):
+def gdc2xena(
+    root_dir,
+    projects,
+    xena_dtypes,
+    delete_raw_data=False,
+    skip_generated=False,
+):
     """Start a pipeline for importing data from GDC to Xena.
 
     Data will be imported on a dataset basis, which is defined by project
@@ -57,6 +63,8 @@ def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data=False):
             "methylation27", "methylation450".
         delete_raw_data (optional, bool): Delete raw data upon generation
             of xena_matrix.
+        skip_generated (optional, bool): Skips the pipeline for a datatype if
+            the corresponding Xena Matrix is already found.
     """
     start_time = timeit.default_timer()
     counts = 0
@@ -78,12 +86,6 @@ def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data=False):
         msg = 'Importing [{}/{}] projects: {}'
         print(msg.format(counts, total_projects, project))
         for dtype in xena_dtypes:
-            file_name = project + "." + dtype + ".tsv"
-            if os.path.isfile(
-                os.path.join(root_dir, project, "Xena_Matrices", file_name)
-            ):
-                print("Xena Matrix already found, skipping ... ")
-                continue
             if dtype == 'survival':
                 dataset = GDCSurvivalset(project, root_dir)
             elif dtype == 'raw_phenotype':
@@ -95,6 +97,14 @@ def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data=False):
                 dataset = GDCPhenoset(project, 'GDC_phenotype', root_dir)
             else:
                 dataset = GDCOmicset(project, dtype, root_dir)
+            file_name = project + "." + dtype + ".tsv"
+            if os.path.isfile(
+                os.path.join(dataset.matrix_dir, file_name)
+            ):
+                print(
+                    "Xena Matrix for {} found, skipping ...".format(dtype)
+                )
+                continue
             try:
                 dataset.download().transform().metadata()
                 if delete_raw_data:
