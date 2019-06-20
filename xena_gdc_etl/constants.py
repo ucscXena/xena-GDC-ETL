@@ -81,6 +81,7 @@ valid_dtype = [
     'htseq_fpkm',
     'htseq_fpkm-uq',
     'mirna',
+    'cnv',
     'masked_cnv',
     'muse_snv',
     'mutect2_snv',
