@@ -1289,6 +1289,7 @@ class GDCPhenoset(XenaDataset):
         'state.treatments.diagnoses',
         'created_datetime.treatments.diagnoses',
         'updated_datetime.treatments.diagnoses',
+        'disease_type.project',
         'exposure_id.exposures',
         'submitter_id.exposures',
         'state.exposures',
