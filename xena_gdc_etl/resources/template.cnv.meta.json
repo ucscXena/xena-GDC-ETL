@@ -12,5 +12,6 @@
  "wrangler":"Xena GDC ETL script",
  "version":"{{ date }}",
  "unit":"log2(copy-number/2)"{% if notes %},
- "notes":"{{ notes }}"{% endif %}
+ "notes":"{{ notes }}"{% endif %},
+ "GDC_Description": "https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/CNV_Pipeline/"
 }
