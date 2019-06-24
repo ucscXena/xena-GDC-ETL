@@ -13,6 +13,5 @@
  "wrangler":"Xena GDC ETL script",
  "version":"{{ date }}",
  "unit":"beta value"{% if notes %},
- "notes":"{{ notes }}"{% endif %},
- "GDC_Description": "https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/Methylation_LO_Pipeline/"
+ "notes":"{{ notes }}"{% endif %}
 }
