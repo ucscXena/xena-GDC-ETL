@@ -17,7 +17,12 @@ import warnings
 import pandas as pd
 import requests
 
-from .utils import mkdir_p, reduce_json_array
+from .utils import (
+    mkdir_p,
+    reduce_json_array,
+    extract_leaves,
+    get_intersection,
+)
 
 GDC_API_BASE = 'https://api.gdc.cancer.gov'
 _SUPPORTED_FILE_TYPES = {
@@ -488,3 +493,146 @@ def gdc_check_new(new_file_uuids):
     except:  # noqa: E722
         pass
     df.to_csv(sys.stdout, sep='\t', index=False)
+
+
+def get_mapping(
+    results,
+    object_path,
+    mapping,
+    input_field_name,
+    output_field_name,
+    input_field_items,
+):
+    """Gets mapping between ``input_field_name`` and ``output_field_name``.
+    This function is intended to be a utility function for ``map_fields``.
+
+    Args:
+        results (list or list of dicts): The output from the API.
+        object_path (str): Path leading to the same object
+            (``input_field_name`` and ``output_field_name``).
+        mapping (dict): Mapping between ``input_field_name`` and
+            ``output_field_name``. Keys are ``input_field_name`` and values are
+            mapped ``output_field_name``.
+        input_field_name (str): The field which is to be mapped to
+            ``output_field_name``.
+        output_field_name (str): ``input_field_name`` is to be mapped with
+            ``output_field_name``.
+        input_field_items (list of str or str): A list of input ids which is
+            to mapped.
+    For detailed explanation of the args please see ``map_fields``
+    function.
+
+    """
+
+    for hit in results:
+        for index in range(len(object_path)):
+            if isinstance(hit, list):
+                get_mapping(
+                    hit,
+                    object_path[index:],
+                    mapping,
+                    input_field_name,
+                    output_field_name,
+                    input_field_items,
+                )
+                return
+            elif isinstance(hit, dict):
+                if object_path[index] in hit:
+                    hit = hit[object_path[index]]
+        if not isinstance(hit, list):
+            hit = [hit]
+        for data in hit:
+            field_1_leaves = []
+            field_2_leaves = []
+            extract_leaves(data, input_field_name, field_1_leaves)
+            extract_leaves(data, output_field_name, field_2_leaves)
+            for leaf in field_1_leaves:
+                if leaf in input_field_items:
+                    mapping[leaf] = field_2_leaves
+    return mapping
+
+
+def map_fields(
+    endpoint,
+    input_field_items,
+    input_field_name,
+    output_field_name,
+):
+    """Maps two fields - ``input_field_name`` and ``output_field_name`` from
+    the GDC API in a dictionary. The fields should be within same object
+    defined by the argument ``object_path``. The ``input_field_name`` and
+    ``output_field_name`` should not be nested..
+
+
+    Examples:
+        Vaild examples would be:
+        1.  object_path: "samples.portions.analytes.aliquots"
+            input_field_name: "aliquot_id"
+            output_field_name: "submitter_id"
+
+        2.  object_path: "samples.portions"
+            input_field_name: "analytes.aliquots.submitter_id"
+            output_field_name: "submitter_id"
+
+    Args:
+        endpoint (str): One string of GDC API supported endpoint.
+        object_path (str): Path leading to the same object (input_field_name
+            and output_field_name). It should point to an object and should
+            not be a property itself. For example,
+            "samples.portions.analytes.aliquots.aliquot_id" is not a valid
+            ``object_path`` since it leads to the property "aliquot_id". But,
+            "samples.portions.analytes.aliquots" is a valid object_path since
+            it consists of one or more property ("aliquot_id").
+        input_field_items (list of str or str): A list of items that are of
+            input field type which are to mapped. The items should be hashable
+            since they will be used as key in the returned map.
+        input_field_name (str): A direct property of the object pointed by
+            ``object_path`` the field which is to be mapped to
+            ``output_field_name``. List of all available fields can be found
+            here
+            https://docs.gdc.cancer.gov/API/Users_Guide/\
+Appendix_A_Available_Fields/
+        output_field_name (str): ``input_field_name`` is to be mapped with
+            ``output_field_name``. If the field is not in the object pointed
+            by the ``object_path``, the mapped values will be None. The mapped
+            values can even be of ``list`` or ``dict`` datatype for proper
+            ``output_field_name``.
+
+    Returns:
+        dict: The mapping between ``input_field_items`` and
+            ``output_field_name``. Keys are ``input_field_items`` and the
+            corresponding values are mapped ``output_field_items``.
+    """
+
+    if isinstance(input_field_items, str):
+        input_field_items = [input_field_items]
+    in_filter = {input_field_name: input_field_items}
+    result = search(
+        endpoint=endpoint,
+        in_filter=in_filter,
+        fields=[input_field_name, output_field_name],
+        typ="json",
+    )
+    mapping = {}
+    field_1 = input_field_name.split(".")
+    field_2 = output_field_name.split(".")
+    object_path = get_intersection(field_1, field_2)
+    object_path_length = len(object_path)
+    input_field_name = ".".join(
+        input_field_name.split(".")[object_path_length:]
+    )
+    output_field_name = ".".join(
+        output_field_name.split(".")[object_path_length:]
+    )
+    get_mapping(
+        result,
+        object_path,
+        mapping,
+        input_field_name,
+        output_field_name,
+        input_field_items,
+    )
+    for item in input_field_items:
+        if item not in mapping:
+            mapping[item] = None
+    return mapping

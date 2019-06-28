@@ -201,3 +201,49 @@ def requests_retry_session(
     session.mount('http://', adapter)
     session.mount('https://', adapter)
     return session
+
+
+def get_intersection(list_1, list_2):
+    """Returns intersection of two lists.
+    Args:
+        list_1 (list): First list.
+        list_2 (list): Second list.
+    Returns:
+        list: The intersection of the two lists.
+    """
+
+    index = 0
+    length = min(len(list_1), len(list_2))
+    intersection = []
+    while list_1[index] == list_2[index] and index < length:
+        intersection.append(list_1[index])
+        index += 1
+    return intersection
+
+
+def extract_leaves(data, field_name, leaves, current_field=""):
+    """Extract leaves from a dictionary.
+    Args:
+        data (dict or list or list of dicts): The data on which the leaves
+            are to be collected.
+        field_name (str): If "current_field + key" matches with ``last``,
+            corresponding value is appended to leaves.
+        leaves (list): Used to store the leaves.
+        current_field(str): Points to the field the function is traversing at
+            that moment.
+    """
+
+    if isinstance(data, dict):
+        for key, value in data.items():
+            if current_field + key == field_name:
+                leaves.append(value)
+            else:
+                extract_leaves(
+                    value,
+                    field_name,
+                    leaves,
+                    current_field + key + ".",
+                )
+    elif isinstance(data, list):
+        for i in range(len(data)):
+            extract_leaves(data[i], field_name, leaves, current_field)

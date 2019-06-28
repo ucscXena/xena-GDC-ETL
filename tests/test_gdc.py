@@ -124,3 +124,64 @@ def test_gdc_check_new(capfd):
     )
     expected = expected.head()
     actual.equals(expected)
+
+
+@pytest.mark.CI
+def test_map_fields():
+    actual = gdc.map_fields(
+        endpoint="cases",
+        input_field_items=[
+            "35f8d837-f78c-4f88-a4cd-50ea2f9f9437",
+            "48de3d5a-35d8-456d-a23e-e2dc25a840ac",
+        ],
+        input_field_name="samples.portions.analytes.aliquots.aliquot_id",
+        output_field_name="samples.submitter_id",
+    )
+    expected = {
+        "35f8d837-f78c-4f88-a4cd-50ea2f9f9437": ["TCGA-4G-AAZO-11A"],
+        "48de3d5a-35d8-456d-a23e-e2dc25a840ac": ["TCGA-4G-AAZO-11A"],
+    }
+    assert compare_dict(actual, expected)
+
+    actual = gdc.map_fields(
+        endpoint="cases",
+        input_field_items=[
+            "35f8d837-f78c-4f88-a4cd-50ea2f9f9437",
+            "48de3d5a-35d8-456d-a23e-e2dc25a840ac",
+        ],
+        input_field_name="samples.portions.analytes.aliquots.aliquot_id",
+        output_field_name="samples.portions.analytes.aliquots.submitter_id",
+    )
+    expected = {
+        "35f8d837-f78c-4f88-a4cd-50ea2f9f9437":
+        ["TCGA-4G-AAZO-11A-11D-A75W-36"],
+        "48de3d5a-35d8-456d-a23e-e2dc25a840ac":
+        ["TCGA-4G-AAZO-11A-11D-A41A-09"],
+    }
+    assert compare_dict(actual, expected)
+
+    actual = gdc.map_fields(
+        endpoint="cases",
+        input_field_items=[
+            "TCGA-4G-AAZO-11A-11D-A75W-36",
+            "TCGA-4G-AAZO-01A-12D-A416-01",
+        ],
+        input_field_name="samples.portions.analytes.aliquots.submitter_id",
+        output_field_name="samples.portions.submitter_id",
+    )
+    expected = {
+        "TCGA-4G-AAZO-11A-11D-A75W-36": ["TCGA-4G-AAZO-11A-11"],
+        "TCGA-4G-AAZO-01A-12D-A416-01": ["TCGA-4G-AAZO-01A-12"],
+    }
+    assert compare_dict(actual, expected)
+
+    actual = gdc.map_fields(
+        endpoint="cases",
+        input_field_items="TCGA-CHOL",
+        input_field_name="project.project_id",
+        output_field_name="project.name",
+    )
+    expected = {
+        "TCGA-CHOL": ["Cholangiocarcinoma"],
+    }
+    assert actual == expected
