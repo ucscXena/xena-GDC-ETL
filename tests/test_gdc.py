@@ -124,3 +124,66 @@ def test_gdc_check_new(capfd):
     )
     expected = expected.head()
     actual.equals(expected)
+
+
+@pytest.mark.CI
+@pytest.mark.parametrize(
+    'endpoint,input_field,output_field,input_values,expect',
+    [
+        (
+            'cases',
+            'samples.portions.analytes.aliquots.aliquot_id',
+            'samples.submitter_id',
+            [
+                '35f8d837-f78c-4f88-a4cd-50ea2f9f9437',
+                '48de3d5a-35d8-456d-a23e-e2dc25a840ac',
+            ],
+            {
+                '35f8d837-f78c-4f88-a4cd-50ea2f9f9437': ['TCGA-4G-AAZO-11A'],
+                '48de3d5a-35d8-456d-a23e-e2dc25a840ac': ['TCGA-4G-AAZO-11A'],
+            }
+        ),
+        (
+            'cases',
+            'samples.portions.analytes.aliquots.aliquot_id',
+            'samples.portions.analytes.aliquots.submitter_id',
+            [
+                '35f8d837-f78c-4f88-a4cd-50ea2f9f9437',
+                '48de3d5a-35d8-456d-a23e-e2dc25a840ac',
+            ],
+            {
+                '35f8d837-f78c-4f88-a4cd-50ea2f9f9437': [
+                    'TCGA-4G-AAZO-11A-11D-A75W-36'
+                ],
+                '48de3d5a-35d8-456d-a23e-e2dc25a840ac': [
+                    'TCGA-4G-AAZO-11A-11D-A41A-09'
+                ],
+            }
+        ),
+        (
+            'cases',
+            'project.project_i',
+            'project.name',
+            ['TCGA-CHOL'],
+            {'TCGA-CHOL': []}
+        ),
+        (
+            'cases',
+            'case_id',
+            'demographic.gender',
+            ['633e6994-3e8b-4c0b-9b79-06cf4ab6f9bc'],
+            {'633e6994-3e8b-4c0b-9b79-06cf4ab6f9bc': ['female']}
+        ),
+    ]
+)
+def test_map_two_fields(
+    endpoint,
+    input_field,
+    output_field,
+    input_values,
+    expect
+):
+    actual = gdc.map_two_fields(
+        endpoint, input_field, output_field, input_values
+    )
+    assert actual == expect

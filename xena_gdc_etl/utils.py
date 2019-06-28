@@ -201,3 +201,31 @@ def requests_retry_session(
     session.mount('http://', adapter)
     session.mount('https://', adapter)
     return session
+
+
+def get_json_objects(raw, path):
+    """Given a serialized ``raw`` JSON object, return a list of values by going
+    through keys in ``path``.
+
+    Args:
+        raw (list or dict): A serialized JSON object.
+        path (str): A dot separated string of keys in ``raw`` indicating the
+            path to target values.
+
+    Returns:
+        list: a list of values by going through ``raw`` with keys in ``path``.
+    """
+
+    values = raw if isinstance(raw, list) else [raw]
+    for key in path.split('.'):
+        if not values:
+            return []
+        while values and isinstance(values[0], list):
+            values = [obj for objs in values for obj in objs]
+        if not values:
+            return []
+        values = [
+            obj[key] for obj in values
+            if isinstance(obj, dict) and key in obj
+        ]
+    return values
