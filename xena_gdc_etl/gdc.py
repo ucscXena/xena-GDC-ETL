@@ -520,6 +520,7 @@ def map_two_fields(endpoint, input_field, output_field, input_values=[]):
         in_filter={input_field: input_values} if input_values else {},
         fields=[input_field, output_field],
         typ="json",
+        method='POST',
     )
 
     # Split input_field and output_field into shared_path, input_specific_path
