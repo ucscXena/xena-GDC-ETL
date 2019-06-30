@@ -146,33 +146,58 @@ def test_gdc_check_new(capfd):
         (
             'cases',
             'samples.portions.analytes.aliquots.aliquot_id',
-            'samples.portions.analytes.aliquots.submitter_id',
+            'invalid.path',
+            ['35f8d837-f78c-4f88-a4cd-50ea2f9f9437'],
+            {
+                '35f8d837-f78c-4f88-a4cd-50ea2f9f9437': [],
+            }
+        ),
+        (
+            'files',
+            'analysis.input_files.file_id',
+            'analysis.input_files.file_name',
             [
-                '35f8d837-f78c-4f88-a4cd-50ea2f9f9437',
-                '48de3d5a-35d8-456d-a23e-e2dc25a840ac',
+                '4b0b0fb4-99c1-4b86-be77-0bce51ced90d',
+                'cd01b316-357d-4535-b7ae-a5645e619b35',
             ],
             {
-                '35f8d837-f78c-4f88-a4cd-50ea2f9f9437': [
-                    'TCGA-4G-AAZO-11A-11D-A75W-36'
+                '4b0b0fb4-99c1-4b86-be77-0bce51ced90d': ['COTES_p_TCGAaffxB8_9a_S_GenomeWideSNP_6_F08_293030.nocnv_grch38.seg.v2.txt'],  # noqa: E501
+                'cd01b316-357d-4535-b7ae-a5645e619b35': ['QUANT_p_TCGA_Batch12_AFFX_GenomeWideSNP_6_H02_437614.nocnv_grch38.seg.v2.txt'],  # noqa: E501
+            }
+        ),
+        (
+            'projects',
+            'project_id',
+            'disease_type',
+            [
+                'NCICCR-DLBCL',
+                'CPTAC-3',
+                'BEATAML1.0-CRENOLANIB',
+                'CTSP-DLBCL1',
+            ],
+            {
+                'NCICCR-DLBCL': [
+                    'Lymphoid Neoplasm Diffuse Large B-cell Lymphoma'
                 ],
-                '48de3d5a-35d8-456d-a23e-e2dc25a840ac': [
-                    'TCGA-4G-AAZO-11A-11D-A41A-09'
+                'CPTAC-3': ['Adenomas and Adenocarcinomas'],
+                'BEATAML1.0-CRENOLANIB': ['Myeloid Leukemias'],
+                'CTSP-DLBCL1': [
+                    'Lymphoid Neoplasm Diffuse Large B-cell Lymphoma'
                 ],
             }
         ),
         (
-            'cases',
-            'project.project_i',
-            'project.name',
-            ['TCGA-CHOL'],
-            {'TCGA-CHOL': []}
-        ),
-        (
-            'cases',
-            'case_id',
-            'demographic.gender',
-            ['633e6994-3e8b-4c0b-9b79-06cf4ab6f9bc'],
-            {'633e6994-3e8b-4c0b-9b79-06cf4ab6f9bc': ['female']}
+            'annotations',
+            'annotation_id',
+            'project.program.name',
+            [
+                '6e5a8aeb-9c98-4f82-bd5b-08ce6f764485',
+                'invalid-value',
+            ],
+            {
+                '6e5a8aeb-9c98-4f82-bd5b-08ce6f764485': ['TARGET'],
+                'invalid-value': [],
+            }
         ),
     ]
 )

@@ -35,7 +35,17 @@ def test_merge_xena():
     'raw,path,expect',
     [
         ({'a': 'b'}, '', []),
-        ([{'a': 'b'}, {'c': [{'d': 'e'}]}], 'c.d', ['e']),
+        (
+            [
+                {
+                    'project_id': 'CPTAC-3',
+                    'disease_type': ['Adenomas and Adenocarcinomas'],
+                    'id': 'CPTAC-3'
+                }
+            ],
+            'disease_type',
+            [['Adenomas and Adenocarcinomas']]
+        ),
         (
             {
                 "submitter_id": "TCGA-AX-A064",

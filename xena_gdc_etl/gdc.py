@@ -554,6 +554,8 @@ def map_two_fields(endpoint, input_field, output_field, input_values=[]):
         for v in input_found:
             if input_values and v not in input_values:
                 continue
+            while output_found and isinstance(output_found[0], list):
+                output_found = [obj for objs in output_found for obj in objs]
             if v in map:
                 map[v] |= set(output_found)
             else:
