@@ -1,0 +1,16 @@
+{"cohort":"{{ xena_cohort }}",
+ "url":"{% if gdc_release %}{{ gdc_release }}, {% endif %}https://api.gdc.cancer.gov/data/",
+ "dataSubType": "copy number (gene-level)",
+ ":probeMap":"gencode.v22.annotation.gene.probeMap",
+ "dataProducer":"Genomic Data Commons",
+ "label":"{{ gdc_type }}",
+ "colNormalization":true,
+ "wrangling_procedure": "Loaded data directly into Xena", 
+ "PLATFORM":"Illumina",
+ "type":"genomicMatrix",
+ "wrangler":"Xena GDC ETL script",
+ "version":"{{ date }}",
+ "unit":"Gistic2 copy number"{% if notes %},
+ "notes":"{{ notes }}"{% endif %},
+ "GDC_Description": "https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/CNV_Pipeline/"
+}

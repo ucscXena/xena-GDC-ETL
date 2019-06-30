@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 
 from xena_gdc_etl import gdc
-from .utils import mkdir_p, requests_retry_session
+from .utils import mkdir_p, requests_retry_session, reduce_json_array
 from .constants import (
     GDC_XENA_COHORT,
     METADATA_TEMPLATE,
@@ -364,6 +364,36 @@ def merge_sample_cols(
         return np.log2(xena_matrix + 1)
     else:
         return xena_matrix
+
+
+def handle_gistic(filelist):
+    """Handles GISTIC Data type.
+    Args:
+        filelist (list of path): The list of input raw data.
+    Returns:
+        pandas.core.frame.DataFrame: Ready to load Xena matrix.
+    """
+
+    assert len(filelist) == 1
+    print('\rProcessing file {}'.format(filelist[0]), end='')
+    df = pd.read_csv(
+        filelist[0],
+        sep="\t",
+        header=0,
+        comment='#',
+        index_col=0,
+    )
+    df = df.drop(["Gene ID", "Cytoband"], axis=1)
+    columns = list(df)
+    mapping = gdc.map_two_fields(
+        endpoint="cases",
+        input_field="samples.portions.analytes.aliquots.aliquot_id",
+        output_field="samples.submitter_id",
+        input_values=columns,
+    )
+    mapping = reduce_json_array(mapping)
+    df = df.rename(columns=mapping)
+    return df
 
 
 class XenaDataset(object):
@@ -882,6 +912,10 @@ class GDCOmicset(XenaDataset):
             'analysis.workflow_type':
             'VarScan2 Variant Aggregation and Masking',
         },
+        'gistic': {
+            'data_type': 'Gene Level Copy Number Scores',
+            'analysis.workflow_type': 'GISTIC - Copy Number Score',
+        },
         'methylation27': {
             'data_type': 'Methylation Beta Value',
             'platform': 'Illumina Human Methylation 27',
@@ -905,6 +939,7 @@ class GDCOmicset(XenaDataset):
         'mutect2_snv': 'submitter_id',
         'somaticsniper_snv': 'submitter_id',
         'varscan2_snv': 'submitter_id',
+        'gistic': 'submitter_id',
         'methylation27': 'cases.samples.submitter_id',
         'methylation450': 'cases.samples.submitter_id',
     }
@@ -932,6 +967,7 @@ class GDCOmicset(XenaDataset):
             snv_maf_matrix,
         )
     )
+    _RAWS2MATRIX_FUNCS['gistic'] = handle_gistic
     _RAWS2MATRIX_FUNCS.update(
         dict.fromkeys(
             ['methylation27', 'methylation450'],

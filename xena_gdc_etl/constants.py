@@ -54,6 +54,7 @@ METADATA_TEMPLATE = {
     'varscan2_snv': 'template.snv.meta.json',
     'GDC_phenotype': 'template.phenotype.meta.json',
     'survival': 'template.survival.meta.json',
+    'gistic': 'template.gistic.meta.json',
     'methylation27': 'template.methylation.meta.json',
     'methylation450': 'template.methylation.meta.json',
 }
@@ -73,6 +74,7 @@ METADATA_VARIABLES = {
         'gdc_type': 'SomaticSniper Variant Aggregation and Masking'
     },
     'varscan2_snv': {'gdc_type': 'VarScan2 Variant Aggregation and Masking'},
+    'gistic': {'gdc_type': 'GISTIC - Copy Number Score'},
     'methylation27': {'platform_num': '27'},
     'methylation450': {'platform_num': '450'},
 }
@@ -89,6 +91,7 @@ valid_dtype = [
     'varscan2_snv',
     'GDC_phenotype',
     'survival',
+    'gistic',
     'methylation27',
     'methylation450',
 ]
