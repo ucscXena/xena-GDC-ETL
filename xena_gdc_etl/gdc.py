@@ -17,7 +17,7 @@ import warnings
 import pandas as pd
 import requests
 
-from .utils import mkdir_p, reduce_json_array
+from .utils import mkdir_p, reduce_json_array, get_json_objects
 
 GDC_API_BASE = 'https://api.gdc.cancer.gov'
 _SUPPORTED_FILE_TYPES = {
@@ -488,3 +488,81 @@ def gdc_check_new(new_file_uuids):
     except:  # noqa: E722
         pass
     df.to_csv(sys.stdout, sep='\t', index=False)
+
+
+def map_two_fields(endpoint, input_field, output_field, input_values=[]):
+    """This function helps map values from ``input_field`` of certain
+    ``endpoint`` to values from ``output_field`` of the same ``endpoint``. It
+    returns a dict whose keys are values from ``input_field`` of ``endpoint``
+    and values are values from ``output_field`` of ``endpoint``. It can also
+    accept a list of values from ``input_field`` to filter the return dict.
+
+    Args:
+        endpoint (str): One string of GDC API supported endpoint. This
+            function only does mapping for two fields from the same endpoint.
+            For available endpoints, see:
+            https://docs.gdc.cancer.gov/API/Users_Guide/Getting_Started/#api-endpoints
+        input_field (str): One valid field of the ``endpoint``. Values from
+            this field will be used as keys of the return dict.
+            ``input_values``, if provided, are values on this field.
+        output_field (str):One valid field of the ``endpoint``.
+        input_values (list, optional): query values on ``input_field`` which
+            needs to be mapped. It helps limit/filter the return.
+
+    Returns:
+        dict: A dict whose keys are ``input_values`` if it's not empty or all
+        possible values from ``input_field`` of ``endpoint``. Values of return
+        dict are values from ``output_field`` of ``endpoint``.
+    """
+
+    raw_results = search(
+        endpoint=endpoint,
+        in_filter={input_field: input_values} if input_values else {},
+        fields=[input_field, output_field],
+        typ="json",
+        method='POST',
+    )
+
+    # Split input_field and output_field into shared_path, input_specific_path
+    # and output_specific_path
+    input_keys = input_field.split('.')
+    output_keys = output_field.split('.')
+    for i in range(min([len(input_keys), len(output_keys)])):
+        if input_keys[i] != output_keys[i]:
+            break
+    shared_path = '.'.join(input_keys[:i])
+    input_sub_path = '.'.join(input_keys[i:])
+    output_sub_path = '.'.join(output_keys[i:])
+
+    # Get the list of dicts by shared_path
+    if shared_path:
+        shared_objs = get_json_objects(raw_results, shared_path)
+    else:
+        if isinstance(raw_results, list):
+            shared_objs = raw_results
+        else:
+            shared_objs = [raw_results]
+    while shared_objs and isinstance(shared_objs[0], list):
+        shared_objs = [obj for objs in shared_objs for obj in objs]
+
+    # For shared_objects, get the list of values by input_specific_path and
+    # output_specific_path
+    map = {}
+    for shared_obj in shared_objs:
+        input_found = get_json_objects(shared_obj, input_sub_path)
+        output_found = get_json_objects(shared_obj, output_sub_path)
+        for v in input_found:
+            if input_values and v not in input_values:
+                continue
+            while output_found and isinstance(output_found[0], list):
+                output_found = [obj for objs in output_found for obj in objs]
+            if v in map:
+                map[v] |= set(output_found)
+            else:
+                map[v] = set(output_found)
+
+    # Fill in failed input_values
+    for v in input_values:
+        if v not in map:
+            map[v] = set()
+    return {k: list(map[k]) for k in map}
