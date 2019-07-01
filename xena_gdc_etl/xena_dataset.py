@@ -292,6 +292,7 @@ def merge_sample_cols(
     header='infer',
     index_col=0,
     usecols=[0, 1],
+    skiprows=None,
     comment=None,
     index_name='id',
     get_sid=lambda f: os.path.basename(f).split('.', 1)[0],
@@ -340,6 +341,7 @@ def merge_sample_cols(
                 header=header,
                 index_col=index_col,
                 usecols=usecols,
+                skiprows=skiprows,
                 comment=comment,
                 names=[index_name, sample_id],
             )
@@ -916,6 +918,9 @@ class GDCOmicset(XenaDataset):
             'data_type': 'Gene Level Copy Number Scores',
             'analysis.workflow_type': 'GISTIC - Copy Number Score',
         },
+        'starcounts': {
+            'analysis.workflow_type': 'STAR - Counts',
+        },
         'methylation27': {
             'data_type': 'Methylation Beta Value',
             'platform': 'Illumina Human Methylation 27',
@@ -940,6 +945,7 @@ class GDCOmicset(XenaDataset):
         'somaticsniper_snv': 'submitter_id',
         'varscan2_snv': 'submitter_id',
         'gistic': 'submitter_id',
+        'starcounts': 'cases.samples.submitter_id',
         'methylation27': 'cases.samples.submitter_id',
         'methylation450': 'cases.samples.submitter_id',
     }
@@ -968,6 +974,10 @@ class GDCOmicset(XenaDataset):
         )
     )
     _RAWS2MATRIX_FUNCS['gistic'] = handle_gistic
+    _RAWS2MATRIX_FUNCS['starcounts'] = functools.partial(
+        merge_sample_cols,
+        skiprows=[0, 1, 2, 3, 4],
+    )
     _RAWS2MATRIX_FUNCS.update(
         dict.fromkeys(
             ['methylation27', 'methylation450'],

@@ -1,0 +1,13 @@
+{"cohort":"{{ xena_cohort }}",
+ "url":"{% if gdc_release %}{{ gdc_release }}, {% endif %}https://api.gdc.cancer.gov/data/",
+ "dataProducer":"Genomic Data Commons",
+ "label":"{{ Workflow_Type }}",
+ "colNormalization":true,
+ "wrangling_procedure":
+ "Data from the same sample but from different vials/portions/analytes/aliquotes is averaged; data from different samples is combined into genomicMatrix; all data is then log2(x+1) transformed.",
+ "type":"genomicMatrix",
+ "wrangler":"Xena GDC ETL script",
+ "version":"{{ date }}",
+ "unit":"{% if unit %}log2({{ unit }}+1){% else %}log2(count+1){% endif %}"{% if notes %},
+ "notes":"{{ notes }}"{% endif %}
+}
