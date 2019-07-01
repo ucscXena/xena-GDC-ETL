@@ -8,7 +8,6 @@ import pandas as pd
 import pytest
 
 from xena_gdc_etl import gdc
-from tests.utils import compare_dict
 
 
 def test_simple_and_filter():
@@ -26,7 +25,7 @@ def test_simple_and_filter():
         "op": "and",
     }
     actual = gdc.simple_and_filter(in_dict_2, exclude_dict_2)
-    compare_dict(expected, actual)
+    assert actual == expected
 
 
 def test_reduce_json_array():
@@ -37,7 +36,7 @@ def test_reduce_json_array():
     assert actual_1 == expected_1
     actual_2 = gdc.reduce_json_array(input_2)
     expected_2 = {'a': 'b'}
-    compare_dict(actual_2, expected_2)
+    assert actual_2 == expected_2
 
 
 def test_get_ext():
