@@ -28,12 +28,7 @@ import numpy as np
 import pandas as pd
 
 from xena_gdc_etl import gdc
-from .utils import (
-    mkdir_p,
-    requests_retry_session,
-    reduce_json_array,
-    get_json_objects,
-)
+from .utils import mkdir_p, requests_retry_session, reduce_json_array
 from .constants import (
     GDC_XENA_COHORT,
     METADATA_TEMPLATE,
@@ -1535,18 +1530,6 @@ class GDCPhenoset(XenaDataset):
                 except Exception:
                     raise TypeError('Fail to process file {}.'.format(path))
         print('\rAll {} files have been processed. '.format(total))
-        in_filter = {
-            "cases.project.project_id": self.projects,
-            "data_category": "Sequencing Reads",
-        }
-        field = "cases.samples.submitter_id"
-        res = gdc.search(
-            endpoint="files",
-            in_filter=in_filter,
-            fields=field,
-            typ="json",
-        )
-        submitter_ids = get_json_objects(res, field)
         try:
             bio_matrix = (
                 pd.concat(bio_dfs, axis=0)
@@ -1646,6 +1629,17 @@ class GDCPhenoset(XenaDataset):
                     for n in api_clin.columns
                 }
             )
+            sequenced_samples = gdc.search(
+                endpoint='files',
+                in_filter={
+                    'cases.project.project_id': self.projects,
+                    'data_category': 'Sequencing Reads',
+                },
+                fields=['cases.samples.submitter_id']
+            )['cases.samples.submitter_id'].tolist()
+            api_clin = api_clin[
+                api_clin['submitter_id.samples'].isin(sequenced_samples)
+            ]
             if all([i.startswith('TCGA-') for i in self.projects]):
                 # Remove code 10, Blood Derived Normal, sample:
                 # https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/sample-type-codes
@@ -1692,9 +1686,6 @@ class GDCPhenoset(XenaDataset):
                     'Getting "GDC_phenotype" for a cohort with mixed TCGA and '
                     'TARGET projects is not currently suppported.'
                 )
-        all_submitter_ids = xena_matrix.index.values
-        to_drop = list(set(all_submitter_ids) - set(submitter_ids))
-        xena_matrix = xena_matrix.drop(to_drop, axis=0)
         # Transformation done
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
