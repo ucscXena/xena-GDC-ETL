@@ -55,7 +55,7 @@ METADATA_TEMPLATE = {
     'GDC_phenotype': 'template.phenotype.meta.json',
     'survival': 'template.survival.meta.json',
     'gistic': 'template.gistic.meta.json',
-    'starcounts': 'template.starcounts.meta.json',
+    'star_counts': 'template.rna.meta.json',
     'methylation27': 'template.methylation.meta.json',
     'methylation450': 'template.methylation.meta.json',
 }
@@ -76,7 +76,7 @@ METADATA_VARIABLES = {
     },
     'varscan2_snv': {'gdc_type': 'VarScan2 Variant Aggregation and Masking'},
     'gistic': {'gdc_type': 'GISTIC - Copy Number Score'},
-    'starcounts': {'Workflow_Type': 'STAR - Counts'},
+    'star_counts': {'gdc_type': 'STAR - Counts'},
     'methylation27': {'platform_num': '27'},
     'methylation450': {'platform_num': '450'},
 }
@@ -94,7 +94,7 @@ valid_dtype = [
     'GDC_phenotype',
     'survival',
     'gistic',
-    'starcounts',
+    'star_counts',
     'methylation27',
     'methylation450',
 ]
