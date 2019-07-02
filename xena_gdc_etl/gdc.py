@@ -418,7 +418,6 @@ def get_samples_clinical(projects=None):
     expand = [
         'demographic',
         'diagnoses',
-        'diagnoses.treatments',
         'exposures',
         'family_histories',
         'project',
