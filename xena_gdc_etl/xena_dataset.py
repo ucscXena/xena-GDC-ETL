@@ -1795,8 +1795,8 @@ class GDCSurvivalset(XenaDataset):
 
         Only 1 GDC raw survival data (i.e. ``raw_data_list[0]``) will be read
         and used by this transformation. Xena survival data has 4 columns,
-        which are "sample", "_OS_IND", "_OS" and "_PATIENT". "_OS_IND"
-        corresponds to the "censored" column in GDC survival data; "_OS"
+        which are "sample", "OS", "OS.time" and "_PATIENT". "OS"
+        corresponds to the "censored" column in GDC survival data; "OS.time"
         corresponds to the "time" column in GDC survival data;
         "_PATIENT" corresponds to the "submitter_id" column in GDC survival
         data which is the case(patient)'s submitter ID; "sample" contains
@@ -1812,12 +1812,12 @@ class GDCSurvivalset(XenaDataset):
             ['project_id', 'survivalEstimate'], axis=1
         ).rename(
             columns={
-                'censored': '_OS_IND',
-                'time': '_OS',
+                'censored': 'OS',
+                'time': 'OS.time',
                 'submitter_id': '_PATIENT',
             }
         )
-        survival_df['_OS_IND'] = (~survival_df['_OS_IND']).map(int)
+        survival_df['OS'] = (~survival_df['OS']).map(int)
         # Get samples to case map
         case_samples = gdc.search(
             'cases',
