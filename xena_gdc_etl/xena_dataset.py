@@ -916,6 +916,9 @@ class GDCOmicset(XenaDataset):
             'data_type': 'Gene Level Copy Number Scores',
             'analysis.workflow_type': 'GISTIC - Copy Number Score',
         },
+        'star_counts': {
+            'analysis.workflow_type': 'STAR - Counts',
+        },
         'methylation27': {
             'data_type': 'Methylation Beta Value',
             'platform': 'Illumina Human Methylation 27',
@@ -940,6 +943,7 @@ class GDCOmicset(XenaDataset):
         'somaticsniper_snv': 'submitter_id',
         'varscan2_snv': 'submitter_id',
         'gistic': 'submitter_id',
+        'star_counts': 'cases.samples.submitter_id',
         'methylation27': 'cases.samples.submitter_id',
         'methylation450': 'cases.samples.submitter_id',
     }
@@ -968,6 +972,11 @@ class GDCOmicset(XenaDataset):
         )
     )
     _RAWS2MATRIX_FUNCS['gistic'] = handle_gistic
+    _RAWS2MATRIX_FUNCS['star_counts'] = functools.partial(
+        merge_sample_cols,
+        header=0,
+        index_name='Ensembl_ID',
+    )
     _RAWS2MATRIX_FUNCS.update(
         dict.fromkeys(
             ['methylation27', 'methylation450'],
