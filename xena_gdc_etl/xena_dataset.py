@@ -1254,16 +1254,19 @@ class GDCPhenoset(XenaDataset):
     _XENA_GDC_DTYPE = {
         'biospecimen': {
             'data_category': 'Biospecimen',
-            'data_format': 'BCR XML',
+            'data_format': ['BCR XML', 'XLSX'],
         },
-        'clinical': {'data_category': 'Clinical', 'data_format': 'BCR XML'},
+        'clinical': {
+            'data_category': 'Clinical',
+            'data_format': ['BCR XML', 'XLSX'],
+        },
         'raw_phenotype': {
             'data_category': ['Biospecimen', 'Clinical'],
-            'data_format': 'BCR XML',
+            'data_format': ['BCR XML', 'XLSX'],
         },
         'GDC_phenotype': {
             'data_category': ['Biospecimen', 'Clinical'],
-            'data_format': 'BCR XML',
+            'data_format': ['BCR XML', 'XLSX'],
         },
     }
     # To resovle overlapping between raw data and API data, remove columns
