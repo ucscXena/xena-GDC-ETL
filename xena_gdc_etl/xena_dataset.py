@@ -1686,7 +1686,28 @@ class GDCPhenoset(XenaDataset):
                 "cases.project.project_id": self.projects,
                 "data_category": "Sequencing Reads",
             }
-            if all([i.startswith("TCGA-") for i in self.projects]):
+            if len(self.projects) == 1 and self.projects[0] == "CPTAC-3":
+                fields = CASES_FIELDS_EXPANDS["CPTAC-3"]["fields"]
+                res = gdc.search(
+                    endpoint="files",
+                    in_filter=in_filter,
+                    fields=fields,
+                    typ="json",
+                )
+                reduced_no_samples_json = gdc.reduce_json_array(res)
+                xena_matrix = pd.io.json.json_normalize(
+                    reduced_no_samples_json
+                )
+                xena_matrix.drop(
+                    "cases.samples",
+                    axis=1,
+                    inplace=True,
+                )
+                xena_matrix.set_index(
+                    "cases.samples.submitter_id",
+                    inplace=True,
+                )
+            elif all([i.startswith("TCGA-") for i in self.projects]):
                 fields = CASES_FIELDS_EXPANDS["TCGA"]["fields"]
                 expand = CASES_FIELDS_EXPANDS["TCGA"]["expand"]
                 res = gdc.search(
