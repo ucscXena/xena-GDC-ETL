@@ -158,7 +158,11 @@ def read_clinical(fileobj):
         filename = fileobj
     ext = os.path.splitext(filename)[1]
     if ext == '.xlsx':
-        return pd.read_excel(filename, sheet_name='Clinical Data', index_col=0)
+        xl_file = pd.ExcelFile(filename)
+        sheets = xl_file.sheet_names
+        if sheets[0] == "Data Elements":
+            return pd.DataFrame()
+        return xl_file.parse(sheets[0], index_col=0)
     elif ext != '.xml':
         raise IOError('Unknown file type for clinical data: {}'.format(ext))
 
@@ -1523,7 +1527,8 @@ class GDCPhenoset(XenaDataset):
             # `read_biospecimen` and `read_clinical` will check file format
             try:
                 df = read_clinical(path)
-                clin_dfs.append(df)
+                if not df.empty:
+                    clin_dfs.append(df)
             except Exception:
                 try:
                     df = read_biospecimen(path)
