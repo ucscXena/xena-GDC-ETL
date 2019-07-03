@@ -62,9 +62,9 @@ def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data=False):
     counts = 0
     unfinished = {}
     total_projects = len(projects)
-    log_format = '%(asctime)-15s [%(levelname)s]: %(message)s'
+    log_format = '%(asctime)-15s %(name)s [%(levelname)s]: %(message)s'
     logging.basicConfig(
-        level=logging.WARNING,
+        level=logging.INFO,
         format=log_format,
         datefmt='%Y-%m-%d %H:%M:%S',
         filename=os.path.join(
@@ -106,9 +106,9 @@ def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data=False):
                     json.dump(unfinished, outfile)
                 msg = 'No {} data for cohort {}.'.format(dtype, project)
                 logger.warning(msg, exc_info=True)
-                print(msg)
+                logging.info(msg)
     logging.shutdown()
     end_time = timeit.default_timer()
     m, s = divmod(int(end_time - start_time), 60)
     h, m = divmod(m, 60)
-    print('Finish in {:d}:{:02d}:{:02d}.'.format(h, m, s))
+    logging.info('Finish in {:d}:{:02d}:{:02d}.'.format(h, m, s))
