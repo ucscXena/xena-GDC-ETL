@@ -1298,6 +1298,7 @@ class GDCPhenoset(XenaDataset):
         'pathology_report_uuid.samples',
         'state.project',
         'released.project',
+        'primary_site.project',
         'sample_id.samples',
         'created_datetime.samples',
         'updated_datetime.samples',
