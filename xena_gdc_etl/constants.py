@@ -75,7 +75,13 @@ METADATA_VARIABLES = {
         'gdc_type': 'SomaticSniper Variant Aggregation and Masking'
     },
     'varscan2_snv': {'gdc_type': 'VarScan2 Variant Aggregation and Masking'},
-    'gistic': {'gdc_type': 'GISTIC - Copy Number Score'},
+    'gistic': {
+        'gdc_type': 'GISTIC - focal score by gene',
+        'notes': 'The GISTIC -1,0, 1 comes from focal copy number estimates, '
+                 'not actual copy number estimate. Focal means small region '
+                 '(probably some cutoff), large chromosomal level deletion '
+                 'like PTEN does not assigned to focal.',
+    },
     'star_counts': {'gdc_type': 'STAR - Counts'},
     'methylation27': {'platform_num': '27'},
     'methylation450': {'platform_num': '450'},
