@@ -160,9 +160,10 @@ def read_clinical(fileobj):
     if ext == '.xlsx':
         xl_file = pd.ExcelFile(filename)
         sheets = xl_file.sheet_names
-        if sheets[0] == "Data Elements":
+        if sheets[0] == "Clinical Data":
+            return xl_file.parse(sheets[0], index_col=0)
+        else:
             return pd.DataFrame()
-        return xl_file.parse(sheets[0], index_col=0)
     elif ext != '.xml':
         raise IOError('Unknown file type for clinical data: {}'.format(ext))
 
