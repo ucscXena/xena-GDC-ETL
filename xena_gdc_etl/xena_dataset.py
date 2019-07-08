@@ -163,6 +163,7 @@ def read_clinical(fileobj):
         if sheets[0] == "Clinical Data":
             return xl_file.parse(sheets[0], index_col=0)
         else:
+            print("Clincal Data not found, skipping this file ...")
             return pd.DataFrame()
     elif ext != '.xml':
         raise IOError('Unknown file type for clinical data: {}'.format(ext))
