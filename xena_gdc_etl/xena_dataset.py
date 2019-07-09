@@ -159,7 +159,13 @@ def read_clinical(fileobj):
         filename = fileobj
     ext = os.path.splitext(filename)[1]
     if ext == '.xlsx':
-        return pd.read_excel(filename, sheet_name='Clinical Data', index_col=0)
+        xl_file = pd.ExcelFile(filename)
+        sheets = xl_file.sheet_names
+        if sheets[0] == "Clinical Data":
+            return xl_file.parse(sheets[0], index_col=0)
+        else:
+            print("Clincal Data not found, skipping this file ...")
+            return pd.DataFrame()
     elif ext != '.xml':
         raise IOError('Unknown file type for clinical data: {}'.format(ext))
 
@@ -1255,16 +1261,19 @@ class GDCPhenoset(XenaDataset):
     _XENA_GDC_DTYPE = {
         'biospecimen': {
             'data_category': 'Biospecimen',
-            'data_format': 'BCR XML',
+            'data_format': ['BCR XML', 'XLSX'],
         },
-        'clinical': {'data_category': 'Clinical', 'data_format': 'BCR XML'},
+        'clinical': {
+            'data_category': 'Clinical',
+            'data_format': ['BCR XML', 'XLSX'],
+        },
         'raw_phenotype': {
             'data_category': ['Biospecimen', 'Clinical'],
-            'data_format': 'BCR XML',
+            'data_format': ['BCR XML', 'XLSX'],
         },
         'GDC_phenotype': {
             'data_category': ['Biospecimen', 'Clinical'],
-            'data_format': 'BCR XML',
+            'data_format': ['BCR XML', 'XLSX'],
         },
         'Xena_phenotype': {},
     }
@@ -1528,7 +1537,8 @@ class GDCPhenoset(XenaDataset):
             # `read_biospecimen` and `read_clinical` will check file format
             try:
                 df = read_clinical(path)
-                clin_dfs.append(df)
+                if not df.empty:
+                    clin_dfs.append(df)
             except Exception:
                 try:
                     df = read_biospecimen(path)
