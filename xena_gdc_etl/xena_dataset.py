@@ -873,6 +873,27 @@ class GDCOmicset(XenaDataset):
         'cnv': {
             'data_type': 'Copy Number Segment',
             'analysis.workflow_type': 'DNAcopy',
+            'cases.samples.sample_type_id': (
+                [
+                    '01',
+                    '02',
+                    '03',
+                    '04',
+                    '05',
+                    '06',
+                    '07',
+                    '08',
+                    '09',
+                    '15',
+                    '16',
+                    '20',
+                    '40',
+                    '50',
+                    '60',
+                    '61',
+                    '99',
+                ]
+            ),
         },
         'masked_cnv': {
             'data_type': 'Masked Copy Number Segment',
