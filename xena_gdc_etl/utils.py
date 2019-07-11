@@ -229,3 +229,25 @@ def get_json_objects(raw, path):
             if isinstance(obj, dict) and key in obj
         ]
     return values
+
+
+def remove_list_fields(df):
+    """Given a dataframe, this functions drop the columns whose cells are of
+    ``list`` datatype.
+
+    Args:
+        df (pandas.DataFrame): A pandas dataframe.
+
+    Returns:
+        pandas.DataFrame: The modified dataframe
+    """
+
+    to_drop = []
+    for col in df.columns:
+        for cell in df[col]:
+            if isinstance(cell, str):
+                if cell.startswith("[") and cell.endswith("]"):
+                    to_drop.append(col)
+                    break
+    df.drop(to_drop, axis=1, inplace=True)
+    return df

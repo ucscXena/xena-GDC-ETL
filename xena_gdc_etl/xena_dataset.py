@@ -28,7 +28,12 @@ import numpy as np
 import pandas as pd
 
 from xena_gdc_etl import gdc
-from .utils import mkdir_p, requests_retry_session, reduce_json_array
+from .utils import (
+    mkdir_p,
+    requests_retry_session,
+    reduce_json_array,
+    remove_list_fields,
+)
 from .constants import (
     GDC_XENA_COHORT,
     METADATA_TEMPLATE,
@@ -1704,6 +1709,8 @@ class GDCPhenoset(XenaDataset):
                     'Getting "GDC_phenotype" for a cohort with mixed TCGA and '
                     'TARGET projects is not currently suppported.'
                 )
+        print("Removing fields having list datatypes ... ")
+        xena_matrix = remove_list_fields(xena_matrix)
         # Transformation done
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
