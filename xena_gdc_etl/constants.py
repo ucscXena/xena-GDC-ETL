@@ -75,7 +75,12 @@ METADATA_VARIABLES = {
         'gdc_type': 'SomaticSniper Variant Aggregation and Masking'
     },
     'varscan2_snv': {'gdc_type': 'VarScan2 Variant Aggregation and Masking'},
-    'gistic': {'gdc_type': 'GISTIC - Copy Number Score'},
+    'gistic': {
+        'gdc_type': 'GISTIC - focal score by gene',
+        'notes': 'The GDC GISTIC copy number dataset is derived from focal '
+                 'copy number estimates. Larger chromosomal-level deletions '
+                 'may not be not captured in this dataset.',
+    },
     'star_counts': {'gdc_type': 'STAR - Counts'},
     'methylation27': {'platform_num': '27'},
     'methylation450': {'platform_num': '450'},
