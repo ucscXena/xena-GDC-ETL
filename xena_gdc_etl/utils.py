@@ -1,6 +1,5 @@
 from __future__ import print_function
 from datetime import date
-from itertools import chain, starmap
 import glob
 import os
 import sys
@@ -230,44 +229,3 @@ def get_json_objects(raw, path):
             if isinstance(obj, dict) and key in obj
         ]
     return values
-
-
-def get_to_drops(dictionary):
-    """Given a dictionary, this functions returns the path of leaves (joined
-    by ".") whose values are of type list.
-
-    Args:
-        dictionary (dictionary): A dictionary.
-
-    Returns:
-        list: A list of paths
-    """
-    to_drop = []
-
-    def unpack(parent_key, parent_value):
-        if isinstance(parent_value, dict):
-            for key, value in parent_value.items():
-                cur_key = parent_key + "." + key
-                yield cur_key, value
-        elif isinstance(parent_value, list):
-            if not isinstance(parent_value[0], dict):
-                to_drop.append(parent_key)
-            else:
-                for value in parent_value:
-                    yield parent_key, value
-        else:
-            yield parent_key, parent_value
-
-    while True:
-        dictionary = dict(
-            chain.from_iterable(starmap(unpack, dictionary.items()))
-        )
-        if (
-            not any(isinstance(value, dict) for value in dictionary.values())
-            and not any(
-                isinstance(value, list) for value in dictionary.values()
-            )
-        ):
-            break
-
-    return to_drop
