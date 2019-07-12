@@ -28,11 +28,7 @@ import numpy as np
 import pandas as pd
 
 from xena_gdc_etl import gdc
-from .utils import (
-    mkdir_p,
-    requests_retry_session,
-    reduce_json_array,
-)
+from .utils import mkdir_p, requests_retry_session, reduce_json_array
 from .constants import (
     GDC_XENA_COHORT,
     METADATA_TEMPLATE,
