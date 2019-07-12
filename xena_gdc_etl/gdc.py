@@ -427,10 +427,10 @@ def get_samples_clinical(projects=None):
     res = search(
         'cases', in_filter=in_filter, fields=fields, expand=expand, typ='json'
     )
-    reduced_json = reduce_json_array(res)
     to_drops = set()
-    for ele in reduced_json:
+    for ele in res:
         to_drops |= set(get_to_drops(ele))
+    print("Dropping columns {} for {} projects".format(to_drops, projects))
     reduced_no_samples_json = reduce_json_array(
         [{k: v for k, v in d.items() if k != 'samples'} for d in res]
     )
