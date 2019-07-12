@@ -233,7 +233,7 @@ def get_json_objects(raw, path):
 
 
 def get_to_drops(dictionary):
-    """Given a dictionary, this functions returns the path of nodes (joined
+    """Given a dictionary, this functions returns the path of leaves (joined
     by ".") whose values are of type list.
 
     Args:
