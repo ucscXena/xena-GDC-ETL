@@ -17,7 +17,7 @@ import warnings
 import pandas as pd
 import requests
 
-from .utils import mkdir_p, reduce_json_array, get_json_objects
+from .utils import mkdir_p, reduce_json_array, get_json_objects, get_to_drops
 
 GDC_API_BASE = 'https://api.gdc.cancer.gov'
 _SUPPORTED_FILE_TYPES = {
@@ -418,7 +418,6 @@ def get_samples_clinical(projects=None):
     expand = [
         'demographic',
         'diagnoses',
-        'diagnoses.treatments',
         'exposures',
         'family_histories',
         'project',
@@ -428,6 +427,10 @@ def get_samples_clinical(projects=None):
     res = search(
         'cases', in_filter=in_filter, fields=fields, expand=expand, typ='json'
     )
+    to_drops = set()
+    for ele in res:
+        to_drops |= set(get_to_drops(ele))
+    print("Dropping columns {} for {} projects".format(to_drops, projects))
     reduced_no_samples_json = reduce_json_array(
         [{k: v for k, v in d.items() if k != 'samples'} for d in res]
     )
@@ -447,7 +450,9 @@ def get_samples_clinical(projects=None):
         'id',
         record_prefix='samples.',
     )
-    return pd.merge(cases_df, samples_df, how='inner', on='id')
+    merged_df = pd.merge(cases_df, samples_df, how='inner', on='id')
+    merged_df.drop(list(to_drops), axis=1, inplace=True)
+    return merged_df
 
 
 def gdc_check_new(new_file_uuids):
