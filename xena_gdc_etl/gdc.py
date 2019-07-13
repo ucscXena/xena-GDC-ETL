@@ -418,7 +418,6 @@ def get_samples_clinical(projects=None):
     expand = [
         'demographic',
         'diagnoses',
-        'diagnoses.treatments',
         'exposures',
         'family_histories',
         'project',
@@ -447,7 +446,20 @@ def get_samples_clinical(projects=None):
         'id',
         record_prefix='samples.',
     )
-    return pd.merge(cases_df, samples_df, how='inner', on='id')
+    clinical_df = pd.merge(cases_df, samples_df, how='inner', on='id')
+    # Filter out columns whose values are list of non-dict
+    raw_df = pd.io.json.json_normalize(res)
+    list_cols = [
+        c for c in raw_df.columns
+        if (
+            isinstance(raw_df.loc[0, c], list)
+            and not isinstance(raw_df.loc[0, c][0], dict)
+        )
+    ]
+    if any(list_cols):
+        clinical_df = clinical_df.drop(columns=list_cols)
+        print('The following columns are dropped: {}'.format(str(list_cols)))
+    return clinical_df
 
 
 def gdc_check_new(new_file_uuids):
