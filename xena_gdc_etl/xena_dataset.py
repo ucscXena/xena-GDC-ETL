@@ -1881,6 +1881,8 @@ class GDCSurvivalset(XenaDataset):
             .drop('id', axis=1)
             .set_index('sample')
         )
+        print('Dropping TCGA-**-****-**Z samples ...')
+        df = df[~df.index.str.endswith('Z')]
         mkdir_p(os.path.dirname(self.matrix))
         df.to_csv(self.matrix, sep='\t')
         print('\rXena matrix is saved at {}.'.format(self.matrix))
