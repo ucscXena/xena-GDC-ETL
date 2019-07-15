@@ -1704,6 +1704,8 @@ class GDCPhenoset(XenaDataset):
                     'Getting "GDC_phenotype" for a cohort with mixed TCGA and '
                     'TARGET projects is not currently suppported.'
                 )
+        print("Dropping samples having no genomic data ...")
+        xena_matrix = xena_matrix[~xena_matrix.index.str.endswith('Z')]
         # Transformation done
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
