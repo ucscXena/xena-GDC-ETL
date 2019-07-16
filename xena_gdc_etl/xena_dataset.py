@@ -1704,6 +1704,8 @@ class GDCPhenoset(XenaDataset):
                     'Getting "GDC_phenotype" for a cohort with mixed TCGA and '
                     'TARGET projects is not currently suppported.'
                 )
+        print('Dropping TCGA-**-****-**Z samples ...')
+        xena_matrix = xena_matrix[~xena_matrix.index.str.endswith('Z')]
         # Transformation done
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
@@ -1879,6 +1881,8 @@ class GDCSurvivalset(XenaDataset):
             .drop('id', axis=1)
             .set_index('sample')
         )
+        print('Dropping TCGA-**-****-**Z samples ...')
+        df = df[~df.index.str.endswith('Z')]
         mkdir_p(os.path.dirname(self.matrix))
         df.to_csv(self.matrix, sep='\t')
         print('\rXena matrix is saved at {}.'.format(self.matrix))
