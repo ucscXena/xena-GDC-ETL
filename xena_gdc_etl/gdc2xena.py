@@ -29,7 +29,7 @@ import json
 import time
 import shutil
 
-from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
+from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset, TCGAPhenoset
 
 
 def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data=False):
@@ -86,7 +86,7 @@ def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data=False):
                 if project.startswith('TARGET'):
                     dataset = GDCPhenoset(project, 'clinical', root_dir)
             elif dtype == 'GDC_phenotype':
-                dataset = GDCPhenoset(project, 'GDC_phenotype', root_dir)
+                dataset = TCGAPhenoset(project, root_dir)
             else:
                 dataset = GDCOmicset(project, dtype, root_dir)
             try:
