@@ -2267,26 +2267,19 @@ class TCGAPhenoset(XenaDataset):
             .replace(r'\r\n', ' ', regex=True)
             .replace(r'^\s*$', np.nan, regex=True)
             .dropna(axis=1, how='all')
+            .rename(columns={
+                'bcr_sample_barcode': 'submitter_id.samples',
+                'bcr_patient_barcode': 'submitter_id',
+            })
         )
         clin_matrix = (
             pd.concat(clin_dfs, axis=0)
             .replace(r'\r\n', ' ', regex=True)
             .replace(r'^\s*$', np.nan, regex=True)
             .dropna(axis=1, how='all')
-        )
-        bio_columns = bio_matrix.columns.difference(
-            clin_matrix.columns
-        ).insert(0, 'bcr_patient_barcode')
-        xena_matrix = (
-            pd.merge(
-                clin_matrix,
-                bio_matrix[bio_columns],
-                how='outer',
-                on='bcr_patient_barcode',
-            )
-            .replace(r'^\s*$', np.nan, regex=True)
-            .set_index('bcr_sample_barcode')
-            .fillna(bio_matrix.set_index('bcr_sample_barcode'))
+            .rename(columns={
+                'bcr_patient_barcode': 'submitter_id',
+            })
         )
         # Query GDC API for GDC harmonized phenotype info
         api_clin = gdc.get_samples_clinical(self.projects)
@@ -2316,22 +2309,36 @@ class TCGAPhenoset(XenaDataset):
                 pass
         for c in self._RAW_DROPS:
             try:
-                xena_matrix.drop(c, axis=1, inplace=True)
+                clin_matrix.drop(c, axis=1, inplace=True)
             except Exception:
                 pass
-        # Merge phenotype matrix from raw data and that from GDC's API
-        xena_matrix = xena_matrix.reset_index().rename(
-            columns={'bcr_sample_barcode': 'submitter_id.samples'}
+            try:
+                bio_matrix.drop(c, axis=1, inplace=True)
+            except Exception:
+                pass
+        # Merge phenotype matrices from raw data and that from GDC's API
+        bio_columns = bio_matrix.columns.difference(
+            clin_matrix.columns
+        ).insert(0, 'submitter_id')
+        xena_matrix = (
+            pd.merge(
+                bio_matrix[bio_columns],
+                api_clin.reset_index(),
+                how='outer',
+                on=['submitter_id.samples', 'submitter_id'],
+            )
+            .replace(r'^\s*$', np.nan, regex=True)
         )
         xena_matrix = (
             pd.merge(
+                clin_matrix,
                 xena_matrix,
-                api_clin.reset_index(),
                 how='outer',
-                on='submitter_id.samples',
+                on='submitter_id',
             )
             .replace(r'^\s*$', np.nan, regex=True)
             .set_index('submitter_id.samples')
+            .fillna(bio_matrix.set_index('submitter_id.samples'))
         )
         print('Dropping TCGA-**-****-**Z samples ...')
         xena_matrix = xena_matrix[~xena_matrix.index.str.endswith('Z')]
