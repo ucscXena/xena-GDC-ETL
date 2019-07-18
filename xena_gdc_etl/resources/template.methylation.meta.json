@@ -14,5 +14,5 @@
  "version":"{{ date }}",
  "unit":"beta value"{% if notes %},
  "notes":"{{ notes }}"{% endif %},
- "GDC_Description": "https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/Methylation_LO_Pipeline/"
+ "description": "More information on the GDC pipeline used to generate this data: https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/Methylation_LO_Pipeline/"
 }

@@ -12,5 +12,5 @@
  "wrangler":"Xena GDC ETL script",
  "version":"{{ date }}"{% if notes %},
  "notes":"{{ notes }}"{% endif %},
- "GDC_Description": "https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/DNA_Seq_Variant_Calling_Pipeline/#somatic-variant-calling-workflow"
+ "description": "More information on the GDC pipeline used to generate this data: https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/DNA_Seq_Variant_Calling_Pipeline/#somatic-variant-calling-workflow"
 }

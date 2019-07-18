@@ -13,5 +13,5 @@
  "version":"{{ date }}",
  "unit":"Gistic2 copy number"{% if notes %},
  "notes":"{{ notes }}"{% endif %},
- "GDC_Description": "https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/CNV_Pipeline/"
+ "description": "The GDC GISTIC copy number dataset is derived from focal copy number estimates. Larger chromosomal-level deletions may not be not captured in this dataset. More information on the GDC pipeline used to generate this data: https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/CNV_Pipeline/"
 }
