@@ -1698,6 +1698,7 @@ class GDCPhenoset(XenaDataset):
                     )
                     .replace(r'^\s*$', np.nan, regex=True)
                     .set_index('submitter_id.samples')
+                    .fillna(bio_matrix.set_index('submitter_id.samples'))
                 )
             elif all([i.startswith('TARGET-') for i in self.projects]):
                 xena_matrix = api_clin.dropna(axis=1, how='all').set_index(
