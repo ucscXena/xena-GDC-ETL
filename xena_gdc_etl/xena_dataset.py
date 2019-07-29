@@ -1565,6 +1565,10 @@ class GDCPhenoset(XenaDataset):
                 .replace(r'\r\n', ' ', regex=True)
                 .replace(r'^\s*$', np.nan, regex=True)
                 .dropna(axis=1, how='all')
+                .rename(columns={
+                    'bcr_sample_barcode': 'submitter_id.samples',
+                    'bcr_patient_barcode': 'submitter_id',
+                })
             )
         except Exception:
             bio_matrix = pd.DataFrame()
@@ -1574,6 +1578,9 @@ class GDCPhenoset(XenaDataset):
                 .replace(r'\r\n', ' ', regex=True)
                 .replace(r'^\s*$', np.nan, regex=True)
                 .dropna(axis=1, how='all')
+                .rename(columns={
+                    'bcr_patient_barcode': 'submitter_id',
+                })
             )
         except Exception:
             clin_matrix = pd.DataFrame()
@@ -1631,23 +1638,6 @@ class GDCPhenoset(XenaDataset):
                 xena_matrix = bio_matrix.set_index('bcr_sample_barcode')
             except Exception:
                 xena_matrix = bio_matrix
-        elif self.xena_dtype in ['raw_phenotype', 'GDC_phenotype'] and all(
-            [i.startswith('TCGA-') for i in self.projects]
-        ):
-            bio_columns = bio_matrix.columns.difference(
-                clin_matrix.columns
-            ).insert(0, 'bcr_patient_barcode')
-            xena_matrix = (
-                pd.merge(
-                    clin_matrix,
-                    bio_matrix[bio_columns],
-                    how='outer',
-                    on='bcr_patient_barcode',
-                )
-                .replace(r'^\s*$', np.nan, regex=True)
-                .set_index('bcr_sample_barcode')
-                .fillna(bio_matrix.set_index('bcr_sample_barcode'))
-            )
         if self.xena_dtype == 'GDC_phenotype':
             # Query GDC API for GDC harmonized phenotype info
             api_clin = gdc.get_samples_clinical(self.projects)
@@ -1678,22 +1668,37 @@ class GDCPhenoset(XenaDataset):
                         pass
                 for c in self._RAW_DROPS:
                     try:
-                        xena_matrix.drop(c, axis=1, inplace=True)
+                        clin_matrix.drop(c, axis=1, inplace=True)
                     except Exception:
                         pass
-                # Merge phenotype matrix from raw data and that from GDC's API
-                xena_matrix = xena_matrix.reset_index().rename(
-                    columns={'bcr_sample_barcode': 'submitter_id.samples'}
+                    try:
+                        bio_matrix.drop(c, axis=1, inplace=True)
+                    except Exception:
+                        pass
+                # Merge phenotype matrices from raw data and that from GDC's
+                # API
+                bio_columns = bio_matrix.columns.difference(
+                    clin_matrix.columns
+                ).insert(0, 'submitter_id')
+                xena_matrix = (
+                    pd.merge(
+                        bio_matrix[bio_columns],
+                        api_clin.reset_index(),
+                        how='outer',
+                        on=['submitter_id.samples', 'submitter_id'],
+                    )
+                    .replace(r'^\s*$', np.nan, regex=True)
                 )
                 xena_matrix = (
                     pd.merge(
+                        clin_matrix,
                         xena_matrix,
-                        api_clin.reset_index(),
                         how='outer',
-                        on='submitter_id.samples',
+                        on='submitter_id',
                     )
                     .replace(r'^\s*$', np.nan, regex=True)
                     .set_index('submitter_id.samples')
+                    .fillna(bio_matrix.set_index('submitter_id.samples'))
                 )
             elif all([i.startswith('TARGET-') for i in self.projects]):
                 xena_matrix = api_clin.dropna(axis=1, how='all').set_index(
