@@ -34,6 +34,7 @@ from .constants import (
     METADATA_TEMPLATE,
     METADATA_VARIABLES,
     GDC_RELEASE_URL,
+    CASES_FIELDS_EXPANDS,
 )
 
 
@@ -1712,6 +1713,162 @@ class GDCPhenoset(XenaDataset):
         print('Dropping TCGA-**-****-**Z samples ...')
         xena_matrix = xena_matrix[~xena_matrix.index.str.endswith('Z')]
         # Transformation done
+        print('\rSaving matrix to {} ...'.format(self.matrix), end='')
+        mkdir_p(self.matrix_dir)
+        xena_matrix.to_csv(self.matrix, sep='\t', encoding='utf-8')
+        print('\rXena matrix is saved at {}.'.format(self.matrix))
+        return self
+
+
+class XenaPhenoset(XenaDataset):
+    """
+    """
+
+    @property
+    def gdc_release(self):
+        try:
+            return self.__gdc_release
+        except AttributeError:
+            data_release = gdc.search('status', typ='json')['data_release']
+            anchor = (
+                re.match(r'(Data Release [^\s]+)\s', data_release)
+                .group(1)
+                .replace(' ', '-')
+                .replace('.', '')
+                .lower()
+            )
+            self.__gdc_release = GDC_RELEASE_URL + '#' + anchor
+            return self.__gdc_release
+
+    @gdc_release.setter
+    def gdc_release(self, url):
+        self.__gdc_release = url
+
+    @property
+    def metadata_vars(self):
+        try:
+            assert self.__metadata_vars and isinstance(
+                self.__metadata_vars, dict
+            )
+            return self.__metadata_vars
+        except (AttributeError, AssertionError):
+            matrix_date = time.strftime(
+                "%m-%d-%Y", time.gmtime(os.path.getmtime(self.matrix))
+            )
+            projects = ','.join(self.projects)
+            variables = {
+                'project_id': projects,
+                'date': matrix_date,
+                'gdc_release': self.gdc_release,
+            }
+            if projects in GDC_XENA_COHORT:
+                variables['xena_cohort'] = GDC_XENA_COHORT[projects]
+            else:
+                variables['xena_cohort'] = 'GDC ' + projects
+            self.__metadata_vars = variables
+            return self.__metadata_vars
+
+    @metadata_vars.setter
+    def metadata_vars(self, variables):
+        self.__metadata_vars = variables
+
+    @XenaDataset.download_map.getter
+    def download_map(self):
+        print("Xena_phenotype is selected. No files will be downloaded.")
+        return {}
+
+    def __get_samples_clinical(self, projects, fields, expand):
+        """Get info for all samples of ``projects`` and clinical info for all
+        cases of ``projects`` through GDC API.
+
+        Args:
+            projects (list or str): one (str) or a list of GDC "project_id"(s),
+                whose info will be returned. If None, projects will not be
+                filtered, i.e. info for all GDC projects will be returned.
+                Defaults to None.
+            fields (list or str):
+            expands (list or str):
+
+        Returns:
+            pandas.core.frame.DataFrame: A DataFrame organized by samples,
+            having info for all samples of ``projects``, as well as
+            corresponding clinical info.
+        """
+
+        in_filter = {}
+        if projects is not None:
+            if isinstance(projects, list):
+                in_filter = {'project.project_id': projects}
+            else:
+                in_filter = {'project.project_id': [projects]}
+        res = gdc.search(
+            'cases',
+            in_filter=in_filter,
+            fields=fields,
+            expand=expand,
+            typ='json'
+        )
+        to_drops = set()
+        for ele in res:
+            to_drops |= set(gdc.get_to_drops(ele))
+        print(
+            "Dropping columns {} for {} projects".format(to_drops, projects)
+        )
+        reduced_no_samples_json = reduce_json_array(
+            [{k: v for k, v in d.items() if k != 'samples'} for d in res]
+        )
+        cases_df = pd.io.json.json_normalize(reduced_no_samples_json)
+        samples_df = pd.io.json.json_normalize(
+            [r for r in res if 'samples' in r],
+            'samples',
+            'id',
+            record_prefix='samples.',
+        )
+        merged_df = pd.merge(cases_df, samples_df, how='inner', on='id')
+        merged_df.drop(list(to_drops), axis=1, inplace=True)
+        return merged_df
+
+    def __init__(
+        self,
+        projects,
+        xena_dtype=None,
+        root_dir='.',
+        raw_data_dir=None,
+        matrix_dir=None,
+    ):
+        self.projects = projects
+        if xena_dtype is not None:
+            if xena_dtype != 'Xena_phenotype':
+                raise ValueError(
+                    "No datatype other than 'Xena_phenotype' is supported."
+                )
+            else:
+                self.xena_dtype = xena_dtype
+        else:
+            self.xena_dtype = 'Xena_phenotype'
+        self.root_dir = root_dir
+        if matrix_dir is not None:
+            self.matrix_dir = matrix_dir
+        jinja2_env = jinja2.Environment(
+            loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
+        )
+        self.metadata_template = jinja2_env.get_template(
+            'template.phenotype.meta.json'
+        )
+
+    def transform(self):
+        if len(self.projects) == 1 and self.projects[0] == "CPTAC-3":
+            xena_matrix = self.__get_samples_clinical(
+                projects=["CPTAC-3"],
+                fields=CASES_FIELDS_EXPANDS["CPTAC-3"]["fields"],
+                expand=CASES_FIELDS_EXPANDS["CPTAC-3"]["expand"],
+            )
+            xena_matrix = xena_matrix.set_index('samples.submitter_id')
+        else:
+            raise NotImplementedError(
+                "Xena_phenotype for {} project(s) is not "
+                "implemented".format(",".join(self.projects))
+            )
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
         xena_matrix.to_csv(self.matrix, sep='\t', encoding='utf-8')
