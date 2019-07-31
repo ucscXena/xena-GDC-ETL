@@ -1561,7 +1561,7 @@ class GDCPhenoset(XenaDataset):
         print('\rAll {} files have been processed. '.format(total))
         try:
             bio_matrix = (
-                pd.concat(bio_dfs, axis=0, sort=True)
+                pd.concat(bio_dfs, axis=0, sort=False)
                 .replace(r'\r\n', ' ', regex=True)
                 .replace(r'^\s*$', np.nan, regex=True)
                 .dropna(axis=1, how='all')
@@ -1574,7 +1574,7 @@ class GDCPhenoset(XenaDataset):
             bio_matrix = pd.DataFrame()
         try:
             clin_matrix = (
-                pd.concat(clin_dfs, axis=0, sort=True)
+                pd.concat(clin_dfs, axis=0, sort=False)
                 .replace(r'\r\n', ' ', regex=True)
                 .replace(r'^\s*$', np.nan, regex=True)
                 .dropna(axis=1, how='all')
