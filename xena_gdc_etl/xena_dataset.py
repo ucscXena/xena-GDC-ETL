@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 
 from xena_gdc_etl import gdc
-from .utils import mkdir_p, requests_retry_session
+from .utils import mkdir_p, requests_retry_session, reduce_json_array
 from .constants import (
     GDC_XENA_COHORT,
     METADATA_TEMPLATE,
@@ -158,7 +158,13 @@ def read_clinical(fileobj):
         filename = fileobj
     ext = os.path.splitext(filename)[1]
     if ext == '.xlsx':
-        return pd.read_excel(filename, sheet_name='Clinical Data', index_col=0)
+        xl_file = pd.ExcelFile(filename)
+        sheets = xl_file.sheet_names
+        if sheets[0] == "Clinical Data":
+            return xl_file.parse(sheets[0], index_col=0)
+        else:
+            print("Clincal Data not found, skipping this file ...")
+            return pd.DataFrame()
     elif ext != '.xml':
         raise IOError('Unknown file type for clinical data: {}'.format(ext))
 
@@ -364,6 +370,36 @@ def merge_sample_cols(
         return np.log2(xena_matrix + 1)
     else:
         return xena_matrix
+
+
+def handle_gistic(filelist):
+    """Handles GISTIC Data type.
+    Args:
+        filelist (list of path): The list of input raw data.
+    Returns:
+        pandas.core.frame.DataFrame: Ready to load Xena matrix.
+    """
+
+    assert len(filelist) == 1
+    print('\rProcessing file {}'.format(filelist[0]), end='')
+    df = pd.read_csv(
+        filelist[0],
+        sep="\t",
+        header=0,
+        comment='#',
+        index_col=0,
+    )
+    df = df.drop(["Gene ID", "Cytoband"], axis=1)
+    columns = list(df)
+    mapping = gdc.map_two_fields(
+        endpoint="cases",
+        input_field="samples.portions.analytes.aliquots.aliquot_id",
+        output_field="samples.submitter_id",
+        input_values=columns,
+    )
+    mapping = reduce_json_array(mapping)
+    df = df.rename(columns=mapping)
+    return df
 
 
 class XenaDataset(object):
@@ -837,6 +873,27 @@ class GDCOmicset(XenaDataset):
         'cnv': {
             'data_type': 'Copy Number Segment',
             'analysis.workflow_type': 'DNAcopy',
+            'cases.samples.sample_type_id': (
+                [
+                    '01',
+                    '02',
+                    '03',
+                    '04',
+                    '05',
+                    '06',
+                    '07',
+                    '08',
+                    '09',
+                    '15',
+                    '16',
+                    '20',
+                    '40',
+                    '50',
+                    '60',
+                    '61',
+                    '99',
+                ]
+            ),
         },
         'masked_cnv': {
             'data_type': 'Masked Copy Number Segment',
@@ -882,6 +939,13 @@ class GDCOmicset(XenaDataset):
             'analysis.workflow_type':
             'VarScan2 Variant Aggregation and Masking',
         },
+        'gistic': {
+            'data_type': 'Gene Level Copy Number Scores',
+            'analysis.workflow_type': 'GISTIC - Copy Number Score',
+        },
+        'star_counts': {
+            'analysis.workflow_type': 'STAR - Counts',
+        },
         'methylation27': {
             'data_type': 'Methylation Beta Value',
             'platform': 'Illumina Human Methylation 27',
@@ -905,6 +969,8 @@ class GDCOmicset(XenaDataset):
         'mutect2_snv': 'submitter_id',
         'somaticsniper_snv': 'submitter_id',
         'varscan2_snv': 'submitter_id',
+        'gistic': 'submitter_id',
+        'star_counts': 'cases.samples.submitter_id',
         'methylation27': 'cases.samples.submitter_id',
         'methylation450': 'cases.samples.submitter_id',
     }
@@ -931,6 +997,12 @@ class GDCOmicset(XenaDataset):
             ['muse_snv', 'mutect2_snv', 'somaticsniper_snv', 'varscan2_snv'],
             snv_maf_matrix,
         )
+    )
+    _RAWS2MATRIX_FUNCS['gistic'] = handle_gistic
+    _RAWS2MATRIX_FUNCS['star_counts'] = functools.partial(
+        merge_sample_cols,
+        header=0,
+        index_name='Ensembl_ID',
     )
     _RAWS2MATRIX_FUNCS.update(
         dict.fromkeys(
@@ -1209,16 +1281,19 @@ class GDCPhenoset(XenaDataset):
     _XENA_GDC_DTYPE = {
         'biospecimen': {
             'data_category': 'Biospecimen',
-            'data_format': 'BCR XML',
+            'data_format': ['BCR XML', 'XLSX'],
         },
-        'clinical': {'data_category': 'Clinical', 'data_format': 'BCR XML'},
+        'clinical': {
+            'data_category': 'Clinical',
+            'data_format': ['BCR XML', 'XLSX'],
+        },
         'raw_phenotype': {
             'data_category': ['Biospecimen', 'Clinical'],
-            'data_format': 'BCR XML',
+            'data_format': ['BCR XML', 'XLSX'],
         },
         'GDC_phenotype': {
             'data_category': ['Biospecimen', 'Clinical'],
-            'data_format': 'BCR XML',
+            'data_format': ['BCR XML', 'XLSX'],
         },
     }
     # To resovle overlapping between raw data and API data, remove columns
@@ -1475,7 +1550,8 @@ class GDCPhenoset(XenaDataset):
             # `read_biospecimen` and `read_clinical` will check file format
             try:
                 df = read_clinical(path)
-                clin_dfs.append(df)
+                if not df.empty:
+                    clin_dfs.append(df)
             except Exception:
                 try:
                     df = read_biospecimen(path)
@@ -1489,6 +1565,10 @@ class GDCPhenoset(XenaDataset):
                 .replace(r'\r\n', ' ', regex=True)
                 .replace(r'^\s*$', np.nan, regex=True)
                 .dropna(axis=1, how='all')
+                .rename(columns={
+                    'bcr_sample_barcode': 'submitter_id.samples',
+                    'bcr_patient_barcode': 'submitter_id',
+                })
             )
         except Exception:
             bio_matrix = pd.DataFrame()
@@ -1498,6 +1578,9 @@ class GDCPhenoset(XenaDataset):
                 .replace(r'\r\n', ' ', regex=True)
                 .replace(r'^\s*$', np.nan, regex=True)
                 .dropna(axis=1, how='all')
+                .rename(columns={
+                    'bcr_patient_barcode': 'submitter_id',
+                })
             )
         except Exception:
             clin_matrix = pd.DataFrame()
@@ -1555,23 +1638,6 @@ class GDCPhenoset(XenaDataset):
                 xena_matrix = bio_matrix.set_index('bcr_sample_barcode')
             except Exception:
                 xena_matrix = bio_matrix
-        elif self.xena_dtype in ['raw_phenotype', 'GDC_phenotype'] and all(
-            [i.startswith('TCGA-') for i in self.projects]
-        ):
-            bio_columns = bio_matrix.columns.difference(
-                clin_matrix.columns
-            ).insert(0, 'bcr_patient_barcode')
-            xena_matrix = (
-                pd.merge(
-                    clin_matrix,
-                    bio_matrix[bio_columns],
-                    how='outer',
-                    on='bcr_patient_barcode',
-                )
-                .replace(r'^\s*$', np.nan, regex=True)
-                .set_index('bcr_sample_barcode')
-                .fillna(bio_matrix.set_index('bcr_sample_barcode'))
-            )
         if self.xena_dtype == 'GDC_phenotype':
             # Query GDC API for GDC harmonized phenotype info
             api_clin = gdc.get_samples_clinical(self.projects)
@@ -1602,22 +1668,37 @@ class GDCPhenoset(XenaDataset):
                         pass
                 for c in self._RAW_DROPS:
                     try:
-                        xena_matrix.drop(c, axis=1, inplace=True)
+                        clin_matrix.drop(c, axis=1, inplace=True)
                     except Exception:
                         pass
-                # Merge phenotype matrix from raw data and that from GDC's API
-                xena_matrix = xena_matrix.reset_index().rename(
-                    columns={'bcr_sample_barcode': 'submitter_id.samples'}
+                    try:
+                        bio_matrix.drop(c, axis=1, inplace=True)
+                    except Exception:
+                        pass
+                # Merge phenotype matrices from raw data and that from GDC's
+                # API
+                bio_columns = bio_matrix.columns.difference(
+                    clin_matrix.columns
+                ).insert(0, 'submitter_id')
+                xena_matrix = (
+                    pd.merge(
+                        bio_matrix[bio_columns],
+                        api_clin.reset_index(),
+                        how='outer',
+                        on=['submitter_id.samples', 'submitter_id'],
+                    )
+                    .replace(r'^\s*$', np.nan, regex=True)
                 )
                 xena_matrix = (
                     pd.merge(
+                        clin_matrix,
                         xena_matrix,
-                        api_clin.reset_index(),
                         how='outer',
-                        on='submitter_id.samples',
+                        on='submitter_id',
                     )
                     .replace(r'^\s*$', np.nan, regex=True)
                     .set_index('submitter_id.samples')
+                    .fillna(bio_matrix.set_index('submitter_id.samples'))
                 )
             elif all([i.startswith('TARGET-') for i in self.projects]):
                 xena_matrix = api_clin.dropna(axis=1, how='all').set_index(
@@ -1628,6 +1709,8 @@ class GDCPhenoset(XenaDataset):
                     'Getting "GDC_phenotype" for a cohort with mixed TCGA and '
                     'TARGET projects is not currently suppported.'
                 )
+        print('Dropping TCGA-**-****-**Z samples ...')
+        xena_matrix = xena_matrix[~xena_matrix.index.str.endswith('Z')]
         # Transformation done
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
@@ -1758,11 +1841,10 @@ class GDCSurvivalset(XenaDataset):
         """Transform GDC survival data according to Xena survival data spec
 
         Only 1 GDC raw survival data (i.e. ``raw_data_list[0]``) will be read
-        and used by this transformation. Xena survival data has 6 columns,
-        which are "sample", "_EVENT", "_TIME_TO_EVENT", "_OS_IND", "_OS" and
-        "_PATIENT". "_EVENT" and "_OS_IND" are the same and corresponds to the
-        "censored" column in GDC survival data; "_TIME_TO_EVENT" and "_OS" are
-        the same and corresponds to the "time" column in GDC survival data;
+        and used by this transformation. Xena survival data has 4 columns,
+        which are "sample", "OS", "OS.time" and "_PATIENT". "OS"
+        corresponds to the "censored" column in GDC survival data; "OS.time"
+        corresponds to the "time" column in GDC survival data;
         "_PATIENT" corresponds to the "submitter_id" column in GDC survival
         data which is the case(patient)'s submitter ID; "sample" contains
         "samples.submitter_id" for corresponding case(patient).
@@ -1777,14 +1859,12 @@ class GDCSurvivalset(XenaDataset):
             ['project_id', 'survivalEstimate'], axis=1
         ).rename(
             columns={
-                'censored': '_EVENT',
-                'time': '_TIME_TO_EVENT',
+                'censored': 'OS',
+                'time': 'OS.time',
                 'submitter_id': '_PATIENT',
             }
         )
-        survival_df['_OS_IND'] = (~survival_df['_EVENT']).map(int)
-        survival_df['_EVENT'] = survival_df['_OS_IND']
-        survival_df['_OS'] = survival_df['_TIME_TO_EVENT']
+        survival_df['OS'] = (~survival_df['OS']).map(int)
         # Get samples to case map
         case_samples = gdc.search(
             'cases',
@@ -1806,6 +1886,8 @@ class GDCSurvivalset(XenaDataset):
             .drop('id', axis=1)
             .set_index('sample')
         )
+        print('Dropping TCGA-**-****-**Z samples ...')
+        df = df[~df.index.str.endswith('Z')]
         mkdir_p(os.path.dirname(self.matrix))
         df.to_csv(self.matrix, sep='\t')
         print('\rXena matrix is saved at {}.'.format(self.matrix))

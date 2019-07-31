@@ -1,0 +1,17 @@
+{"cohort":"{{ xena_cohort }}",
+ "min":-1.00000,
+ "url":"{% if gdc_release %}{{ gdc_release }}, {% endif %}https://api.gdc.cancer.gov/data/",
+ "dataSubType": "copy number (gene-level)",
+ ":probeMap":"gencode.v22.annotation.gene.probeMap",
+ "dataProducer":"Genomic Data Commons",
+ "label":"{{ gdc_type }}",
+ "max":1.00000,
+ "wrangling_procedure": "Loaded data directly into Xena", 
+ "PLATFORM":"Illumina",
+ "type":"genomicMatrix",
+ "wrangler":"Xena GDC ETL script",
+ "version":"{{ date }}",
+ "unit":"Gistic2 copy number"{% if notes %},
+ "notes":"{{ notes }}"{% endif %},
+ "description": "The GDC GISTIC copy number dataset is derived from focal copy number estimates. Larger chromosomal-level deletions may not be not captured in this dataset. More information on the GDC pipeline used to generate this data: https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/CNV_Pipeline/"
+}

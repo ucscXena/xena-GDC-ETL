@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+import pytest
 
 from xena_gdc_etl import utils
 
@@ -28,3 +29,42 @@ def test_merge_xena():
         expected = pd.read_csv(expected)
     os.unlink(PATH + name)
     actual.equals(expected)
+
+
+@pytest.mark.parametrize(
+    'raw,path,expect',
+    [
+        ({'a': 'b'}, '', []),
+        (
+            [
+                {
+                    'project_id': 'CPTAC-3',
+                    'disease_type': ['Adenomas and Adenocarcinomas'],
+                    'id': 'CPTAC-3'
+                }
+            ],
+            'disease_type',
+            [['Adenomas and Adenocarcinomas']]
+        ),
+        (
+            {
+                "submitter_id": "TCGA-AX-A064",
+                "samples": [{"portions": [{"analytes": [{"aliquots": [
+                    {
+                        "submitter_id": "TCGA-AX-A064-10A-01W-A027-09",
+                        "aliquot_id": "14163707-5628-4c1b-9efd-87f7dd11d300",
+                    },
+                    {
+                        "submitter_id": "TCGA-AX-A064-10A-01W-A028-08",
+                    }
+                ]}]}]}]
+            },
+            'samples.portions.analytes.aliquots.aliquot_id',
+            [
+                '14163707-5628-4c1b-9efd-87f7dd11d300',
+            ]
+        ),
+    ]
+)
+def test_get_json_objects(raw, path, expect):
+    assert utils.get_json_objects(raw, path) == expect
