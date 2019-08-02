@@ -1720,8 +1720,24 @@ class GDCPhenoset(XenaDataset):
         return self
 
 
-class XenaPhenoset(XenaDataset):
-    """
+class GDCAPIPhenoset(XenaDataset):
+    r"""GDCAPIPhenoset is derived from the ``XenaDataset`` class and represents
+    for a Xena matrix whose data is phenotype data from the GDC API only.
+
+    Attributes:
+        projects (str or list): One (string) or a list of GDC's
+            "cases.project.project_id". All corresponding projects will be
+            included in this dataset.
+        gdc_release (str): URL to the data release note for the dataset. It
+            will be used by the ``metadata`` method when making the metadata
+            for this dataset. It is highly recommended that this attribute is
+            set explicitly by the user so that it is guaranteed to match the
+            data (raw data) underlying this dataset. If it is not available,
+            the most recent data release will be queried and used.
+        metadata_vars (dict): A dict of variables which will be used (by \*\*
+            unpacking) when rendering the ``metadata_template``. Defaults, if
+            needed, can be derived from corresponding matrix and ``projects``
+            and ``xena_dtype`` properties.
     """
 
     @property
@@ -1786,8 +1802,8 @@ class XenaPhenoset(XenaDataset):
                 whose info will be returned. If None, projects will not be
                 filtered, i.e. info for all GDC projects will be returned.
                 Defaults to None.
-            fields (list or str):
-            expands (list or str):
+            fields (list or str): one (str) or a list of GDC "cases"
+            expand (list or str): one (str) or a list of GDC "expand"
 
         Returns:
             pandas.core.frame.DataFrame: A DataFrame organized by samples,
@@ -1834,7 +1850,7 @@ class XenaPhenoset(XenaDataset):
         root_dir='.',
         matrix_dir=None,
     ):
-        super(XenaPhenoset, self).__init__(
+        super(GDCAPIPhenoset, self).__init__(
             projects, 'Xena_phenotype', root_dir, matrix_dir,
         )
         self.projects = projects
