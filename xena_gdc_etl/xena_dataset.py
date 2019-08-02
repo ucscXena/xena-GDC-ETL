@@ -1831,24 +1831,24 @@ class XenaPhenoset(XenaDataset):
     def __init__(
         self,
         projects,
-        xena_dtype=None,
         root_dir='.',
-        raw_data_dir=None,
         matrix_dir=None,
     ):
+        super(XenaPhenoset, self).__init__(
+            projects, 'Xena_phenotype', root_dir, matrix_dir,
+        )
         self.projects = projects
-        if xena_dtype is not None:
-            if xena_dtype != 'Xena_phenotype':
-                raise ValueError(
-                    "No datatype other than 'Xena_phenotype' is supported."
+        if any(
+            [
+                project not in list(CASES_FIELDS_EXPANDS.keys())
+                for project in self.projects
+            ]
+        ):
+            raise NotImplementedError(
+                "'Xena_phenotype' for {} project is not implemented".format(
+                    projects
                 )
-            else:
-                self.xena_dtype = xena_dtype
-        else:
-            self.xena_dtype = 'Xena_phenotype'
-        self.root_dir = root_dir
-        if matrix_dir is not None:
-            self.matrix_dir = matrix_dir
+            )
         jinja2_env = jinja2.Environment(
             loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
         )
@@ -1857,18 +1857,13 @@ class XenaPhenoset(XenaDataset):
         )
 
     def transform(self):
-        if len(self.projects) == 1 and self.projects[0] == "CPTAC-3":
+        if self.projects == ["CPTAC-3"]:
             xena_matrix = self.__get_samples_clinical(
                 projects=["CPTAC-3"],
                 fields=CASES_FIELDS_EXPANDS["CPTAC-3"]["fields"],
                 expand=CASES_FIELDS_EXPANDS["CPTAC-3"]["expand"],
             )
-            xena_matrix = xena_matrix.set_index('samples.submitter_id')
-        else:
-            raise NotImplementedError(
-                "Xena_phenotype for {} project(s) is not "
-                "implemented".format(",".join(self.projects))
-            )
+            xena_matrix = xena_matrix.set_index("samples.submitter_id")
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
         xena_matrix.to_csv(self.matrix, sep='\t', encoding='utf-8')

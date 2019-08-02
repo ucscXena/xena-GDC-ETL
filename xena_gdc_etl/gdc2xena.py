@@ -93,7 +93,7 @@ def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data=False):
             elif dtype == 'GDC_phenotype':
                 dataset = GDCPhenoset(project, 'GDC_phenotype', root_dir)
             elif dtype == 'Xena_phenotype':
-                dataset = XenaPhenoset(project, 'Xena_phenotype', root_dir)
+                dataset = XenaPhenoset(project, root_dir)
             else:
                 dataset = GDCOmicset(project, dtype, root_dir)
             try:
