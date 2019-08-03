@@ -1869,7 +1869,7 @@ class GDCAPIPhenoset(XenaDataset):
             loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
         )
         self.metadata_template = jinja2_env.get_template(
-            'template.phenotype.meta.json'
+            'template.Xena_phenotype.meta.json'
         )
 
     def transform(self):
