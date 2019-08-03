@@ -53,7 +53,7 @@ METADATA_TEMPLATE = {
     'somaticsniper_snv': 'template.snv.meta.json',
     'varscan2_snv': 'template.snv.meta.json',
     'GDC_phenotype': 'template.phenotype.meta.json',
-    'Xena_phenotype': 'template.phenotype.meta.json',
+    'Xena_phenotype': 'template.Xena_phenotype.meta.json',
     'survival': 'template.survival.meta.json',
     'gistic': 'template.gistic.meta.json',
     'star_counts': 'template.rna.meta.json',
