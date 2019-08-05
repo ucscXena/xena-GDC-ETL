@@ -1781,6 +1781,7 @@ class GDCAPIPhenoset(XenaDataset):
                 variables['xena_cohort'] = GDC_XENA_COHORT[projects]
             else:
                 variables['xena_cohort'] = 'GDC ' + projects
+            variables["projects"] = projects
             try:
                 variables.update(METADATA_VARIABLES[self.xena_dtype])
             except KeyError:

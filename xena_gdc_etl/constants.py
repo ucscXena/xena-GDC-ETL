@@ -80,13 +80,6 @@ METADATA_VARIABLES = {
     'star_counts': {'gdc_type': 'STAR - Counts'},
     'methylation27': {'platform_num': '27'},
     'methylation450': {'platform_num': '450'},
-    'Xena_phenotype': {
-        'CPTAC_desc': (
-            "Some submitter_ids in the GDC appear to be UUIDs (see an example "
-            "here: https://portal.gdc.cancer.gov/cases/4c241b93-c11c-4802-94a7-07f125267ba3 "  # noqa: E501
-            "and one with a UUID as submitter_id: https://portal.gdc.cancer.gov/cases/ba0fe300-d3f0-42fd-b609-3ee3d0e49d7b)."  # noqa: E501
-        ),
-    }
 }
 valid_dtype = [
     'htseq_counts',
