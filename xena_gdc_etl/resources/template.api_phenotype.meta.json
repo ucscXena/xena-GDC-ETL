@@ -1,0 +1,11 @@
+{"cohort":"{{ xena_cohort }}",
+ "url":"{% if gdc_release %}{{ gdc_release }}, {% endif %}https://api.gdc.cancer.gov/data/",
+ "dataSubType":"phenotype",
+ "dataProducer":"Genomic Data Commons",
+ "label":"Phenotype",
+ "type":"clinicalMatrix",
+ "wrangler":"Xena GDC ETL script",
+ "version":"{{ date }}"{% if notes %},
+ "notes":"{{ notes }}"{% endif %}{% if projects == "CPTAC-3" %},
+ "description": "Some submitter_ids in the GDC appear to be UUIDs (see an example here: https://portal.gdc.cancer.gov/cases/4c241b93-c11c-4802-94a7-07f125267ba3 and one with a UUID as submitter_id: https://portal.gdc.cancer.gov/cases/ba0fe300-d3f0-42fd-b609-3ee3d0e49d7b)." {% endif %} 
+}
