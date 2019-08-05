@@ -1781,6 +1781,10 @@ class GDCAPIPhenoset(XenaDataset):
                 variables['xena_cohort'] = GDC_XENA_COHORT[projects]
             else:
                 variables['xena_cohort'] = 'GDC ' + projects
+            try:
+                variables.update(METADATA_VARIABLES[self.xena_dtype])
+            except KeyError:
+                pass
             self.__metadata_vars = variables
             return self.__metadata_vars
 
@@ -1866,10 +1870,10 @@ class GDCAPIPhenoset(XenaDataset):
                 )
             )
         jinja2_env = jinja2.Environment(
-            loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
+            loader=jinja2.PackageLoader("xena_gdc_etl", "resources")
         )
         self.metadata_template = jinja2_env.get_template(
-            'template.Xena_phenotype.meta.json'
+            "template.api_phenotype.meta.json"
         )
 
     def transform(self):
