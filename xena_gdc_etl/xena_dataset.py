@@ -1856,7 +1856,7 @@ class GDCAPIPhenoset(XenaDataset):
         self.projects = projects
         if any(
             [
-                project not in list(CASES_FIELDS_EXPANDS.keys())
+                project not in CASES_FIELDS_EXPANDS.keys()
                 for project in self.projects
             ]
         ):
