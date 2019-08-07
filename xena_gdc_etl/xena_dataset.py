@@ -35,6 +35,7 @@ from .constants import (
     METADATA_VARIABLES,
     GDC_RELEASE_URL,
     CASES_FIELDS_EXPANDS,
+    LIST_FIELDS,
 )
 
 
@@ -1674,6 +1675,11 @@ class GDCPhenoset(XenaDataset):
                         pass
                     try:
                         bio_matrix.drop(c, axis=1, inplace=True)
+                    except Exception:
+                        pass
+                for c in LIST_FIELDS:
+                    try:
+                        clin_matrix.drop(c, axis=1, inplace=True)
                     except Exception:
                         pass
                 # Merge phenotype matrices from raw data and that from GDC's
