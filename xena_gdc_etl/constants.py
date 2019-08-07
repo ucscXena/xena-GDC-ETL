@@ -177,7 +177,7 @@ CASES_FIELDS_EXPANDS = {
         "expand": [],
     }
 }
-LIST_FIELDS = [
+LIST_FIELDS = {
     "FISH_test_component",
     "FISH_test_component_percentage_value",
     "ablation_performed_indicator",
@@ -477,4 +477,4 @@ LIST_FIELDS = [
     "viral_hepatitis_serology",
     "vital_status",
     "year_of_form_completion",
-]
+}

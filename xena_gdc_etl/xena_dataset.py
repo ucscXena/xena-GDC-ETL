@@ -179,6 +179,9 @@ def read_clinical(fileobj):
     patient = {}
     # "Dirty" extraction
     for child in root.xpath('.//*[not(*)]'):
+        field_name = child.tag.split('}', 1)[-1]
+        if field_name in LIST_FIELDS:
+            continue
         try:
             patient[child.tag.split('}', 1)[-1]] = child.text.strip()
         except AttributeError:
@@ -1675,11 +1678,6 @@ class GDCPhenoset(XenaDataset):
                         pass
                     try:
                         bio_matrix.drop(c, axis=1, inplace=True)
-                    except Exception:
-                        pass
-                for c in LIST_FIELDS:
-                    try:
-                        clin_matrix.drop(c, axis=1, inplace=True)
                     except Exception:
                         pass
                 # Merge phenotype matrices from raw data and that from GDC's
