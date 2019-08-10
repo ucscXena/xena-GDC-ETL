@@ -101,12 +101,17 @@ def main():
     }
 
     for dtype in datatypes:
-        if dtype in ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna']:
+        if dtype in [
+            'htseq_counts',
+            'htseq_fpkm',
+            'htseq_fpkm-uq',
+            'mirna',
+            'gistic'
+        ]:
             merge_axis = 1
         elif dtype in [
             'masked_cnv',
             'cnv',
-            'gistic',
             'muse_snv',
             'mutect2_snv',
             'somaticsniper_snv',
