@@ -53,7 +53,6 @@ METADATA_TEMPLATE = {
     'somaticsniper_snv': 'template.snv.meta.json',
     'varscan2_snv': 'template.snv.meta.json',
     'GDC_phenotype': 'template.phenotype.meta.json',
-    'Xena_phenotype': 'template.api_phenotype.meta.json',
     'survival': 'template.survival.meta.json',
     'gistic': 'template.gistic.meta.json',
     'star_counts': 'template.rna.meta.json',
@@ -175,6 +174,28 @@ CASES_FIELDS_EXPANDS = {
             "samples.tumor_descriptor",
         ],
         "expand": [],
+    },
+    "GDC-PANCAN": {
+        "fields": [
+            "project.name",
+            "project.project_id",
+            "samples.is_ffpe",
+            "samples.sample_id",
+            "samples.sample_type",
+            "samples.sample_type_id",
+            "samples.tissue_type",
+            "samples.tumor_code",
+            "samples.tumor_code_id",
+            "samples.tumor_descriptor",
+            "tissue_source_site.name",
+            "samples.submitter_id",
+        ],
+        "expand": [
+            "demographic",
+            "diagnoses",
+            "exposures",
+            "family_histories",
+        ],
     }
 }
 LIST_FIELDS = {

@@ -82,6 +82,8 @@ def main():
         'htseq_fpkm-uq',
         'mirna',
         'masked_cnv',
+        'cnv',
+        'gistic',
         'muse_snv',
         'mutect2_snv',
         'somaticsniper_snv',
@@ -99,10 +101,17 @@ def main():
     }
 
     for dtype in datatypes:
-        if dtype in ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq', 'mirna']:
+        if dtype in [
+            'htseq_counts',
+            'htseq_fpkm',
+            'htseq_fpkm-uq',
+            'mirna',
+            'gistic'
+        ]:
             merge_axis = 1
         elif dtype in [
             'masked_cnv',
+            'cnv',
             'muse_snv',
             'mutect2_snv',
             'somaticsniper_snv',
@@ -119,6 +128,8 @@ def main():
                 'htseq_fpkm',
                 'htseq_fpkm-uq',
                 'mirna',
+                'cnv',
+                'gistic',
                 'masked_cnv',
                 'muse_snv',
                 'mutect2_snv',
