@@ -1,8 +1,8 @@
 xena-GDC-ETL
 ============
 
-.. image:: https://travis-ci.com/yunhailuo/xena-GDC-ETL.svg?branch=master
-    :target: https://travis-ci.com/yunhailuo/xena-GDC-ETL
+.. image:: https://travis-ci.org/ucscXena/xena-GDC-ETL.svg?branch=master
+    :target: https://travis-ci.org/ucscXena/xena-GDC-ETL
 
 Extract, transform and load `GDC data <https://portal.gdc.cancer.gov/>`__ onto `UCSC Xena <https://xenabrowser.net/>`__.
 
@@ -37,13 +37,16 @@ Installation
 ------------
 
 - First clone the repository from GitHub by running
-  ``git clone https://github.com/yunhailuo/xena-GDC-ETL.git``. Now, ``cd`` into
+  ``git clone https://github.com/ucscXena/xena-GDC-ETL.git``. Now, ``cd`` into
   ``xena-GDC-ETL`` directory and install the package using pip: ``pip install .``
 
     If you are developing the package, you can use ``pip``'s edit mode for
     installation: ``pip install -e .``.
-- You can also directly use ``pip`` to install the package by running:
-  ``pip install git+https://github.com/yunhailuo/xena-GDC-ETL``
+- You can also directly use ``pip`` to install the package. To get the latest
+  code from GitHub master branch, run:
+  ``pip install git+https://github.com/ucscXena/xena-GDC-ETL``.
+  To get the latest stable version, run: 
+  ``pip install xena-GDC-ETL``.
 - Dependencies can be installed either before or after cloning this repository.
   You can install them by running ``pip install -r requirements.txt``.
 - In general,
@@ -213,7 +216,7 @@ Advanced usage with XenaDataset and its subclasses
   
   .. code:: python
   
-    from xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
+    from xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset, GDCAPIPhenoset
     
     gdc_omic_cohort = GDCOmicset('TCGA-BRCA', 'htsep_counts')
     
@@ -224,6 +227,8 @@ Advanced usage with XenaDataset and its subclasses
     target_pheno_cohort = GDCPhenoset('TARGET-NBL')
     
     gdc_survival_cohort = GDCSurvivalset('TCGA-BRCA')
+
+    gdc_api_pheno_cohort = GDCAPIPhenoset('CPTAC-3')
   
   With such a dataset object, it is fine to call ``download``, ``transform`` and/or ``metadata`` method(s). These methods will use preloaded settings and save files under ``root_dir`` accordingly. You are free to call/chain some but not all 3 methods; just keep in mind the pre-requisites for each method and set related properties properly. Aside from `directory related settings`_ described above, you can change some default importing settings through the following properties.
   
@@ -295,6 +300,20 @@ Advanced usage with XenaDataset and its subclasses
     
     Different from ``download`` and ``transform``, there is no special settings for the ``metadata`` method of ``GDCSurvivalset``. Therefore, similar to that of ``GDCOmicset``, this step can be customized through ``metadata_template``, ``metadata_vars`` and ``gdc_release`` properties. To call just the ``metadata`` method, an existing ``matrix`` is enough.
 
+  - **Customize** ``GDCAPIPhenoset``
+
+    The data for this class comes from GDC API only. Therefore, the ``download`` 
+    and ``transform`` methods are re-designed, overriding those of the base class, 
+    ``XenaDataset``. Aside from redefining ``download`` and ``transform`` methods, 
+    there is no simple way to customize ``download`` and ``transform`` steps.
+
+    Different from ``download`` and ``transform``, there is no special settings 
+    for the ``metadata`` method of ``GDCAPIPhenoset``. Therefore, similar to that 
+    of ``GDCOmicset``, this step can be customized through ``metadata_template``, 
+    ``metadata_vars`` and ``gdc_release`` properties. To call just the ``metadata`` 
+    method, an existing ``matrix`` is enough.
+
+
 GDC ETL settings
 -------------------
 
@@ -320,6 +339,10 @@ GDC ETL settings
   | cnv               | data              | Copy Number Segment               | DNAcopy                                       | 1/Sample vial            | cases.samples.submitter_id                           |
   +-------------------+-------------------+-----------------------------------+-----------------------------------------------+--------------------------+------------------------------------------------------+
   | masked_cnv        | data              | Masked Copy Number Segment        | DNAcopy                                       | 1/Sample vial            | cases.samples.submitter_id                           |
+  +-------------------+-------------------+-----------------------------------+-----------------------------------------------+--------------------------+------------------------------------------------------+
+  | gistic            | data              | Gene Level Copy Number Scores     | GISTIC - Copy Number Score                    | 1/Project                | submitter_id                                         |
+  +-------------------+-------------------+-----------------------------------+-----------------------------------------------+--------------------------+------------------------------------------------------+
+  | star_counts       | data              | STARCounts                        | STAR - Counts                                 | 1/Sample vial            | cases.samples.submitter_id                           |
   +-------------------+-------------------+-----------------------------------+-----------------------------------------------+--------------------------+------------------------------------------------------+
   | muse_snv          | data              | Masked Somatic Mutation           | MuSE Variant Aggregation and Masking          | 1/Project                | submitter_id                                         |
   +-------------------+-------------------+-----------------------------------+-----------------------------------------------+--------------------------+------------------------------------------------------+
@@ -372,6 +395,10 @@ GDC ETL settings
   |                   |                      |                                                                                                                                                                            |                 |                       |                               |         'Segment_Mean': 'value'                                             |
   |                   |                      |                                                                                                                                                                            |                 |                       |                               |     }                                                                       |
   +-------------------+----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+-----------------------+-------------------------------+-----------------------------------------------------------------------------+
+  | gistic            | Yes                  | 1                                                                                                                                                                          | Ensembl_ID      | _                     | N/A                           | 1. Drop "Gene ID" and "Cytoband" column;                                    |
+  |                   |                      |                                                                                                                                                                            |                 |                       |                               | 2. Map "samples.portions.analytes.aliquots.aliquot_id" into                 |
+  |                   |                      | [Ensembl_ID]                                                                                                                                                               |                 |                       |                               | "samples.submitter_id" using GDC API and use it as index.                   |
+  +-------------------+----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+-----------------------+-------------------------------+-----------------------------------------------------------------------------+
   | muse_snv          | Yes                  | 13, 37, 5, 6, 7, 40, 42, 52, 1, 11, 16, 111                                                                                                                                | N/A             | #                     | N/A                           | 1. Calculate variant allele frequency (dna_vaf) by "t_alt_count"/"t_depth"; |
   | mutect2_snv       |                      | [Tumor_Seq_Allele2, HGVSp_Short, Chromosome, Start_Position, End_Position, t_depth, t_alt_count, Consequence, Hugo_Symbol, Reference_Allele, Tumor_Sample_Barcode, FILTER] |                 |                       |                               | 2. Delete "t_alt_count" and "t_depth" columns;                              |
   | somaticsniper_snv |                      |                                                                                                                                                                            |                 |                       |                               | 3. Trim "Tumor_Sample_Barcode" to sample vial level;                        |
@@ -389,6 +416,9 @@ GDC ETL settings
   |                   |                      |                                                                                                                                                                            |                 |                       |                               |         'Consequence': 'effect',                                            |
   |                   |                      |                                                                                                                                                                            |                 |                       |                               |         'FILTER': 'filter'                                                  |
   |                   |                      |                                                                                                                                                                            |                 |                       |                               |     }                                                                       |
+  +-------------------+----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+-----------------------+-------------------------------+-----------------------------------------------------------------------------+
+  | star_counts       | Yes                  | 1, 2                                                                                                                                                                       | Ensembl_ID      | _                     | 1 new column based on index   | 1. Average if there are multiple data from the same sample vial;            |
+  |                   |                      | [Ensembl_ID, Counts]                                                                                                                                                       |                 |                       |                               | 2. log2(counts + 1)                                                         |
   +-------------------+----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------+-----------------------+-------------------------------+-----------------------------------------------------------------------------+
 
 .. _transform phenotype:
@@ -422,18 +452,20 @@ GDC ETL settings
   +---------------------+-------------------+
   | Primary Xena column | GDC source column |
   +=====================+===================+
-  | _EVENT              | censored          |
+  | OS.time             | time              |
   +---------------------+-------------------+
-  | _TIME_TO_EVENT      | time              |
-  +---------------------+-------------------+
-  | _OS_IND             | censored          |
-  +---------------------+-------------------+
-  | _OS                 | time              |
+  | OS                  | censored          |
   +---------------------+-------------------+
   | _PATIENT            | submitter_id      |
   +---------------------+-------------------+
 
   GDC survival data is per case(patient) based and so is "primary" Xena survival matrix, while Xena survival matrix is per sample based. All related samples for each case/patient will be identified and survival data will be mapped to corresponding samples.
+
+- **CPTAC-3 Cohort**
+
+  CPTAC-3 data consists of RNAseq data (as discussed in ``GDCOmicset``) and
+  clinical data from the API. The cases and expand for clinical data are
+  defined in the ``constants.py`` file.
 
 Documentation
 -------------

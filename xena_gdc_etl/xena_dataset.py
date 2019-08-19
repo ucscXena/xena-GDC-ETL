@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """This module mainly provides a ``XenaDataset`` class representing one Xena
-matrix in a Xena cohort. Three class, ``GDCOmicset``, ``TCGAPhenoset`` and
-``TARGETPhenoset`` are derived from ``XenaDataset``, representing genomic
-data, phenotype info of TCGA and phenotype info of TARGET respectively.
+matrix in a Xena cohort. Three class, ``GDCOmicset``, ``GDCPhenoset``,
+``GDCSurvivalset`` and ``GDCAPIPhenoset``are derived from ``XenaDataset``,
+representing genomic data, phenotype info of TCGA and phenotype info of TARGET,
+survival data and phenotype info from GDC API respectively.
 
 In general, a ``XenaDataset`` class contains 3 methods, ``download``,
 ``transform`` and ``metadata``, which can be used for quickly assembling an
