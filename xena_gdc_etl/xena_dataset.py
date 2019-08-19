@@ -35,6 +35,7 @@ from .constants import (
     METADATA_VARIABLES,
     GDC_RELEASE_URL,
     CASES_FIELDS_EXPANDS,
+    LIST_FIELDS,
 )
 
 
@@ -178,6 +179,9 @@ def read_clinical(fileobj):
     patient = {}
     # "Dirty" extraction
     for child in root.xpath('.//*[not(*)]'):
+        field_name = child.tag.split('}', 1)[-1]
+        if field_name in LIST_FIELDS:
+            continue
         try:
             patient[child.tag.split('}', 1)[-1]] = child.text.strip()
         except AttributeError:
