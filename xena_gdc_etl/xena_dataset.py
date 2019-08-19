@@ -1777,7 +1777,9 @@ class GDCAPIPhenoset(XenaDataset):
                 'date': matrix_date,
                 'gdc_release': self.gdc_release,
             }
-            if projects in GDC_XENA_COHORT:
+            if projects == "GDC-PANCAN":
+                variables['xena_cohort'] = "GDC Pan-Cancer (PANCAN)"
+            elif projects in GDC_XENA_COHORT:
                 variables['xena_cohort'] = GDC_XENA_COHORT[projects]
             else:
                 variables['xena_cohort'] = 'GDC ' + projects
@@ -1827,7 +1829,8 @@ class GDCAPIPhenoset(XenaDataset):
             in_filter=in_filter,
             fields=fields,
             expand=expand,
-            typ='json'
+            typ='json',
+            method='POST',
         )
         to_drops = set()
         for ele in res:
@@ -1858,7 +1861,6 @@ class GDCAPIPhenoset(XenaDataset):
         super(GDCAPIPhenoset, self).__init__(
             projects, 'Xena_phenotype', root_dir, matrix_dir,
         )
-        self.projects = projects
         if any(
             [
                 project not in CASES_FIELDS_EXPANDS.keys()
@@ -1885,6 +1887,19 @@ class GDCAPIPhenoset(XenaDataset):
                 expand=CASES_FIELDS_EXPANDS["CPTAC-3"]["expand"],
             )
             xena_matrix = xena_matrix.set_index("samples.submitter_id")
+        elif self.projects == ["GDC-PANCAN"]:
+            xena_matrix = self.__get_samples_clinical(
+                projects=list(GDC_XENA_COHORT.keys()),
+                fields=CASES_FIELDS_EXPANDS["GDC-PANCAN"]["fields"],
+                expand=CASES_FIELDS_EXPANDS["GDC-PANCAN"]["expand"],
+            )
+            xena_matrix = (
+                xena_matrix
+                .dropna(axis=1, how="all")
+                .set_index("samples.submitter_id")
+            )
+            print('Dropping TCGA-**-****-**Z samples ...')
+            xena_matrix = xena_matrix[~xena_matrix.index.str.endswith('Z')]
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
         xena_matrix.to_csv(self.matrix, sep='\t', encoding='utf-8')
