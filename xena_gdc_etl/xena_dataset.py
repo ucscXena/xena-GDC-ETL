@@ -1920,6 +1920,28 @@ class GDCAPIPhenoset(XenaDataset):
                 .dropna(axis=1, how="all")
                 .set_index("samples.submitter_id")
             )
+        elif self.projects == ["ORGANOID-PANCREATIC"]:
+            xena_matrix = self.__get_samples_clinical(
+                projects=self.projects,
+                fields=CASES_FIELDS_EXPANDS["CPTAC-3"]["fields"],
+                expand=CASES_FIELDS_EXPANDS["CPTAC-3"]["expand"],
+            )
+            xena_matrix = (
+                xena_matrix
+                .dropna(axis=1, how="all")
+                .set_index("samples.submitter_id")
+            )
+        elif self.projects == ["MMRF-COMMPASS"]:
+            xena_matrix = self.__get_samples_clinical(
+                projects=self.projects,
+                fields=CASES_FIELDS_EXPANDS["CPTAC-3"]["fields"],
+                expand=CASES_FIELDS_EXPANDS["CPTAC-3"]["expand"],
+            )
+            xena_matrix = (
+                xena_matrix
+                .dropna(axis=1, how="all")
+                .set_index("samples.submitter_id")
+            )
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
         xena_matrix.to_csv(self.matrix, sep='\t', encoding='utf-8')
