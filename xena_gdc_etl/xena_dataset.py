@@ -1923,8 +1923,8 @@ class GDCAPIPhenoset(XenaDataset):
         elif self.projects == ["ORGANOID-PANCREATIC"]:
             xena_matrix = self.__get_samples_clinical(
                 projects=self.projects,
-                fields=CASES_FIELDS_EXPANDS["CPTAC-3"]["fields"],
-                expand=CASES_FIELDS_EXPANDS["CPTAC-3"]["expand"],
+                fields=CASES_FIELDS_EXPANDS["ORGANOID-PANCREATIC"]["fields"],
+                expand=CASES_FIELDS_EXPANDS["ORGANOID-PANCREATIC"]["expand"],
             )
             xena_matrix = (
                 xena_matrix
@@ -1934,8 +1934,8 @@ class GDCAPIPhenoset(XenaDataset):
         elif self.projects == ["MMRF-COMMPASS"]:
             xena_matrix = self.__get_samples_clinical(
                 projects=self.projects,
-                fields=CASES_FIELDS_EXPANDS["CPTAC-3"]["fields"],
-                expand=CASES_FIELDS_EXPANDS["CPTAC-3"]["expand"],
+                fields=CASES_FIELDS_EXPANDS["MMRF-COMMPASS"]["fields"],
+                expand=CASES_FIELDS_EXPANDS["MMRF-COMMPASS"]["expand"],
             )
             xena_matrix = (
                 xena_matrix

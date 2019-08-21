@@ -258,7 +258,7 @@ CASES_FIELDS_EXPANDS = {
         ],
         "expand": [],
     },
-    "MMRF-COMPASS": {
+    "MMRF-COMMPASS": {
         "fields": [
             "case_id",
             "demographic.cause_of_death",
