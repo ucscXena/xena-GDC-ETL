@@ -1905,50 +1905,6 @@ class GDCAPIPhenoset(XenaDataset):
             )
             print('Dropping TCGA-**-****-**Z samples ...')
             xena_matrix = xena_matrix[~xena_matrix.index.str.endswith('Z')]
-        elif self.projects == ["CTSP-DLBCL1"]:
-            xena_matrix = self.__get_samples_clinical(
-                projects=self.projects,
-                fields=CASES_FIELDS_EXPANDS["CTSP-DLBCL1"]["fields"],
-                expand=CASES_FIELDS_EXPANDS["CTSP-DLBCL1"]["expand"],
-            )
-            xena_matrix = (
-                xena_matrix
-                .dropna(axis=1, how="all")
-                .set_index("samples.submitter_id")
-            )
-        elif self.projects == ["NCICCR-DLBCL"]:
-            xena_matrix = self.__get_samples_clinical(
-                projects=self.projects,
-                fields=CASES_FIELDS_EXPANDS["NCICCR-DLBCL"]["fields"],
-                expand=CASES_FIELDS_EXPANDS["NCICCR-DLBCL"]["expand"],
-            )
-            xena_matrix = (
-                xena_matrix
-                .dropna(axis=1, how="all")
-                .set_index("samples.submitter_id")
-            )
-        elif self.projects == ["ORGANOID-PANCREATIC"]:
-            xena_matrix = self.__get_samples_clinical(
-                projects=self.projects,
-                fields=CASES_FIELDS_EXPANDS["ORGANOID-PANCREATIC"]["fields"],
-                expand=CASES_FIELDS_EXPANDS["ORGANOID-PANCREATIC"]["expand"],
-            )
-            xena_matrix = (
-                xena_matrix
-                .dropna(axis=1, how="all")
-                .set_index("samples.submitter_id")
-            )
-        elif self.projects == ["MMRF-COMMPASS"]:
-            xena_matrix = self.__get_samples_clinical(
-                projects=self.projects,
-                fields=CASES_FIELDS_EXPANDS["MMRF-COMMPASS"]["fields"],
-                expand=CASES_FIELDS_EXPANDS["MMRF-COMMPASS"]["expand"],
-            )
-            xena_matrix = (
-                xena_matrix
-                .dropna(axis=1, how="all")
-                .set_index("samples.submitter_id")
-            )
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
         xena_matrix.to_csv(self.matrix, sep='\t', encoding='utf-8')
