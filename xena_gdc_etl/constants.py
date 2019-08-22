@@ -197,7 +197,37 @@ CASES_FIELDS_EXPANDS = {
             "family_histories",
         ],
     },
-    "DLBCL": {
+    "CTSP-DLBCL1": {
+        "fields": [
+            "case_id",
+            "demographic.demographic_id",
+            "demographic.ethnicity",
+            "demographic.gender",
+            "demographic.race",
+            "demographic.submitter_id",
+            "demographic.vital_status",
+            "diagnoses.age_at_diagnosis",
+            "diagnoses.diagnosis_id",
+            "diagnoses.last_known_disease_status",
+            "diagnoses.morphology",
+            "diagnoses.primary_diagnosis",
+            "diagnoses.progression_or_recurrence",
+            "diagnoses.site_of_resection_or_biopsy",
+            "diagnoses.submitter_id",
+            "diagnoses.tissue_or_organ_of_origin",
+            "diagnoses.tumor_grade",
+            "diagnoses.tumor_stage",
+            "disease_type",
+            "id",
+            "primary_site",
+            "samples.sample_id",
+            "samples.sample_type",
+            "samples.submitter_id",
+            "samples.tissue_type",
+        ],
+        "expand": [],
+    },
+    "NCICCR-DLBCL": {
         "fields": [
             "case_id",
             "demographic.demographic_id",
@@ -295,14 +325,6 @@ CASES_FIELDS_EXPANDS = {
         "expand": [],
     },
 }
-PROJECTS_PHENOTYPE_API = [
-    "CPTAC-3",
-    "GDC-PANCAN",
-    "CTSP-DLBCL1",
-    "NCICCR-DLBCL",
-    "MMRF-COMMPASS",
-    "ORGANOID-PANCREATIC",
-]
 LIST_FIELDS = {
     "FISH_test_component",
     "FISH_test_component_percentage_value",

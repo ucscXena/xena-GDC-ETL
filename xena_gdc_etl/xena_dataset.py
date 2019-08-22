@@ -37,7 +37,6 @@ from .constants import (
     GDC_RELEASE_URL,
     CASES_FIELDS_EXPANDS,
     LIST_FIELDS,
-    PROJECTS_PHENOTYPE_API,
 )
 
 
@@ -1869,7 +1868,7 @@ class GDCAPIPhenoset(XenaDataset):
         )
         if any(
             [
-                project not in PROJECTS_PHENOTYPE_API
+                project not in CASES_FIELDS_EXPANDS.keys()
                 for project in self.projects
             ]
         ):
@@ -1906,14 +1905,22 @@ class GDCAPIPhenoset(XenaDataset):
             )
             print('Dropping TCGA-**-****-**Z samples ...')
             xena_matrix = xena_matrix[~xena_matrix.index.str.endswith('Z')]
-        elif(
-            self.projects == ["CTSP-DLBCL1"]
-            or self.projects == ["NCICCR-DLBCL"]
-        ):
+        elif self.projects == ["CTSP-DLBCL1"]:
             xena_matrix = self.__get_samples_clinical(
                 projects=self.projects,
-                fields=CASES_FIELDS_EXPANDS["DLBCL"]["fields"],
-                expand=CASES_FIELDS_EXPANDS["DLBCL"]["expand"],
+                fields=CASES_FIELDS_EXPANDS["CTSP-DLBCL1"]["fields"],
+                expand=CASES_FIELDS_EXPANDS["CTSP-DLBCL1"]["expand"],
+            )
+            xena_matrix = (
+                xena_matrix
+                .dropna(axis=1, how="all")
+                .set_index("samples.submitter_id")
+            )
+        elif self.projects == ["NCICCR-DLBCL"]:
+            xena_matrix = self.__get_samples_clinical(
+                projects=self.projects,
+                fields=CASES_FIELDS_EXPANDS["NCICCR-DLBCL"]["fields"],
+                expand=CASES_FIELDS_EXPANDS["NCICCR-DLBCL"]["expand"],
             )
             xena_matrix = (
                 xena_matrix
