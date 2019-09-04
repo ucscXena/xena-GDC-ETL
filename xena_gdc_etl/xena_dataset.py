@@ -1858,13 +1858,13 @@ class GDCAPIPhenoset(XenaDataset):
         return merged_df
 
     def __build_query_dict(self, projects):
-        """Builds the query dict that will be fed into gdc.search().
+        """Builds the query dict that will be fed into ``gdc.search()``.
 
         Args:
-            projects (list or str): one (str) or a list of GDC "project_id"(s)
+            projects (list or str): one (str) or a list of GDC "project_id"(s).
 
         Returns:
-            dict: A dictionary with keys projects, fields and expands
+            dict: A dictionary with projects, fields and expand as keys.
         """
 
         if not isinstance(projects, list):
