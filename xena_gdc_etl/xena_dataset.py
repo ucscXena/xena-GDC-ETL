@@ -1857,6 +1857,33 @@ class GDCAPIPhenoset(XenaDataset):
         merged_df.drop(list(to_drops), axis=1, inplace=True)
         return merged_df
 
+    def __build_query_dict(self, projects):
+        """Builds the query dict that will be fed into ``gdc.search()``.
+
+        Args:
+            projects (list or str): one (str) or a list of GDC "project_id"(s).
+
+        Returns:
+            dict: A dictionary with projects, fields and expand as keys.
+        """
+
+        if not isinstance(projects, list):
+            projects = [projects]
+        fields = set()
+        modified_projects = []
+        for project in projects:
+            fields |= set(CASES_FIELDS_EXPANDS[project]["fields"])
+        modified_projects.extend(projects)
+        if "GDC-PANCAN" in projects:
+            modified_projects.extend(list(GDC_XENA_COHORT.keys()))
+            modified_projects.remove("GDC-PANCAN")
+        query_dict = {
+            "projects": modified_projects,
+            "fields": list(fields),
+            "expand": [],
+        }
+        return query_dict
+
     def __init__(
         self,
         projects,
@@ -1885,24 +1912,18 @@ class GDCAPIPhenoset(XenaDataset):
         )
 
     def transform(self):
-        if self.projects == ["CPTAC-3"]:
-            xena_matrix = self.__get_samples_clinical(
-                projects=["CPTAC-3"],
-                fields=CASES_FIELDS_EXPANDS["CPTAC-3"]["fields"],
-                expand=CASES_FIELDS_EXPANDS["CPTAC-3"]["expand"],
-            )
-            xena_matrix = xena_matrix.set_index("samples.submitter_id")
-        elif self.projects == ["GDC-PANCAN"]:
-            xena_matrix = self.__get_samples_clinical(
-                projects=list(GDC_XENA_COHORT.keys()),
-                fields=CASES_FIELDS_EXPANDS["GDC-PANCAN"]["fields"],
-                expand=CASES_FIELDS_EXPANDS["GDC-PANCAN"]["expand"],
-            )
-            xena_matrix = (
-                xena_matrix
-                .dropna(axis=1, how="all")
-                .set_index("samples.submitter_id")
-            )
+        query_dict = self.__build_query_dict(self.projects)
+        xena_matrix = self.__get_samples_clinical(
+            projects=query_dict["projects"],
+            fields=query_dict["fields"],
+            expand=query_dict["expand"],
+        )
+        xena_matrix = (
+            xena_matrix
+            .dropna(axis=1, how="all")
+            .set_index("samples.submitter_id")
+        )
+        if "GDC-PANCAN" in self.projects:
             print('Dropping TCGA-**-****-**Z samples ...')
             xena_matrix = xena_matrix[~xena_matrix.index.str.endswith('Z')]
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
