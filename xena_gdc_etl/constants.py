@@ -236,7 +236,7 @@ CASES_FIELDS_EXPANDS = {
             "samples.tissue_type",
             "tissue_source_site.name",
         ],
-        "expands": [],
+        "expand": [],
     },
 }
 LIST_FIELDS = {
