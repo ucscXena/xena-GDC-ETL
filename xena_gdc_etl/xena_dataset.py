@@ -1883,7 +1883,6 @@ class GDCAPIPhenoset(XenaDataset):
             "expand": [],
         }
         return query_dict
-            
 
     def __init__(
         self,
