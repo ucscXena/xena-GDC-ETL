@@ -17,7 +17,7 @@ import warnings
 import pandas as pd
 import requests
 
-from .utils import mkdir_p, reduce_json_array, get_json_objects, get_to_drops
+from .utils import mkdir_p, reduce_json_array, get_json_objects
 
 GDC_API_BASE = 'https://api.gdc.cancer.gov'
 _SUPPORTED_FILE_TYPES = {
@@ -427,10 +427,6 @@ def get_samples_clinical(projects=None):
     res = search(
         'cases', in_filter=in_filter, fields=fields, expand=expand, typ='json'
     )
-    to_drops = set()
-    for ele in res:
-        to_drops |= set(get_to_drops(ele))
-    print("Dropping columns {} for {} projects".format(to_drops, projects))
     reduced_no_samples_json = reduce_json_array(
         [{k: v for k, v in d.items() if k != 'samples'} for d in res]
     )
@@ -450,9 +446,20 @@ def get_samples_clinical(projects=None):
         'id',
         record_prefix='samples.',
     )
-    merged_df = pd.merge(cases_df, samples_df, how='inner', on='id')
-    merged_df.drop(list(to_drops), axis=1, inplace=True)
-    return merged_df
+    clinical_df = pd.merge(cases_df, samples_df, how='inner', on='id')
+    # Filter out columns whose values are list of non-dict
+    raw_df = pd.io.json.json_normalize(res)
+    list_cols = [
+        c for c in raw_df.columns
+        if (
+            isinstance(raw_df.loc[0, c], list)
+            and not isinstance(raw_df.loc[0, c][0], dict)
+        )
+    ]
+    if any(list_cols):
+        clinical_df = clinical_df.drop(columns=list_cols)
+        print('The following columns are dropped: {}'.format(str(list_cols)))
+    return clinical_df
 
 
 def gdc_check_new(new_file_uuids):
