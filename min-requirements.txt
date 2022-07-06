@@ -1,5 +1,5 @@
 jinja2 == 2.10.1
-lxml == 4.2.0
+lxml == 4.9.1
 numpy == 1.15.0
 pandas == 0.23.2
 requests == 2.20.0
