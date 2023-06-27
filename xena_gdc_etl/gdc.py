@@ -19,6 +19,7 @@ import requests
 
 from .utils import mkdir_p, reduce_json_array, get_json_objects, get_to_drops
 
+
 GDC_API_BASE = 'https://api.gdc.cancer.gov'
 _SUPPORTED_FILE_TYPES = {
     'txt',
@@ -241,7 +242,7 @@ def search(
         if typ.lower() == 'json':
             return results
         try:
-            return pd.io.json.json_normalize(reduce_json_array(results))
+            return pd.json_normalize(reduce_json_array(results))
         except Exception:
             warnings.warn(
                 'Fail to convert searching results into table. '
@@ -405,36 +406,24 @@ def get_samples_clinical(projects=None):
             in_filter = {'project.project_id': projects}
         else:
             in_filter = {'project.project_id': [projects]}
-    fields = [
-        'case_id',
-        'created_datetime',
-        'disease_type',
-        'id',
-        'primary_site',
-        'state',
-        'submitter_id',
-        'updated_datetime',
-    ]
-    expand = [
-        'demographic',
-        'diagnoses',
-        'exposures',
-        'family_histories',
-        'project',
-        'samples',
-        'tissue_source_site',
-    ]
+
+    # Get available fields for cases dynamically
+    mapping = search('cases/_mapping', typ='json', method='POST')['fields']
+    fields = []
+    for field in mapping:
+        if not field.startswith('files.'):
+            fields.append(field)
     res = search(
-        'cases', in_filter=in_filter, fields=fields, expand=expand, typ='json'
+        'cases', in_filter=in_filter, fields=fields, typ='json', method='POST'
     )
-    to_drops = set()
-    for ele in res:
-        to_drops |= set(get_to_drops(ele))
-    print("Dropping columns {} for {} projects".format(to_drops, projects))
+    # to_drops = set()
+    # for ele in res:
+    #     to_drops |= set(get_to_drops(ele))
+    # print("Dropping columns {} for {} projects".format(to_drops, projects))
     reduced_no_samples_json = reduce_json_array(
         [{k: v for k, v in d.items() if k != 'samples'} for d in res]
     )
-    cases_df = pd.io.json.json_normalize(reduced_no_samples_json)
+    cases_df = pd.json_normalize(reduced_no_samples_json)
     # In the list of reduced json, "samples" fields for each case are not
     # consistently ``list`` (if there is only 1 sample for the case, it will
     # be reduced into "naked" ``dict``). Therefore, it cannot be normalized
@@ -444,14 +433,14 @@ def get_samples_clinical(projects=None):
     #    for r in res:
     #        r.setdefault('samples', [{}])
     #        samples_json.append(r)
-    samples_df = pd.io.json.json_normalize(
+    samples_df = pd.json_normalize(
         [r for r in res if 'samples' in r],
         'samples',
         'id',
         record_prefix='samples.',
     )
     merged_df = pd.merge(cases_df, samples_df, how='inner', on='id')
-    merged_df.drop(list(to_drops), axis=1, inplace=True)
+    # merged_df.drop(list(to_drops), axis=1, inplace=True)
     return merged_df
 
 

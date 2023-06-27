@@ -35,7 +35,6 @@ from .constants import (
     METADATA_TEMPLATE,
     METADATA_VARIABLES,
     GDC_RELEASE_URL,
-    CASES_FIELDS_EXPANDS,
     LIST_FIELDS,
 )
 
@@ -67,153 +66,6 @@ def read_by_ext(filename, mode='r'):
         return bz2.BZ2File(filename, mode)
     else:
         return open(filename, mode)
-
-
-def read_biospecimen(fileobj):
-    """Extract info from GDC's biospecimen supplement and re-organize them
-    into a pandas DataFrame.
-
-    Args:
-        fileobj (file or path): XML file of GDC's biospecimen supplement.
-
-    Returns:
-        pandas.core.frame.DataFrame: Transformed pandas DataFrame.
-    """
-
-    if hasattr(fileobj, 'name'):
-        filename = fileobj.name
-    else:
-        filename = fileobj
-    ext = os.path.splitext(filename)[1]
-    if ext == '.xlsx':
-        # Design specifically for TARGET biospecimen
-        try:
-            df = pd.read_excel(
-                filename, sheet_name='Sample Names', header=None
-            )
-        except Exception:
-            try:
-                df = pd.read_excel(
-                    filename, sheet_name='SampleNames', header=None
-                )
-            except Exception:
-                raise
-        df.iloc[0].fillna(method='ffill', inplace=True)
-        df.columns = df.iloc[0:2].apply(lambda x: x.str.cat(sep='.'))
-        return df.drop(df.index[0:2]).set_index(df.columns[0])
-    elif ext != '.xml':
-        raise IOError('Unknown file type for biospecimen data: {}'.format(ext))
-
-    root = etree.parse(fileobj).getroot()
-    ns = root.nsmap
-    assert (
-        'biospecimen'
-        in root.xpath('@xsi:schemaLocation', namespaces=ns)[0].lower()
-    )
-    samples_common = {}
-    for child in root.find('admin:admin', ns):
-        try:
-            samples_common[child.tag.split('}', 1)[-1]] = child.text.strip()
-        except AttributeError:
-            samples_common[child.tag.split('}', 1)[-1]] = ''
-    for child in root.find('bio:patient', ns):
-        try:
-            samples_common[child.tag.split('}', 1)[-1]] = child.text.strip()
-        except AttributeError:
-            samples_common[child.tag.split('}', 1)[-1]] = ''
-    # Add 'primary_diagnosis' according to
-    # https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/tcga-study-abbreviations
-    samples_common['primary_diagnosis'] = gdc.TCGA_STUDY_ABBR[
-        samples_common['disease_code']
-    ]
-
-    samples = {}
-    for sample in root.find('bio:patient/bio:samples', ns):
-        record = {}
-        for child in sample:
-            if child.text and child.text.strip():
-                record[child.tag.split('}', 1)[-1]] = child.text.strip()
-        record.update(samples_common)
-        samples[record['bcr_sample_barcode']] = record
-    df = pd.DataFrame(samples).T
-    sample_mask = df.bcr_sample_barcode.map(lambda s: s[-3:-1] not in ['10'])
-    df = df[sample_mask]
-    df['bcr_patient_barcode'] = root.find(
-        'bio:patient/shared:bcr_patient_barcode', ns
-    ).text
-    return df
-
-
-def read_clinical(fileobj):
-    """Extract info from GDC's clinical supplement and re-organize them into a
-    pandas DataFrame.
-
-    Args:
-        fileobj (file or path): XML file of GDC's clinical supplement.
-
-    Returns:
-        pandas.core.frame.DataFrame: Transformed pandas DataFrame.
-    """
-
-    if hasattr(fileobj, 'name'):
-        filename = fileobj.name
-    else:
-        filename = fileobj
-    ext = os.path.splitext(filename)[1]
-    if ext == '.xlsx':
-        xl_file = pd.ExcelFile(filename)
-        sheets = xl_file.sheet_names
-        if sheets[0] == "Clinical Data":
-            return xl_file.parse(sheets[0], index_col=0)
-        else:
-            print("Clincal Data not found, skipping this file ...")
-            return pd.DataFrame()
-    elif ext != '.xml':
-        raise IOError('Unknown file type for clinical data: {}'.format(ext))
-
-    root = etree.parse(fileobj).getroot()
-    ns = root.nsmap
-    assert (
-        'clinical'
-        in root.xpath('@xsi:schemaLocation', namespaces=ns)[0].lower()
-    )
-    patient = {}
-    # "Dirty" extraction
-    for child in root.xpath('.//*[not(*)]'):
-        field_name = child.tag.split('}', 1)[-1]
-        if field_name in LIST_FIELDS:
-            continue
-        try:
-            patient[child.tag.split('}', 1)[-1]] = child.text.strip()
-        except AttributeError:
-            patient[child.tag.split('}', 1)[-1]] = ''
-    # Redo 'race'
-    if 'race_list' in patient:
-        del patient['race_list']
-    try:
-        patient['race'] = ','.join(
-            [
-                child.text.strip()
-                for child in root.find('.//clin_shared:race_list', ns)
-                if child.text and child.text.strip()
-            ]
-        )
-    except Exception:
-        patient['race'] = ''
-    # Redo the most recent "follow_up" and update the patient dict if there is
-    # an overlapped key.
-    follow_ups = root.xpath('.//*[local-name()="follow_up"]')
-    if follow_ups:
-        most_recent = follow_ups[0]
-        for follow_up in follow_ups:
-            if follow_up.attrib['version'] > most_recent.attrib['version']:
-                most_recent = follow_up
-        for child in most_recent:
-            try:
-                patient[child.tag.split('}', 1)[-1]] = child.text.strip()
-            except AttributeError:
-                patient[child.tag.split('}', 1)[-1]] = ''
-    return pd.DataFrame({patient['bcr_patient_barcode']: patient}).T
 
 
 def merge_cnv(filelist):
@@ -303,7 +155,8 @@ def merge_sample_cols(
     filelist,
     header='infer',
     index_col=0,
-    usecols=[0, 1],
+    usecols=[0, 3],
+    skiprows=[0],
     comment=None,
     index_name='id',
     get_sid=lambda f: os.path.basename(f).split('.', 1)[0],
@@ -352,6 +205,7 @@ def merge_sample_cols(
                 header=header,
                 index_col=index_col,
                 usecols=usecols,
+                skiprows=skiprows,
                 comment=comment,
                 names=[index_name, sample_id],
             )
@@ -856,17 +710,14 @@ class GDCOmicset(XenaDataset):
 
     # Map Xena dtype code to GDC data query dict
     _XENA_GDC_DTYPE = {
-        'htseq_counts': {
-            'data_type': 'Gene Expression Quantification',
-            'analysis.workflow_type': 'HTSeq - Counts',
+        'star_counts': {
+            'analysis.workflow_type': 'STAR - Counts',
         },
-        'htseq_fpkm': {
-            'data_type': 'Gene Expression Quantification',
-            'analysis.workflow_type': 'HTSeq - FPKM',
+        'star_fpkm': {
+            'analysis.workflow_type': 'STAR - Counts',
         },
-        'htseq_fpkm-uq': {
-            'data_type': 'Gene Expression Quantification',
-            'analysis.workflow_type': 'HTSeq - FPKM-UQ',
+        'star_fpkm-uq': {
+            'analysis.workflow_type': 'STAR - Counts',
         },
         'mirna': {
             'data_type': 'miRNA Expression Quantification',
@@ -949,9 +800,6 @@ class GDCOmicset(XenaDataset):
             'data_type': 'Gene Level Copy Number Scores',
             'analysis.workflow_type': 'GISTIC - Copy Number Score',
         },
-        'star_counts': {
-            'analysis.workflow_type': 'STAR - Counts',
-        },
         'methylation27': {
             'data_type': 'Methylation Beta Value',
             'platform': 'Illumina Human Methylation 27',
@@ -964,9 +812,9 @@ class GDCOmicset(XenaDataset):
 
     # Prefix in filenames for downloaded files
     _GDC_PREFIX = {
-        'htseq_counts': 'cases.samples.submitter_id',
-        'htseq_fpkm': 'cases.samples.submitter_id',
-        'htseq_fpkm-uq': 'cases.samples.submitter_id',
+        'star_counts': 'cases.samples.submitter_id',
+        'star_fpkm': 'cases.samples.submitter_id',
+        'star_fpkm-uq': 'cases.samples.submitter_id',
         'mirna': 'cases.samples.submitter_id',
         'mirna_isoform': 'cases.samples.submitter_id',
         'cnv': 'cases.samples.submitter_id',
@@ -976,18 +824,12 @@ class GDCOmicset(XenaDataset):
         'somaticsniper_snv': 'submitter_id',
         'varscan2_snv': 'submitter_id',
         'gistic': 'submitter_id',
-        'star_counts': 'cases.samples.submitter_id',
         'methylation27': 'cases.samples.submitter_id',
         'methylation450': 'cases.samples.submitter_id',
     }
 
     # Settings for making Xena matrix from GDC data
-    _RAWS2MATRIX_FUNCS = dict.fromkeys(
-        ['htseq_counts', 'htseq_fpkm', 'htseq_fpkm-uq'],
-        functools.partial(
-            merge_sample_cols, header=None, index_name='Ensembl_ID'
-        ),
-    )
+    _RAWS2MATRIX_FUNCS = {}
     _RAWS2MATRIX_FUNCS['mirna'] = functools.partial(
         merge_sample_cols, header=0, usecols=[0, 2], index_name='miRNA_ID'
     )
@@ -1008,6 +850,18 @@ class GDCOmicset(XenaDataset):
     _RAWS2MATRIX_FUNCS['star_counts'] = functools.partial(
         merge_sample_cols,
         header=0,
+        index_name='Ensembl_ID',
+    )
+    _RAWS2MATRIX_FUNCS['star_fpkm'] = functools.partial(
+        merge_sample_cols,
+        header = 0,
+        usecols=[0, 7],
+        index_name='Ensembl_ID',
+    )
+    _RAWS2MATRIX_FUNCS['star_fpkm-uq'] = functools.partial(
+        merge_sample_cols,
+        header = 0,
+        usecols=[0, 8],
         index_name='Ensembl_ID',
     )
     _RAWS2MATRIX_FUNCS.update(
@@ -1283,113 +1137,6 @@ class GDCPhenoset(XenaDataset):
             and ``xena_dtype`` properties.
     """
 
-    # Map Xena dtype code to GDC data query dict
-    _XENA_GDC_DTYPE = {
-        'biospecimen': {
-            'data_category': 'Biospecimen',
-            'data_format': ['BCR XML', 'XLSX'],
-        },
-        'clinical': {
-            'data_category': 'Clinical',
-            'data_format': ['BCR XML', 'XLSX'],
-        },
-        'raw_phenotype': {
-            'data_category': ['Biospecimen', 'Clinical'],
-            'data_format': ['BCR XML', 'XLSX'],
-        },
-        'GDC_phenotype': {
-            'data_category': ['Biospecimen', 'Clinical'],
-            'data_format': ['BCR XML', 'XLSX'],
-        },
-    }
-    # To resovle overlapping between raw data and API data, remove columns
-    # according to the following lists.
-    _API_DROPS = [
-        'id',
-        'case_id',
-        'state',
-        'created_datetime',
-        'updated_datetime',
-        'demographic_id.demographic',
-        'submitter_id.demographic',
-        'state.demographic',
-        'created_datetime.demographic',
-        'updated_datetime.demographic',
-        'diagnosis_id.diagnoses',
-        'submitter_id.diagnoses',
-        'state.diagnoses',
-        'created_datetime.diagnoses',
-        'updated_datetime.diagnoses',
-        'treatment_id.treatments.diagnoses',
-        'submitter_id.treatments.diagnoses',
-        'state.treatments.diagnoses',
-        'created_datetime.treatments.diagnoses',
-        'updated_datetime.treatments.diagnoses',
-        'exposure_id.exposures',
-        'submitter_id.exposures',
-        'state.exposures',
-        'created_datetime.exposures',
-        'updated_datetime.exposures',
-        'pathology_report_uuid.samples',
-        'state.project',
-        'released.project',
-        'sample_id.samples',
-        'created_datetime.samples',
-        'updated_datetime.samples',
-        'tissue_source_site_id.tissue_source_site',
-    ]
-    _RAW_DROPS = [
-        'alcohol_history_documented',
-        'bcr_patient_barcode',
-        'bcr_patient_uuid',
-        'bcr_sample_uuid',
-        'composition',
-        'current_weight',
-        'days_to_birth',
-        'days_to_collection',
-        'days_to_death',
-        'days_to_last_followup',
-        'days_to_sample_procurement',
-        'ethnicity',
-        'freezing_method',
-        'gender',
-        'height',
-        'icd_10',
-        'icd_o_3_histology',
-        'icd_o_3_site',
-        'initial_weight',
-        'intermediate_dimension',
-        'is_ffpe',
-        'longest_dimension',
-        'oct_embedded',
-        'pathologic_stage',
-        'pathology_report_uuid',
-        'preservation_method',
-        'primary_diagnosis',
-        'race',
-        'sample_type',
-        'sample_type_id',
-        'shortest_dimension',
-        'state',
-        'time_between_clamping_and_freezing',
-        'time_between_excision_and_freezing',
-        'tissue_type',
-        'tumor_descriptor',
-        'tumor_tissue_site',
-        'vital_status',
-    ]
-
-    @property
-    def xena_dtype(self):
-        return self.__xena_dtype
-
-    @xena_dtype.setter
-    def xena_dtype(self, xena_dtype):
-        if xena_dtype in self._XENA_GDC_DTYPE:
-            self.__xena_dtype = xena_dtype
-        else:
-            raise ValueError("Unsupported data type: {}".format(xena_dtype))
-
     @property
     def gdc_release(self):
         try:
@@ -1430,48 +1177,9 @@ class GDCPhenoset(XenaDataset):
 
     @XenaDataset.download_map.getter
     def download_map(self):
-        try:
-            assert self._download_map
-            return self._download_map
-        except (AttributeError, AssertionError):
-            fields = ['file_id', 'file_name', 'data_category']
-            try:
-                print('Searching for raw data ...', end='')
-                file_df = gdc.search(
-                    'files', in_filter=self.gdc_filter, fields=fields
-                )
-            except Exception:
-                file_dict = {}
-            else:
-                file_df.set_index('file_id', drop=False, inplace=True)
-                file_dict = (
-                    file_df['data_category'].astype(str)
-                    + '.'
-                    + file_df['file_id'].astype(str)
-                    + '.'
-                    + file_df['file_name'].apply(gdc.get_ext)
-                ).to_dict()
-            if not file_dict:
-                msg = '\rNo {} data found for project {}.'
-                gdc_dtype = self._XENA_GDC_DTYPE[self.xena_dtype]
-                print(
-                    msg.format(
-                        ' - '.join(sorted(gdc_dtype.values())),
-                        str(self.projects),
-                    )
-                )
-                return file_dict
-            file_dict = {
-                '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): os.path.join(
-                    self.raw_data_dir, name
-                )
-                for uuid, name in file_dict.items()
-            }
-            self._download_map = file_dict
-            msg = '\r{} files found for {} data of {}.'
-            print(msg.format(len(file_dict), self.xena_dtype, self.projects))
-            return self._download_map
-
+        print("Clinical is selected. No files will be downloaded.")
+        return {}
+    
     @property
     def metadata_vars(self):
         try:
@@ -1503,27 +1211,13 @@ class GDCPhenoset(XenaDataset):
     def __init__(
         self,
         projects,
-        xena_dtype=None,
         root_dir='.',
-        raw_data_dir=None,
         matrix_dir=None,
     ):
-        self.projects = projects
-        if xena_dtype is not None:
-            self.xena_dtype = xena_dtype
-        elif all([i.startswith('TCGA-') for i in self.projects]):
-            self.xena_dtype = 'GDC_phenotype'
-        elif all([i.startswith('TARGET-') for i in self.projects]):
-            self.xena_dtype = 'clinical'
-        else:
-            warnings.warn(
-                'Caution: fail to guess phenotype data type for project '
-                '{}; use "raw_phenotype" as default.'.format(self.projects)
-            )
-            self.xena_dtype = 'raw_phenotype'
-        self.root_dir = root_dir
-        if matrix_dir is not None:
-            self.matrix_dir = matrix_dir
+        super(GDCPhenoset, self).__init__(
+            projects, 'clinical', root_dir, matrix_dir
+        )
+
         jinja2_env = jinja2.Environment(
             loader=jinja2.PackageLoader('xena_gdc_etl', 'resources')
         )
@@ -1545,106 +1239,8 @@ class GDCPhenoset(XenaDataset):
 
         message = 'Make Xena matrix for {} data of {}.'
         print(message.format(self.xena_dtype, self.projects))
-        total = len(self.raw_data_list)
-        count = 0
-        bio_dfs = []
-        clin_dfs = []
-        for path in self.raw_data_list:
-            count = count + 1
-            print('\rProcessing {}/{} file...'.format(count, total), end='')
-            sys.stdout.flush()
-            # `read_biospecimen` and `read_clinical` will check file format
-            try:
-                df = read_clinical(path)
-                if not df.empty:
-                    clin_dfs.append(df)
-            except Exception:
-                try:
-                    df = read_biospecimen(path)
-                    bio_dfs.append(df)
-                except Exception:
-                    raise TypeError('Fail to process file {}.'.format(path))
-        print('\rAll {} files have been processed. '.format(total))
-        try:
-            bio_matrix = (
-                pd.concat(bio_dfs, axis=0)
-                .replace(r'\r\n', ' ', regex=True)
-                .replace(r'^\s*$', np.nan, regex=True)
-                .dropna(axis=1, how='all')
-                .rename(columns={
-                    'bcr_sample_barcode': 'submitter_id.samples',
-                    'bcr_patient_barcode': 'submitter_id',
-                })
-            )
-        except Exception:
-            bio_matrix = pd.DataFrame()
-        try:
-            clin_matrix = (
-                pd.concat(clin_dfs, axis=0)
-                .replace(r'\r\n', ' ', regex=True)
-                .replace(r'^\s*$', np.nan, regex=True)
-                .dropna(axis=1, how='all')
-                .rename(columns={
-                    'bcr_patient_barcode': 'submitter_id',
-                })
-            )
-        except Exception:
-            clin_matrix = pd.DataFrame()
+        
         if self.xena_dtype == 'clinical':
-            try:
-                xena_matrix = clin_matrix.set_index('bcr_patient_barcode')
-            except Exception:
-                xena_matrix = clin_matrix
-            print('\rMapping clinical info to individual samples...', end='')
-            cases = gdc.search(
-                'cases',
-                in_filter={'project.project_id': self.projects},
-                fields=['submitter_id', 'samples.submitter_id'],
-                typ='json',
-            )
-            cases_samples = [c for c in cases if 'samples' in c]
-            from pandas.io.json import json_normalize
-
-            cases_samples_map = json_normalize(
-                cases_samples,
-                'samples',
-                ['submitter_id'],
-                meta_prefix='cases.',
-            )
-            if all([i.startswith('TCGA-') for i in self.projects]):
-                cases_samples_map = cases_samples_map.rename(
-                    columns={
-                        'submitter_id': 'sample_id',
-                        'cases.submitter_id': 'bcr_patient_barcode',
-                    }
-                )
-                xena_matrix = pd.merge(
-                    xena_matrix.reset_index(),
-                    cases_samples_map,
-                    how='inner',
-                    on='bcr_patient_barcode',
-                ).set_index('sample_id')
-            elif all([i.startswith('TARGET-') for i in self.projects]):
-                cases_samples_map = cases_samples_map.rename(
-                    columns={
-                        'submitter_id': 'sample_id',
-                        'cases.submitter_id': 'TARGET USI',
-                    }
-                )
-                xena_matrix = pd.merge(
-                    xena_matrix.reset_index(),
-                    cases_samples_map,
-                    how='inner',
-                    on='TARGET USI',
-                ).set_index('sample_id')
-            else:
-                warnings.warn('Fail to get per sample based clinical matrix.')
-        elif self.xena_dtype == 'biospecimen':
-            try:
-                xena_matrix = bio_matrix.set_index('bcr_sample_barcode')
-            except Exception:
-                xena_matrix = bio_matrix
-        if self.xena_dtype == 'GDC_phenotype':
             # Query GDC API for GDC harmonized phenotype info
             api_clin = gdc.get_samples_clinical(self.projects)
             # Revert hierarchy order in column names
@@ -1665,253 +1261,19 @@ class GDCPhenoset(XenaDataset):
                 )
                 # Remove all empty columns
                 api_clin = api_clin.dropna(axis=1, how='all')
-                # For overlapping columns between raw data matrix and GDC'S
-                # API data matrix, use API data.
-                for c in self._API_DROPS:
-                    try:
-                        api_clin.drop(c, axis=1, inplace=True)
-                    except Exception:
-                        pass
-                for c in self._RAW_DROPS:
-                    try:
-                        clin_matrix.drop(c, axis=1, inplace=True)
-                    except Exception:
-                        pass
-                    try:
-                        bio_matrix.drop(c, axis=1, inplace=True)
-                    except Exception:
-                        pass
-                # Merge phenotype matrices from raw data and that from GDC's
-                # API
-                bio_columns = bio_matrix.columns.difference(
-                    clin_matrix.columns
-                ).insert(0, 'submitter_id')
-                xena_matrix = (
-                    pd.merge(
-                        bio_matrix[bio_columns],
-                        api_clin.reset_index(),
-                        how='outer',
-                        on=['submitter_id.samples', 'submitter_id'],
-                    )
-                    .replace(r'^\s*$', np.nan, regex=True)
-                )
-                xena_matrix = (
-                    pd.merge(
-                        clin_matrix,
-                        xena_matrix,
-                        how='outer',
-                        on='submitter_id',
-                    )
-                    .replace(r'^\s*$', np.nan, regex=True)
-                    .set_index('submitter_id.samples')
-                    .fillna(bio_matrix.set_index('submitter_id.samples'))
-                )
-            elif all([i.startswith('TARGET-') for i in self.projects]):
+                print('Dropping TCGA-**-****-**Z samples ...')
+                xena_matrix = api_clin[~api_clin.index.str.endswith('Z')]    
+            else:
                 xena_matrix = api_clin.dropna(axis=1, how='all').set_index(
                     'submitter_id.samples'
                 )
-            else:
-                raise ValueError(
-                    'Getting "GDC_phenotype" for a cohort with mixed TCGA and '
-                    'TARGET projects is not currently suppported.'
-                )
-        print('Dropping TCGA-**-****-**Z samples ...')
-        xena_matrix = xena_matrix[~xena_matrix.index.str.endswith('Z')]
         # Transformation done
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
         xena_matrix.to_csv(self.matrix, sep='\t', encoding='utf-8')
         print('\rXena matrix is saved at {}.'.format(self.matrix))
         return self
-
-
-class GDCAPIPhenoset(XenaDataset):
-    r"""GDCAPIPhenoset is derived from the ``XenaDataset`` class and represents
-    for a Xena matrix whose data is phenotype data from the GDC API only.
-
-    Attributes:
-        projects (str or list): One (string) or a list of GDC's
-            "cases.project.project_id". All corresponding projects will be
-            included in this dataset.
-        gdc_release (str): URL to the data release note for the dataset. It
-            will be used by the ``metadata`` method when making the metadata
-            for this dataset. It is highly recommended that this attribute is
-            set explicitly by the user so that it is guaranteed to match the
-            data (raw data) underlying this dataset. If it is not available,
-            the most recent data release will be queried and used.
-        metadata_vars (dict): A dict of variables which will be used (by \*\*
-            unpacking) when rendering the ``metadata_template``. Defaults, if
-            needed, can be derived from corresponding matrix and ``projects``
-            and ``xena_dtype`` properties.
-    """
-
-    @property
-    def gdc_release(self):
-        try:
-            return self.__gdc_release
-        except AttributeError:
-            data_release = gdc.search('status', typ='json')['data_release']
-            anchor = (
-                re.match(r'(Data Release [^\s]+)\s', data_release)
-                .group(1)
-                .replace(' ', '-')
-                .replace('.', '')
-                .lower()
-            )
-            self.__gdc_release = GDC_RELEASE_URL + '#' + anchor
-            return self.__gdc_release
-
-    @gdc_release.setter
-    def gdc_release(self, url):
-        self.__gdc_release = url
-
-    @property
-    def metadata_vars(self):
-        try:
-            assert self.__metadata_vars and isinstance(
-                self.__metadata_vars, dict
-            )
-            return self.__metadata_vars
-        except (AttributeError, AssertionError):
-            matrix_date = time.strftime(
-                "%m-%d-%Y", time.gmtime(os.path.getmtime(self.matrix))
-            )
-            projects = ','.join(self.projects)
-            variables = {
-                'project_id': projects,
-                'date': matrix_date,
-                'gdc_release': self.gdc_release,
-            }
-            if projects == "GDC-PANCAN":
-                variables['xena_cohort'] = "GDC Pan-Cancer (PANCAN)"
-            elif projects in GDC_XENA_COHORT:
-                variables['xena_cohort'] = GDC_XENA_COHORT[projects]
-            else:
-                variables['xena_cohort'] = 'GDC ' + projects
-            variables["projects"] = projects
-            try:
-                variables.update(METADATA_VARIABLES[self.xena_dtype])
-            except KeyError:
-                pass
-            self.__metadata_vars = variables
-            return self.__metadata_vars
-
-    @metadata_vars.setter
-    def metadata_vars(self, variables):
-        self.__metadata_vars = variables
-
-    @XenaDataset.download_map.getter
-    def download_map(self):
-        print("Xena_phenotype is selected. No files will be downloaded.")
-        return {}
-
-    def __get_samples_clinical(self, projects, fields, expand):
-        """Get info for all samples of ``projects`` and clinical info for all
-        cases of ``projects`` through GDC API.
-
-        Args:
-            projects (list or str): one (str) or a list of GDC "project_id"(s),
-                whose info will be returned. If None, projects will not be
-                filtered, i.e. info for all GDC projects will be returned.
-                Defaults to None.
-            fields (list or str): one (str) or a list of GDC "cases"
-            expand (list or str): one (str) or a list of GDC "expand"
-
-        Returns:
-            pandas.core.frame.DataFrame: A DataFrame organized by samples,
-            having info for all samples of ``projects``, as well as
-            corresponding clinical info.
-        """
-
-        in_filter = {}
-        if projects is not None:
-            if isinstance(projects, list):
-                in_filter = {'project.project_id': projects}
-            else:
-                in_filter = {'project.project_id': [projects]}
-        res = gdc.search(
-            'cases',
-            in_filter=in_filter,
-            fields=fields,
-            expand=expand,
-            typ='json',
-            method='POST',
-        )
-        to_drops = set()
-        for ele in res:
-            to_drops |= set(gdc.get_to_drops(ele))
-        print(
-            "Dropping columns {} for {} projects".format(to_drops, projects)
-        )
-        reduced_no_samples_json = reduce_json_array(
-            [{k: v for k, v in d.items() if k != 'samples'} for d in res]
-        )
-        cases_df = pd.io.json.json_normalize(reduced_no_samples_json)
-        samples_df = pd.io.json.json_normalize(
-            [r for r in res if 'samples' in r],
-            'samples',
-            'id',
-            record_prefix='samples.',
-        )
-        merged_df = pd.merge(cases_df, samples_df, how='inner', on='id')
-        merged_df.drop(list(to_drops), axis=1, inplace=True)
-        return merged_df
-
-    def __init__(
-        self,
-        projects,
-        root_dir='.',
-        matrix_dir=None,
-    ):
-        super(GDCAPIPhenoset, self).__init__(
-            projects, 'Xena_phenotype', root_dir, matrix_dir,
-        )
-        if any(
-            [
-                project not in CASES_FIELDS_EXPANDS.keys()
-                for project in self.projects
-            ]
-        ):
-            raise NotImplementedError(
-                "'Xena_phenotype' for {} project is not implemented".format(
-                    projects
-                )
-            )
-        jinja2_env = jinja2.Environment(
-            loader=jinja2.PackageLoader("xena_gdc_etl", "resources")
-        )
-        self.metadata_template = jinja2_env.get_template(
-            "template.api_phenotype.meta.json"
-        )
-
-    def transform(self):
-        if self.projects == ["CPTAC-3"]:
-            xena_matrix = self.__get_samples_clinical(
-                projects=["CPTAC-3"],
-                fields=CASES_FIELDS_EXPANDS["CPTAC-3"]["fields"],
-                expand=CASES_FIELDS_EXPANDS["CPTAC-3"]["expand"],
-            )
-            xena_matrix = xena_matrix.set_index("samples.submitter_id")
-        elif self.projects == ["GDC-PANCAN"]:
-            xena_matrix = self.__get_samples_clinical(
-                projects=list(GDC_XENA_COHORT.keys()),
-                fields=CASES_FIELDS_EXPANDS["GDC-PANCAN"]["fields"],
-                expand=CASES_FIELDS_EXPANDS["GDC-PANCAN"]["expand"],
-            )
-            xena_matrix = (
-                xena_matrix
-                .dropna(axis=1, how="all")
-                .set_index("samples.submitter_id")
-            )
-            print('Dropping TCGA-**-****-**Z samples ...')
-            xena_matrix = xena_matrix[~xena_matrix.index.str.endswith('Z')]
-        print('\rSaving matrix to {} ...'.format(self.matrix), end='')
-        mkdir_p(self.matrix_dir)
-        xena_matrix.to_csv(self.matrix, sep='\t', encoding='utf-8')
-        print('\rXena matrix is saved at {}.'.format(self.matrix))
-        return self
-
-
+    
 class GDCSurvivalset(XenaDataset):
     r"""GDCSurvivalset is derived from the ``XenaDataset`` class and represents
     for a Xena matrix of GDC survival data for project(s) of interest.
@@ -2066,7 +1428,7 @@ class GDCSurvivalset(XenaDataset):
             typ='json',
         )
         case_samples = [c for c in case_samples if 'submitter_sample_ids' in c]
-        samples_df = pd.io.json.json_normalize(
+        samples_df = pd.json_normalize(
             case_samples, 'submitter_sample_ids', 'id'
         ).rename(columns={0: 'sample'})
         sample_mask = samples_df['sample'].map(

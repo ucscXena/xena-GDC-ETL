@@ -5,14 +5,13 @@ import os
 import pkg_resources
 
 import pandas as pd
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 from .utils import handle_merge_xena
 from .gdc import gdc_check_new, get_project_info
 from .constants import valid_dtype, GDC_RELEASE_URL
 from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
 from .gdc2xena import gdc2xena
-
 
 __version__ = pkg_resources.get_distribution("xena_gdc_etl").version
 
