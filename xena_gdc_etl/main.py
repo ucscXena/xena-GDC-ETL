@@ -83,15 +83,18 @@ def main():
         root_dir = os.path.dirname(options.matrix)
         if options.datatype == 'survival':
             dataset = GDCSurvivalset(options.project, root_dir)
-        elif options.datatype == 'raw_phenotype':
-            if options.project.startswith('TCGA'):
-                dataset = GDCPhenoset(
-                    options.project, 'raw_phenotype', root_dir
-                )
-            if options.project.startswith('TARGET'):
-                dataset = GDCPhenoset(options.project, 'clinical', root_dir)
-        elif options.datatype == 'GDC_phenotype':
-            dataset = GDCPhenoset(options.project, 'GDC_phenotype', root_dir)
+        elif options.datatype == 'clinical':
+            dataset = GDCPhenoset(options.project, root_dir)
+        
+        # elif options.datatype == 'raw_phenotype':
+        #     if options.project.startswith('TCGA'):
+        #         dataset = GDCPhenoset(
+        #             options.project, 'raw_phenotype', root_dir
+        #         )
+        #     if options.project.startswith('TARGET'):
+        #         dataset = GDCPhenoset(options.project, 'clinical', root_dir)
+        # elif options.datatype == 'GDC_phenotype':
+        #     dataset = GDCPhenoset(options.project, 'GDC_phenotype', root_dir)
         else:
             dataset = GDCOmicset(options.project, options.datatype, root_dir)
         dataset.matrix = options.matrix
