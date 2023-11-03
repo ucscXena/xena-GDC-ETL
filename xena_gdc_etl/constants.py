@@ -44,9 +44,12 @@ METADATA_TEMPLATE = {
     'star_counts': 'template.rna.meta.json',
     'star_fpkm' : 'template.rna.meta.json',
     'star_fpkm-uq' : 'template.rna.meta.json',
+    'star_tpm' : 'template.rna.meta.json',
     'mirna': 'template.mirna.meta.json',
     'mirna_isoform': 'template.mirna_isoform.meta.json',
-    'cnv': 'template.cnv.meta.json',
+    'segment_cnv_dnacopy': 'template.cnv.meta.json',
+    'segment_cnv_ascat-ngs': 'template.cnv.meta.json', 
+    'segment_cnv_ascat2': 'template.cnv.meta.json', 
     'masked_cnv': 'template.cnv.meta.json',
     'muse_snv': 'template.snv.meta.json',
     'mutect2_snv': 'template.snv.meta.json',
@@ -55,6 +58,7 @@ METADATA_TEMPLATE = {
     'GDC_phenotype': 'template.phenotype.meta.json',
     'survival': 'template.survival.meta.json',
     'gistic': 'template.gistic.meta.json',
+    'gene-level_ascat-ngs': 'template.ascat-ngs.meta.json',
     'methylation27': 'template.methylation.meta.json',
     'methylation450': 'template.methylation.meta.json',
 }
@@ -64,10 +68,14 @@ METADATA_VARIABLES = {
     'star_counts': {'gdc_type': 'STAR - Counts'},
     'star_fpkm' : {'gdc_type' : 'STAR - FPKM', 'unit': 'fpkm'},
     'star_fpkm-uq' : {'gdc_type' : 'STAR - FPKM-UQ', 'unit' : 'fpkm-uq'},
+    'star_tpm' : {'gdc_type' : 'STAR - TPM', 'unit' : 'tpm'}, 
     'mirna': {'gdc_type': 'miRNA Expression Quantification'},
     'mirna_isoform': {'gdc_type': 'Isoform Expression Quantification'},
-    'cnv': {'gdc_type': 'Copy Number Segment'},
+    'segment_cnv_dnacopy': {'gdc_type': 'Copy Number Segment'},
+    'segment_cnv_ascat-ngs': {'gdc_type': 'Copy Number Segment'},
+    'segment_cnv_ascat2': {'gdc_type': 'Copy Number Segment'},
     'masked_cnv': {'gdc_type': 'Masked Copy Number Segment'},
+    'somaticsniper_snv': {'gdc_type': 'Aliquot Ensemble Somatic Variant Merging and Masking'},
     'muse_snv': {'gdc_type': 'MuSE Variant Aggregation and Masking'},
     'mutect2_snv': {'gdc_type': 'MuTect2 Variant Aggregation and Masking'},
     'somaticsniper_snv': {
@@ -83,8 +91,11 @@ valid_dtype = [
     'star_counts',
     'star_fpkm',
     'star_fpkm-uq',
+    'star_tpm',
     'mirna',
-    'cnv',
+    'segment_cnv_dnacopy',
+    'segment_cnv_ascat-ngs', 
+    'segment_cnv_ascat2',
     'masked_cnv',
     'muse_snv',
     'mutect2_snv',
@@ -93,9 +104,41 @@ valid_dtype = [
     'clinical',
     'survival',
     'gistic',
+    'gene-level_ascat-ngs',
     'methylation27',
     'methylation450',
 ]
+
+GDC_SAMPLE_TYPES = {
+    'Tumor': (
+        '01',
+        '02',
+        '03',
+        '04',
+        '05',
+        '06',
+        '07',
+        '08',
+        '09',
+        '15',
+        '16',
+        '20',
+        '31',
+        '40',
+        '50',
+        '60',
+        '61',
+        '85',
+        '86',
+        '99'
+    ),
+    'Normal': (
+        '10',
+        '11',
+        '12',
+        '14'
+    )
+}
 
 LIST_FIELDS = {
     "FISH_test_component",

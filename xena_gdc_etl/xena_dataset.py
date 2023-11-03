@@ -35,6 +35,7 @@ from .constants import (
     METADATA_TEMPLATE,
     METADATA_VARIABLES,
     GDC_RELEASE_URL,
+    GDC_SAMPLE_TYPES,
     LIST_FIELDS,
 )
 
@@ -68,7 +69,7 @@ def read_by_ext(filename, mode='r'):
         return open(filename, mode)
 
 
-def merge_cnv(filelist):
+def merge_cnv(filelist): 
     """Transform GDC's CNV data into Xena data matrix.
 
     Args:
@@ -83,17 +84,26 @@ def merge_cnv(filelist):
     total = len(filelist)
     count = 0
     for path in filelist:
-        xena_matrix = xena_matrix.append(
-            pd.read_csv(path, sep="\t", header=0, usecols=[1, 2, 3, 5]).assign(
+        if '/cnv_dnacopy/' in path: # Currently does not work
+            xena_matrix = xena_matrix.append( 
+                pd.read_csv(path, sep="\t", header=0, usecols=[1, 2, 3, 5]).assign(
                 sample=os.path.basename(path).split('.', 1)[0]
+                )
             )
-        )
-        count += 1
-        print('\rProcessed {}/{} file...'.format(count, total), end='')
-        sys.stdout.flush()
+            count += 1
+            print('\rProcessed {}/{} file...'.format(count, total), end='')
+            sys.stdout.flush()
+        else:
+            xena_matrix = pd.concat([xena_matrix, pd.read_csv(path, sep="\t", header=0, usecols=[1, 2, 3, 4]).assign(
+                    sample=os.path.basename(path).split('.', 1)[0]
+                )
+            ])
+            count += 1
+            print('\rProcessed {}/{} file...'.format(count, total), end='')
+            sys.stdout.flush()
     print('\rAll {} files have been processed. '.format(total))
     return xena_matrix.rename(
-        columns={'Chromosome': 'Chrom', 'Segment_Mean': 'value'}
+        columns={'Chromosome': 'Chrom', 'Copy_Number': 'value', 'Segment_Mean': 'value'}
     ).set_index('sample')
 
 
@@ -113,8 +123,8 @@ def snv_maf_matrix(filelist):
         pandas.core.frame.DataFrame: Transformed pandas DataFrame.
     """
 
-    assert len(filelist) == 1
-    print('\rProcessing 1/1 file...', end='')
+    # assert len(filelist) == 1
+    # print('\rProcessing 1/1 file...', end='')
     df = pd.read_csv(
         filelist[0],
         sep="\t",
@@ -156,10 +166,12 @@ def merge_sample_cols(
     header='infer',
     index_col=0,
     usecols=[0, 3],
-    skiprows=[0],
+    remove=False,
+    skiprows=None, # STAR_Counts file has a row labeling the data
     comment=None,
     index_name='id',
     get_sid=lambda f: os.path.basename(f).split('.', 1)[0],
+    fillna=False,
     log2TF=True,
 ):
     """Merge and process a list of raw data files to make a Xena data matrix.
@@ -226,6 +238,10 @@ def merge_sample_cols(
         sys.stdout.flush()
     print('\rAll {} files have been processed. '.format(total))
     xena_matrix.index.name = index_name
+    if remove: 
+        xena_matrix.drop(['N_unmapped', 'N_multimapping', 'N_noFeature', 'N_ambiguous'], inplace=True)
+    if fillna: 
+        xena_matrix.fillna('NA', inplace=True)
     if log2TF:
         return np.log2(xena_matrix + 1)
     else:
@@ -261,6 +277,29 @@ def handle_gistic(filelist):
     df = df.rename(columns=mapping)
     return df
 
+def get_slides(in_filter):
+    """Find samples with only slides and no analyte data.
+
+    Args:
+        in_filter (dict): A dict of query conditions which will be
+        used to perform the query. Each (key, value) pair represents for
+        one condition. It will be passed to ``simple_and_filter`` for
+        making a query filter compatible with GDC API. Please check
+        ``simple_and_filter`` function for details.
+
+    Returns: 
+        list: Samples to be dropped.
+    """
+    drop_samples = []
+    cases = gdc.search('cases', 
+                        in_filter=in_filter, 
+                        fields=["samples.submitter_id", "samples.portions.analytes.analyte_id"],
+                        typ='json')
+    for case in cases:
+        for sample in case['samples']:
+            if 'portions' not in sample:
+                drop_samples.append(sample['submitter_id'])
+    return drop_samples
 
 class XenaDataset(object):
     r"""XenaDataset represents for one Xena matrix in a Xena cohort.
@@ -393,7 +432,15 @@ class XenaDataset(object):
         try:
             return self._raw_data_dir
         except AttributeError:
-            self._raw_data_dir = os.path.join(
+            if self.xena_dtype.startswith('star'):
+                self._raw_data_dir = os.path.join(
+                    self.root_dir,
+                    '_'.join(self.projects),
+                    'Raw_Data',
+                    'STAR',
+                )
+            else:
+                self._raw_data_dir = os.path.join(
                 self.root_dir,
                 '_'.join(self.projects),
                 'Raw_Data',
@@ -535,28 +582,34 @@ class XenaDataset(object):
         """
 
         print('Starts to download...', end='')
-        total = len(self.download_map)
-        count = 0
         download_list = []
-        for url, path in self.download_map.items():
-            count += 1
-            response = requests_retry_session().get(url, stream=True)
-            if response.ok:
-                path = os.path.abspath(path)
-                status = '\r[{:d}/{:d}] Downloading to "{}" ...'
-                print(status.format(count, total, path), end='')
-                sys.stdout.flush()
-                mkdir_p(os.path.dirname(path))
-                with open(path, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size):
-                        f.write(chunk)
-                download_list.append(path)
+        if self.xena_dtype != 'clinical':
+            total = len(self.download_map)
+            paths_list = list(self.download_map.values())
+            dir_name = os.path.dirname(paths_list[0])
+            if os.path.exists(dir_name) and len(os.listdir(dir_name)) == total:
+                download_list = paths_list
             else:
-                raise IOError(
-                    '\nFail to download file {}. Response {}'.format(
-                        url, response.status_code
-                    )
-                )
+                count = 0
+                for url, path in self.download_map.items():
+                    count += 1
+                    response = requests_retry_session().get(url, stream=True)
+                    if response.ok:
+                        path = os.path.abspath(path)
+                        status = '\r[{:d}/{:d}] Downloading to "{}" ...'
+                        print(status.format(count, total, path), end='')
+                        sys.stdout.flush()
+                        mkdir_p(os.path.dirname(path))
+                        with open(path, 'wb') as f:
+                            for chunk in response.iter_content(chunk_size):
+                                f.write(chunk)
+                        download_list.append(path)
+                    else:
+                        raise IOError(
+                            '\nFail to download file {}. Response {}'.format(
+                                url, response.status_code
+                            )
+                        )
         print('')
         self.raw_data_list = download_list
         print(
@@ -719,6 +772,9 @@ class GDCOmicset(XenaDataset):
         'star_fpkm-uq': {
             'analysis.workflow_type': 'STAR - Counts',
         },
+        'star_tpm': {
+            'analysis.workflow_type': 'STAR - Counts',
+        },
         'mirna': {
             'data_type': 'miRNA Expression Quantification',
             'analysis.workflow_type': 'BCGSC miRNA Profiling',
@@ -727,30 +783,17 @@ class GDCOmicset(XenaDataset):
             'data_type': 'Isoform Expression Quantification',
             'analysis.workflow_type': 'BCGSC miRNA Profiling',
         },
-        'cnv': {
+        'segment_cnv_dnacopy': {
             'data_type': 'Copy Number Segment',
-            'analysis.workflow_type': 'DNAcopy',
-            'cases.samples.sample_type_id': (
-                [
-                    '01',
-                    '02',
-                    '03',
-                    '04',
-                    '05',
-                    '06',
-                    '07',
-                    '08',
-                    '09',
-                    '15',
-                    '16',
-                    '20',
-                    '40',
-                    '50',
-                    '60',
-                    '61',
-                    '99',
-                ]
-            ),
+            'analysis.workflow_type': 'DNAcopy'
+        },
+        'segment_cnv_ascat-ngs': {
+            'data_type': 'Copy Number Segment',
+            'analysis.workflow_type': 'AscatNGS'
+        },
+        'segment_cnv_ascat2': {
+            'data_type': 'Copy Number Segment',
+            'analysis.workflow_type': 'Ascat2'
         },
         'masked_cnv': {
             'data_type': 'Masked Copy Number Segment',
@@ -777,6 +820,10 @@ class GDCOmicset(XenaDataset):
                 ]
             ),
         },
+        'somaticmutation_snv': {
+            'data_type': 'Masked Somatic Mutation',
+            'analysis.workflow_type': 'Aliquot Ensemble Somatic Variant Merging and Masking'
+        },
         'muse_snv': {
             'data_type': 'Masked Somatic Mutation',
             'analysis.workflow_type': 'MuSE Variant Aggregation and Masking',
@@ -800,6 +847,10 @@ class GDCOmicset(XenaDataset):
             'data_type': 'Gene Level Copy Number Scores',
             'analysis.workflow_type': 'GISTIC - Copy Number Score',
         },
+        'gene-level_ascat-ngs': {
+            'data_type': 'Gene Level Copy Number',
+            'analysis.workflow_type': 'AscatNGS',
+        },
         'methylation27': {
             'data_type': 'Methylation Beta Value',
             'platform': 'Illumina Human Methylation 27',
@@ -815,15 +866,20 @@ class GDCOmicset(XenaDataset):
         'star_counts': 'cases.samples.submitter_id',
         'star_fpkm': 'cases.samples.submitter_id',
         'star_fpkm-uq': 'cases.samples.submitter_id',
+        'star_tpm': 'cases.samples.submitter_id',
         'mirna': 'cases.samples.submitter_id',
         'mirna_isoform': 'cases.samples.submitter_id',
-        'cnv': 'cases.samples.submitter_id',
+        'segment_cnv_dnacopy': 'cases.samples.submitter_id',
+        'segment_cnv_ascat-ngs': 'cases.samples.submitter_id',
+        'segment_cnv_ascat2': 'cases.samples.submitter_id',
         'masked_cnv': 'cases.samples.submitter_id',
+        'somaticmutation_snv': 'cases.samples.submitter_id',
         'muse_snv': 'submitter_id',
         'mutect2_snv': 'submitter_id',
         'somaticsniper_snv': 'submitter_id',
         'varscan2_snv': 'submitter_id',
         'gistic': 'submitter_id',
+        'gene-level_ascat-ngs': 'cases.samples.submitter_id',
         'methylation27': 'cases.samples.submitter_id',
         'methylation450': 'cases.samples.submitter_id',
     }
@@ -842,26 +898,48 @@ class GDCOmicset(XenaDataset):
     _RAWS2MATRIX_FUNCS.update(dict.fromkeys(['cnv', 'masked_cnv'], merge_cnv))
     _RAWS2MATRIX_FUNCS.update(
         dict.fromkeys(
-            ['muse_snv', 'mutect2_snv', 'somaticsniper_snv', 'varscan2_snv'],
+            ['somaticmutation_snv', 'muse_snv', 'mutect2_snv', 'somaticsniper_snv', 'varscan2_snv'],
             snv_maf_matrix,
         )
     )
     _RAWS2MATRIX_FUNCS['gistic'] = handle_gistic
+    _RAWS2MATRIX_FUNCS['gene-level_ascat-ngs'] = functools.partial(
+        merge_sample_cols,
+        header = 0,
+        usecols=[0, 5],
+        index_name='Ensembl_ID',
+        fillna=True,
+        log2TF=False,
+    )
     _RAWS2MATRIX_FUNCS['star_counts'] = functools.partial(
         merge_sample_cols,
         header=0,
+        remove=True, 
+        skiprows=1, 
         index_name='Ensembl_ID',
     )
     _RAWS2MATRIX_FUNCS['star_fpkm'] = functools.partial(
         merge_sample_cols,
         header = 0,
         usecols=[0, 7],
+        remove=True,
+        skiprows=1, 
         index_name='Ensembl_ID',
     )
     _RAWS2MATRIX_FUNCS['star_fpkm-uq'] = functools.partial(
         merge_sample_cols,
         header = 0,
         usecols=[0, 8],
+        remove=True, 
+        skiprows=1,
+        index_name='Ensembl_ID',
+    )
+    _RAWS2MATRIX_FUNCS['star_tpm'] = functools.partial( 
+        merge_sample_cols,
+        header = 0,
+        usecols=[0, 6],
+        remove=True,
+        skiprows=1, 
         index_name='Ensembl_ID',
     )
     _RAWS2MATRIX_FUNCS.update(
@@ -955,12 +1033,19 @@ class GDCOmicset(XenaDataset):
             try:
                 print('Searching for raw data ...', end='')
                 file_df = gdc.search(
-                    'files', in_filter=self.gdc_filter, fields=fields
+                    'files', 
+                    in_filter=self.gdc_filter, 
+                    exclude_filter={'files.cases.samples.sample_type': ['FFPE Scrolls']}, 
+                    fields=fields
                 )
             except Exception:
                 file_dict = {}
             else:
                 file_df.set_index('file_id', drop=False, inplace=True)
+                if self.xena_dtype == 'segment_cnv_ascat-ngs' or self.xena_dtype == 'gene-level_ascat-ngs' or self.xena_dtype == 'somaticmutation_snv':
+                    samples_list = [str(id['submitter_id']) for samples in file_df['cases.samples'] for id in samples if id['submitter_id'].split('-')[4].startswith(GDC_SAMPLE_TYPES['Tumor'])]
+                    file_df[self.gdc_prefix] = samples_list
+                    file_df.drop('cases.samples', axis=1)
                 file_dict = (
                     file_df[self.gdc_prefix].astype(str)
                     + '.'
@@ -1239,6 +1324,7 @@ class GDCPhenoset(XenaDataset):
 
         message = 'Make Xena matrix for {} data of {}.'
         print(message.format(self.xena_dtype, self.projects))
+        drop_samples = get_slides({'project.project_id':self.projects})
         
         if self.xena_dtype == 'clinical':
             # Query GDC API for GDC harmonized phenotype info
@@ -1267,7 +1353,12 @@ class GDCPhenoset(XenaDataset):
                 xena_matrix = api_clin.dropna(axis=1, how='all').set_index(
                     'submitter_id.samples'
                 )
+                # Remove Blood Derived Normal and FFPE Scrolls sample
+                xena_matrix = xena_matrix[xena_matrix['sample_type.samples'].isin(
+                ['Blood Derived Normal', 'FFPE Scrolls']
+                ) == False]
         # Transformation done
+        xena_matrix.drop(drop_samples, axis=0, inplace=True) 
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
         xena_matrix.to_csv(self.matrix, sep='\t', encoding='utf-8')
@@ -1424,17 +1515,27 @@ class GDCSurvivalset(XenaDataset):
         case_samples = gdc.search(
             'cases',
             in_filter={'project.project_id': self.projects},
-            fields='submitter_sample_ids',
+            fields=['samples.submitter_id', 'samples.sample_type'],
             typ='json',
         )
-        case_samples = [c for c in case_samples if 'submitter_sample_ids' in c]
-        samples_df = pd.json_normalize(
-            case_samples, 'submitter_sample_ids', 'id'
-        ).rename(columns={0: 'sample'})
-        sample_mask = samples_df['sample'].map(
+        if self.projects[0].startswith('TCGA-'):
+            # case_samples = [c for c in case_samples if 'submitter_sample_ids' in c] # ?
+            samples_df = pd.json_normalize(
+                case_samples, 'samples', 'id'
+            ).rename(columns={'submitter_id': 'sample'})
+            sample_mask = samples_df['sample'].map(
             lambda s: s[-3:-1] not in ['10']
-        )
-        samples_df = samples_df[sample_mask]
+            )
+            samples_df = samples_df[sample_mask]
+            print('Dropping TCGA-**-****-**Z samples ...')
+        else:
+            samples_df = pd.json_normalize(
+                case_samples, 'samples', 'id'
+            )
+            # Remove Blood Derived Normal and FFPE Scrolls sample
+            samples_df = samples_df[samples_df['sample_type'].isin(
+                ['Blood Derived Normal', 'FFPE Scrolls']
+            ) == False].rename(columns={'submitter_id': 'sample'})
         # Make sample indexed survival matrix
         df = (
             pd.merge(survival_df, samples_df, how='inner', on='id')
