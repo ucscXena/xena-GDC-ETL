@@ -5,7 +5,7 @@
  "label":"{{ gdc_type }}",
  "colNormalization":true,
  "wrangling_procedure":
- "RPM Data from the same sample but from different vials/portions/analytes/aliquotes is averaged; data from different samples is combined into genomicMatrix; all data is then log2(x+1) transformed.",
+ "RPM Data from the same sample but from different vials/portions/analytes/aliquotes is averaged; all data is then log2(x+1) transformed.",
  "PLATFORM":"Illumina",
  "type":"genomicMatrix",
  "wrangler":"Xena GDC ETL script",

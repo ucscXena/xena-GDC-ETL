@@ -1,0 +1,10 @@
+{
+"type":"probeMap",
+"version":"2023-08-07",
+"assembly":"hg38",
+"xdb":"genecode Release 36 (GRCh38.p13)",
+"url":"https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_36/gencode.v36.annotation.gtf.gz",
+"label":"Gene: Ensembl human genes (hg38) e.g. ENSG00000223972.5",
+"userLevel":"basic",
+"idType":"gene"
+}
