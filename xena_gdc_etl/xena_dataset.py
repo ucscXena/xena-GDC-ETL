@@ -107,7 +107,13 @@ def merge_cnv(filelist):
     ).set_index('sample')
 
 
-def snv_maf_matrix(filelist):
+def snv_maf_matrix(
+        filelist,
+        compression='gzip',
+        sep='\t',
+        comment='#',
+        get_sid=lambda f: os.path.basename(f).split('.', 1)[0]
+    ):
     """Transform GDC's MAF data into Xena data matrix.
 
     A new column of DNA variant allele frequencies named "dna_vaf" will
@@ -122,26 +128,34 @@ def snv_maf_matrix(filelist):
     Returns:
         pandas.core.frame.DataFrame: Transformed pandas DataFrame.
     """
-
-    # assert len(filelist) == 1
-    # print('\rProcessing 1/1 file...', end='')
-    df = pd.read_csv(
-        filelist[0],
-        sep="\t",
-        header=0,
-        comment='#',
-        usecols=[12, 36, 4, 5, 6, 39, 41, 51, 0, 10, 15, 110],
-    )
+    sample_dict = {}
+    for path in filelist:
+        sample_id = get_sid(path)  # os.path.basename(path).split('.', 1)[0]
+        if sample_id not in sample_dict:
+            sample_dict[sample_id] = []
+        sample_dict[sample_id].append(path)
+    xena_matrix = pd.DataFrame()
+    total = len(filelist)
+    count = 0
+    for sample_id in sample_dict:
+        df = pd.read_csv(
+            sample_dict[sample_id][0],
+            compression=compression,
+            sep=sep,
+            comment=comment,
+            usecols=[0, 4, 5, 6, 10, 12, 15, 36, 39, 41, 51, 139]
+        )
+        df['sample'] = sample_id
+        xena_matrix = pd.concat([xena_matrix, df])
+        count += len(sample_dict[sample_id])
+        print('\rProcessed {}/{} file...'.format(count, total), end='')
+        sys.stdout.flush()
     print('\rCalculating "dna_vaf" ...', end='')
-    df['dna_vaf'] = df['t_alt_count'] / df['t_depth']
-    print('\rTrim "Tumor_Sample_Barcode" into Xena sample ID ...', end='')
-    df['Tumor_Sample_Barcode'] = df['Tumor_Sample_Barcode'].apply(
-        lambda x: '-'.join(x.split('-', 4)[0:4])
-    )
+    xena_matrix['dna_vaf'] = xena_matrix['t_alt_count'] / xena_matrix['t_depth']
     print('\rRe-organizing matrix ...', end='')
-    df = (
-        df.drop(['t_alt_count', 't_depth'], axis=1)
-        .set_index('Tumor_Sample_Barcode')
+    xena_matrix = (
+        xena_matrix.drop(['t_alt_count', 't_depth'], axis=1)
+        .set_index('sample')
         .rename(
             columns={
                 'Hugo_Symbol': 'gene',
@@ -150,15 +164,13 @@ def snv_maf_matrix(filelist):
                 'End_Position': 'end',
                 'Reference_Allele': 'ref',
                 'Tumor_Seq_Allele2': 'alt',
-                'Tumor_Sample_Barcode': 'sampleid',
                 'HGVSp_Short': 'Amino_Acid_Change',
                 'Consequence': 'effect',
-                'FILTER': 'filter',
             }
         )
     )
-    df.index.name = 'Sample_ID'
-    return df
+
+    return xena_matrix
 
 
 def merge_sample_cols(
@@ -183,13 +195,6 @@ def merge_sample_cols(
 
     Args:
         filelist (list of path): The list of input raw data.
-        header:
-        index_col:
-        usecols:
-        comment:
-        index_name:
-        get_sid:
-        log2TF:
 
     Returns:
         pandas.core.frame.DataFrame: Ready to load Xena matrix.
