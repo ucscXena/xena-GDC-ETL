@@ -900,7 +900,7 @@ class GDCOmicset(XenaDataset):
         usecols=[1, 3],
         index_name='isoform_coords',
     )
-    _RAWS2MATRIX_FUNCS.update(dict.fromkeys(['cnv', 'masked_cnv'], merge_cnv))
+    _RAWS2MATRIX_FUNCS.update(dict.fromkeys(['segment_cnv_ascat-ngs', 'masked_cnv'], merge_cnv))
     _RAWS2MATRIX_FUNCS.update(
         dict.fromkeys(
             ['somaticmutation_snv', 'muse_snv', 'mutect2_snv', 'somaticsniper_snv', 'varscan2_snv'],
