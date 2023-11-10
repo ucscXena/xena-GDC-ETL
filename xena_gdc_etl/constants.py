@@ -60,6 +60,7 @@ METADATA_TEMPLATE = {
     'survival': 'template.survival.meta.json',
     'gistic': 'template.gistic.meta.json',
     'gene-level_ascat-ngs': 'template.ascat-ngs.meta.json',
+    'methylation_epic': 'template.methylation.meta.json',
     'methylation27': 'template.methylation.meta.json',
     'methylation450': 'template.methylation.meta.json',
 }
@@ -107,6 +108,7 @@ valid_dtype = [
     'survival',
     'gistic',
     'gene-level_ascat-ngs',
+    'methylation_epic',
     'methylation27',
     'methylation450',
 ]

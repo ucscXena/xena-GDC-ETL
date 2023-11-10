@@ -856,6 +856,11 @@ class GDCOmicset(XenaDataset):
             'data_type': 'Gene Level Copy Number',
             'analysis.workflow_type': 'AscatNGS',
         },
+        'methylation_epic': { 
+            'data_type': 'Methylation Beta Value',
+            'analysis.workflow_type': 'SeSAMe Methylation Beta Estimation',
+            'platform': 'illumina methylation epic'
+        },
         'methylation27': {
             'data_type': 'Methylation Beta Value',
             'platform': 'Illumina Human Methylation 27',
@@ -885,6 +890,7 @@ class GDCOmicset(XenaDataset):
         'varscan2_snv': 'submitter_id',
         'gistic': 'submitter_id',
         'gene-level_ascat-ngs': 'cases.samples.submitter_id',
+        'methylation_epic': 'cases.samples.submitter_id',
         'methylation27': 'cases.samples.submitter_id',
         'methylation450': 'cases.samples.submitter_id',
     }
@@ -949,10 +955,11 @@ class GDCOmicset(XenaDataset):
     )
     _RAWS2MATRIX_FUNCS.update(
         dict.fromkeys(
-            ['methylation27', 'methylation450'],
+            ['methylation_epic', 'methylation27', 'methylation450'],
             functools.partial(
                 merge_sample_cols,
                 header=0,
+                usecols=[0, 1],
                 log2TF=False,
                 index_name='Composite Element REF',
             ),
