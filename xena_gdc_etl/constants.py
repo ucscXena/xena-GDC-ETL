@@ -77,7 +77,7 @@ METADATA_VARIABLES = {
     'segment_cnv_ascat-ngs': {'gdc_type': 'Copy Number Segment'},
     'segment_cnv_ascat2': {'gdc_type': 'Copy Number Segment'},
     'masked_cnv': {'gdc_type': 'Masked Copy Number Segment'},
-    'somaticmutation_snv': {'gdc_type': 'Aliquot Ensemble Somatic Variant Merging and Masking'},
+    'somaticmutation_snv': {'gdc_type': 'Ensemble Somatic Variant'},
     'muse_snv': {'gdc_type': 'MuSE Variant Aggregation and Masking'},
     'mutect2_snv': {'gdc_type': 'MuTect2 Variant Aggregation and Masking'},
     'somaticsniper_snv': {

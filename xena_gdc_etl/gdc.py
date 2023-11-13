@@ -508,33 +508,44 @@ def get_samples_clinical(projects=None):
             diagnoses.setdefault('treatments', [])
             if type(diagnoses['treatments']) == dict:
                 diagnoses['treatments'] = [diagnoses['treatments']]
-    treatments_df = pd.json_normalize(reduced_no_samples_json, record_path=['diagnoses', 'treatments'], record_prefix='diagnoses.treatments.', meta=['id'])
-    treatments_df = treatments_df.dropna(axis=1, how='all').fillna('').astype(str).groupby('id').agg(list) 
-    diagnoses_df = pd.json_normalize(reduced_no_samples_json, record_path=['diagnoses'], record_prefix='diagnoses.', meta=['id'])
-    diagnoses_df = diagnoses_df.dropna(axis=1, how='all').fillna('').astype(str).groupby('id').agg(list)
-    treatments_df = format_multiple_data(treatments_df)
-    diagnoses_df = format_multiple_data(diagnoses_df)
-    age_at_earliest_diagnosis = []
-    for ages in diagnoses_df['diagnoses.age_at_diagnosis'].values.tolist():
-        if type(ages) == str: 
-            try:
-                age_at_earliest_diagnosis.append(float(ages))
-            except:
-                age_at_earliest_diagnosis.append('')
-        else:
-            new_ages = []
-            for age in ages:
+    # Some cohorts do not have any diagnosis or treatment data
+    diagnoses_df = None
+    treatments_df = None
+    try: 
+        diagnoses_df = pd.json_normalize(reduced_no_samples_json, record_path=['diagnoses'], record_prefix='diagnoses.', meta=['id'])
+        diagnoses_df = diagnoses_df.dropna(axis=1, how='all').fillna('').astype(str).groupby('id').agg(list)
+        diagnoses_df = format_multiple_data(diagnoses_df)
+        age_at_earliest_diagnosis = []
+        for ages in diagnoses_df['diagnoses.age_at_diagnosis'].values.tolist():
+            if type(ages) == str: 
                 try:
-                    new_ages.append(float(age))
+                    age_at_earliest_diagnosis.append(float(ages))
                 except:
-                    new_ages.append(float('inf'))
-            age_at_earliest_diagnosis.append(min(new_ages))
-    diagnoses_df['xena_derived.diagnoses.age_at_earliest_diagnosis'] = age_at_earliest_diagnosis
+                    age_at_earliest_diagnosis.append('')
+            else:
+                new_ages = []
+                for age in ages:
+                    try:
+                        new_ages.append(float(age))
+                    except:
+                        new_ages.append(float('inf'))
+                age_at_earliest_diagnosis.append(min(new_ages))
+        diagnoses_df['xena_derived.diagnoses.age_at_earliest_diagnosis'] = age_at_earliest_diagnosis
+    except KeyError:
+        pass
+    try:
+        treatments_df = pd.json_normalize(reduced_no_samples_json, record_path=['diagnoses', 'treatments'], record_prefix='diagnoses.treatments.', meta=['id'])
+        treatments_df = treatments_df.dropna(axis=1, how='all').fillna('').astype(str).groupby('id').agg(list) 
+        treatments_df = format_multiple_data(treatments_df)
+    except KeyError: 
+        pass
     for case in reduced_no_samples_json:
         del case['diagnoses']
     cases_df = pd.json_normalize(reduced_no_samples_json) 
-    cases_df = pd.merge(cases_df, treatments_df, how='left', on='id')
-    cases_df = pd.merge(cases_df, diagnoses_df, how='left', on='id')
+    if diagnoses_df is not None:
+        cases_df = pd.merge(cases_df, diagnoses_df, how='left', on='id')
+    if treatments_df is not None:
+        cases_df = pd.merge(cases_df, treatments_df, how='left', on='id')
     # In the list of reduced json, "samples" fields for each case are not
     # consistently ``list`` (if there is only 1 sample for the case, it will
     # be reduced into "naked" ``dict``). Therefore, it cannot be normalized
