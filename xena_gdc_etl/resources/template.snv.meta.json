@@ -4,8 +4,7 @@
  "dataSubType":"somatic mutation (SNPs and small INDELs)",
  "dataProducer":"Genomic Data Commons",
  "label":"{{ gdc_type }}",
- "wrangling_procedure":
- \"Hugo_Symbol\", \"Chromosome\", \"Start_Position\", \"End_Position\", \"Reference_Allele\", \"Tumor_Seq_Allele2\", \"HGVSp_Short\" and \"Consequence\" data are renamed accordingly and presented; \"dna_vaf\" data is added and is calculated by \"t_alt_count\"/\"t_depth\".",
+ "wrangling_procedure": "Hugo_Symbol, Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele2, HGVSp_Short and Consequence data are renamed accordingly and presented; dna_vaf data is added and is calculated by t_alt_count / t_depth.",
  "assembly":"hg38",
  "PLATFORM":"Illumina",
  "type":"mutationVector",
