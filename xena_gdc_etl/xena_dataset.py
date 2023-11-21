@@ -1041,7 +1041,7 @@ class GDCOmicset(XenaDataset):
             assert self._download_map
             return self._download_map
         except (AttributeError, AssertionError):
-            fields = ['file_id', 'file_name', self.gdc_prefix]
+            fields = ['file_id', 'file_name', self.gdc_prefix, 'cases.samples.sample_type_id']
             try:
                 print('Searching for raw data ...', end='')
                 file_df = gdc.search(
@@ -1055,7 +1055,7 @@ class GDCOmicset(XenaDataset):
             else:
                 file_df.set_index('file_id', drop=False, inplace=True)
                 if self.xena_dtype == 'segment_cnv_ascat-ngs' or self.xena_dtype == 'gene-level_ascat-ngs' or self.xena_dtype == 'somaticmutation_snv':
-                    samples_list = [str(id['submitter_id']) for samples in file_df['cases.samples'] for id in samples if id['submitter_id'].split('-')[4].startswith(GDC_SAMPLE_TYPES['Tumor'])]
+                    samples_list = [sample['submitter_id'] for id in file_df['cases.samples'] for sample in id if 'sample_type_id' in sample if sample['sample_type_id'] in GDC_SAMPLE_TYPES['Tumor']] # Slide samples do not have a Sample Type Id
                     file_df[self.gdc_prefix] = samples_list
                     file_df.drop('cases.samples', axis=1)
                 file_dict = (
@@ -1337,7 +1337,6 @@ class GDCPhenoset(XenaDataset):
         message = 'Make Xena matrix for {} data of {}.'
         print(message.format(self.xena_dtype, self.projects))
         drop_samples = get_slides({'project.project_id':self.projects})
-        
         if self.xena_dtype == 'clinical':
             # Query GDC API for GDC harmonized phenotype info
             api_clin = gdc.get_samples_clinical(self.projects)
@@ -1359,8 +1358,8 @@ class GDCPhenoset(XenaDataset):
                 )
                 # Remove all empty columns
                 api_clin = api_clin.dropna(axis=1, how='all')
-                print('Dropping TCGA-**-****-**Z samples ...')
-                xena_matrix = api_clin[~api_clin.index.str.endswith('Z')]    
+                # print('Dropping TCGA-**-****-**Z samples ...')
+                # xena_matrix = api_clin[~api_clin.index.str.endswith('Z')]    
             else:
                 xena_matrix = api_clin.dropna(axis=1, how='all').set_index(
                     'submitter_id.samples'
@@ -1369,8 +1368,9 @@ class GDCPhenoset(XenaDataset):
                 xena_matrix = xena_matrix[xena_matrix['sample_type.samples'].isin(
                 ['Blood Derived Normal', 'FFPE Scrolls']
                 ) == False]
-        # Transformation done
-        xena_matrix.drop(drop_samples, axis=0, inplace=True) 
+        print('Dropping slide samples with no analyte data ...')
+        xena_matrix.drop(drop_samples, axis=0, inplace=True)
+        # Transformation done 
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
         xena_matrix.to_csv(self.matrix, sep='\t', encoding='utf-8')
@@ -1518,7 +1518,7 @@ class GDCSurvivalset(XenaDataset):
         ).rename(
             columns={
                 'censored': 'OS',
-                'time': 'OS.time',
+                'time': 'OS.time',  
                 'submitter_id': '_PATIENT',
             }
         )
@@ -1530,6 +1530,7 @@ class GDCSurvivalset(XenaDataset):
             fields=['samples.submitter_id', 'samples.sample_type'],
             typ='json',
         )
+        drop_samples = get_slides({'project.project_id':self.projects})
         if self.projects[0].startswith('TCGA-'):
             # case_samples = [c for c in case_samples if 'submitter_sample_ids' in c] # ?
             samples_df = pd.json_normalize(
@@ -1539,7 +1540,7 @@ class GDCSurvivalset(XenaDataset):
             lambda s: s[-3:-1] not in ['10']
             )
             samples_df = samples_df[sample_mask]
-            print('Dropping TCGA-**-****-**Z samples ...')
+            # print('Dropping TCGA-**-****-**Z samples ...')
         else:
             samples_df = pd.json_normalize(
                 case_samples, 'samples', 'id'
@@ -1550,12 +1551,13 @@ class GDCSurvivalset(XenaDataset):
             ) == False].rename(columns={'submitter_id': 'sample'})
         # Make sample indexed survival matrix
         df = (
-            pd.merge(survival_df, samples_df, how='inner', on='id')
-            .drop('id', axis=1)
+            pd.merge(survival_df, samples_df, how='inner', on='id') 
+            .drop(['id', 'sample_type'], axis=1)
             .set_index('sample')
         )
-        print('Dropping TCGA-**-****-**Z samples ...')
-        df = df[~df.index.str.endswith('Z')]
+        print('Dropping slide samples with no analyte data ...')
+        df.drop(drop_samples, axis=0, inplace=True, errors='ignore')
+        # df = df[~df.index.str.endswith('Z')]
         mkdir_p(os.path.dirname(self.matrix))
         df.to_csv(self.matrix, sep='\t')
         print('\rXena matrix is saved at {}.'.format(self.matrix))
