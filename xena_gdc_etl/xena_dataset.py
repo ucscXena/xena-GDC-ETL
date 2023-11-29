@@ -1369,7 +1369,7 @@ class GDCPhenoset(XenaDataset):
                 ['Blood Derived Normal', 'FFPE Scrolls']
                 ) == False]
         print('Dropping slide samples with no analyte data ...')
-        xena_matrix.drop(drop_samples, axis=0, inplace=True)
+        xena_matrix.drop(drop_samples, axis=0, inplace=True, errors='ignore')
         # Transformation done 
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
