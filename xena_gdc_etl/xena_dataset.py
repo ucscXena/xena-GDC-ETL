@@ -241,36 +241,6 @@ def merge_sample_cols(
         return xena_matrix
 
 
-def handle_gistic(filelist):
-    """Handles GISTIC Data type.
-    Args:
-        filelist (list of path): The list of input raw data.
-    Returns:
-        pandas.core.frame.DataFrame: Ready to load Xena matrix.
-    """
-
-    assert len(filelist) == 1
-    print('\rProcessing file {}'.format(filelist[0]), end='')
-    df = pd.read_csv(
-        filelist[0],
-        sep="\t",
-        header=0,
-        comment='#',
-        index_col=0,
-    )
-    df = df.drop(["Gene ID", "Cytoband"], axis=1)
-    columns = list(df)
-    mapping = gdc.map_two_fields(
-        endpoint="cases",
-        input_field="samples.portions.analytes.aliquots.aliquot_id",
-        output_field="samples.submitter_id",
-        input_values=columns,
-    )
-    mapping = reduce_json_array(mapping)
-    df = df.rename(columns=mapping)
-    return df
-
-
 def get_slides(in_filter):
     """Find samples with only slides and no analyte data.
 
@@ -289,7 +259,8 @@ def get_slides(in_filter):
     cases = gdc.search('cases', 
                         in_filter=in_filter, 
                         fields=["samples.submitter_id", "samples.portions.analytes.analyte_id"],
-                        typ='json')
+                        typ='json',
+                    )
     for case in cases:
         for sample in case['samples']:
             if 'portions' not in sample:
@@ -1061,6 +1032,7 @@ class GDCOmicset(XenaDataset):
                         for name, uuid in file_dict.items()
                     }
                 else:
+                    file_df.set_index('id', inplace=True)
                     file_dict = (
                         file_df[self.gdc_prefix].astype(str)
                         + '.'
