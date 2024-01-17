@@ -161,6 +161,7 @@ def format_multiple_data(df):
     Returns: 
         pandas.core.frame.DataFrame: Transformed pandas DataFrame.
     """
+    
     df.drop('diagnoses.treatments', axis=1, inplace=True, errors='ignore')
 
     for column in df.columns:
