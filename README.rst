@@ -344,13 +344,13 @@ GDC ETL settings
   +-----------------------+--------------------+-----------------------------------+------------------------------------------------------+--------------------------+------------------------------------------------------+
   | gene_level_ascat-ngs  | data               | Gene Level Copy Number            | AscatNGS                                             | 1/Sample vial            | cases.samples.submitter_id                           |
   +-----------------------+--------------------+-----------------------------------+------------------------------------------------------+--------------------------+------------------------------------------------------+
-  | somaticmutation_snv   | data               | Masked Somatic Mutation           | Aliquot Ensemble Somatic Variant Merging and Masking | 1/Project                | cases.samples.submitter_id                           |
+  | somaticmutation_snv   | data               | Masked Somatic Mutation           | Aliquot Ensemble Somatic Variant Merging and Masking | 1/Sample vial            | cases.samples.submitter_id                           |
   +-----------------------+--------------------+-----------------------------------+------------------------------------------------------+--------------------------+------------------------------------------------------+
-  | methylation_epic      | data               | Methylation Beta Value            | SeSAMe Methylation Beta Estimation                   | 1/Project                | cases.samples.submitter_id                           |
+  | methylation_epic      | data               | Methylation Beta Value            | SeSAMe Methylation Beta Estimation                   | 1/Sample vial            | cases.samples.submitter_id                           |
   +-----------------------+--------------------+-----------------------------------+------------------------------------------------------+--------------------------+------------------------------------------------------+
-  | methylation27         | data               | Methylation Beta Value            | SeSAMe Methylation Beta Estimation                   | 1/Project                | cases.samples.submitter_id                           |
+  | methylation27         | data               | Methylation Beta Value            | SeSAMe Methylation Beta Estimation                   | 1/Sample vial            | cases.samples.submitter_id                           |
   +-----------------------+--------------------+-----------------------------------+------------------------------------------------------+--------------------------+------------------------------------------------------+
-  | methylation_450       | data               | Methylation Beta Value            | SeSAMe Methylation Beta Estimation                   | 1/Project                | cases.samples.submitter_id                           |
+  | methylation_450       | data               | Methylation Beta Value            | SeSAMe Methylation Beta Estimation                   | 1/Sample vial            | cases.samples.submitter_id                           |
   +-----------------------+--------------------+-----------------------------------+------------------------------------------------------+--------------------------+------------------------------------------------------+
   | clinical              | data               | Clinical Supplement               | N/A                                                  | 0 or 1/Case              | cases.submitter_id                                   |
   +-----------------------+--------------------+-----------------------------------+------------------------------------------------------+--------------------------+------------------------------------------------------+
@@ -359,7 +359,7 @@ GDC ETL settings
   | survival              | analysis/survival  | N/A (filtered by just the "project.project_id")                                          | 1 Record/Case (Non-file) | N/A (filename will be "<projects>.GDC_survival.tsv") |
   +-----------------------+--------------------+-----------------------------------+------------------------------------------------------+--------------------------+------------------------------------------------------+
 
-  Previous data types, inclduding ``htseq_counts``, ``htseq_fpkm``, ``htseq_fpkm-uq``, ``muse_snv``, ``mutect2_snv``, ``somaticsniper_snv``, and ``varscan2_snv``, has been removed from valid data types since January 2024. This is due to the removal of the HTSeq pipeline and transition for the copy number variation pipeline from GISTIC to ASCAT. For more information, refer to  `GDC Release 32.0 <https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#removed-data-files-and-pipelines>`_.
+  Previous data types, including ``htseq_counts``, ``htseq_fpkm``, ``htseq_fpkm-uq``, ``muse_snv``, ``mutect2_snv``, ``somaticsniper_snv``, and ``varscan2_snv``, have been removed from valid data types since January 2024. This is due to the removal of the HTSeq pipeline and transition for the copy number variation pipeline from GISTIC to ASCAT. For more information, refer to  `GDC Release 32.0 <https://docs.gdc.cancer.gov/Data/Release_Notes/Data_Release_Notes/#removed-data-files-and-pipelines>`_.
   
 .. _GDC genomic transform settings:
 
