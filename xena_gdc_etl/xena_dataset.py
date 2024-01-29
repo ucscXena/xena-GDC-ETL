@@ -29,42 +29,14 @@ import numpy as np
 import pandas as pd
 
 from xena_gdc_etl import gdc
-from .utils import mkdir_p, requests_retry_session, reduce_json_array
+from .utils import mkdir_p, requests_retry_session
 from .constants import (
     GDC_XENA_COHORT,
     METADATA_TEMPLATE,
     METADATA_VARIABLES,
     GDC_RELEASE_URL,
+    multi_aliquot_dtype,
 )
-
-
-def read_by_ext(filename, mode='r'):
-    """Automatically decide how to open a file which might be compressed.
-
-    Leveraged codes from the "hook_compressed" function in python's fileinput
-    module.
-
-    Args:
-        filename (str): Must contain proper extension indicating the
-            compression condition.
-        mode (str, optional): To specify the mode in which the file is opened.
-            It will be passed to corresponding open function (``open``,
-            ``gzip.open`` or ``bz2.BZ2File``); please check them for details.
-            Defaults to 'r'.
-
-    Returns:
-        file object: A filehandle to be used with `with`.
-    """
-
-    ext = os.path.splitext(filename)[1]
-    if ext == '.gz':
-        import gzip
-        return gzip.open(filename, mode)
-    elif ext == '.bz2':
-        import bz2
-        return bz2.BZ2File(filename, mode)
-    else:
-        return open(filename, mode)
 
 
 def merge_cnv(filelist): 
@@ -552,55 +524,30 @@ class XenaDataset(object):
         download_list = []
         if self.xena_dtype != 'clinical':
             total = len(self.download_map)
-            if self.xena_dtype == 'segment_cnv_ascat-ngs' or self.xena_dtype == 'gene-level_ascat-ngs' or self.xena_dtype == 'somaticmutation_snv':
-                paths_list = list(self.download_map.keys())
-            else:
-                paths_list = list(self.download_map.values())
+            paths_list = list(self.download_map.keys())
             dir_name = os.path.dirname(paths_list[0])
             if os.path.exists(dir_name) and len(os.listdir(dir_name)) == total:
                 download_list = paths_list
-            elif self.xena_dtype == 'segment_cnv_ascat-ngs' or self.xena_dtype == 'gene-level_ascat-ngs' or self.xena_dtype == 'somaticmutation_snv':
-                count = 0
-                for path, url in self.download_map.items():
-                    count += 1
-                    response = requests_retry_session().get(url, stream=True)
-                    if response.ok:
-                        path = os.path.abspath(path)
-                        status = '\r[{:d}/{:d}] Downloading to "{}" ...'
-                        print(status.format(count, total, path), end='')
-                        sys.stdout.flush()
-                        mkdir_p(os.path.dirname(path))
-                        with open(path, 'wb') as f:
-                            for chunk in response.iter_content(chunk_size):
-                                f.write(chunk)
-                        download_list.append(path)
-                    else:
-                        raise IOError(
-                            '\nFail to download file {}. Response {}'.format(
-                                url, response.status_code
-                            )
+            count = 0
+            for path, url in self.download_map.items():
+                count += 1
+                response = requests_retry_session().get(url, stream=True)
+                if response.ok:
+                    path = os.path.abspath(path)
+                    status = '\r[{:d}/{:d}] Downloading to "{}" ...'
+                    print(status.format(count, total, path), end='')
+                    sys.stdout.flush()
+                    mkdir_p(os.path.dirname(path))
+                    with open(path, 'wb') as f:
+                        for chunk in response.iter_content(chunk_size):
+                            f.write(chunk)
+                    download_list.append(path)
+                else:
+                    raise IOError(
+                        '\nFail to download file {}. Response {}'.format(
+                            url, response.status_code
                         )
-            else:
-                count = 0
-                for url, path in self.download_map.items():
-                    count += 1
-                    response = requests_retry_session().get(url, stream=True)
-                    if response.ok:
-                        path = os.path.abspath(path)
-                        status = '\r[{:d}/{:d}] Downloading to "{}" ...'
-                        print(status.format(count, total, path), end='')
-                        sys.stdout.flush()
-                        mkdir_p(os.path.dirname(path))
-                        with open(path, 'wb') as f:
-                            for chunk in response.iter_content(chunk_size):
-                                f.write(chunk)
-                        download_list.append(path)
-                    else:
-                        raise IOError(
-                            '\nFail to download file {}. Response {}'.format(
-                                url, response.status_code
-                            )
-                        )
+                    )
         print('')
         self.raw_data_list = download_list
         print(
@@ -1000,7 +947,7 @@ class GDCOmicset(XenaDataset):
             except Exception:
                 file_dict = {}
             else:
-                if self.xena_dtype == 'segment_cnv_ascat-ngs' or self.xena_dtype == 'gene-level_ascat-ngs' or self.xena_dtype == 'somaticmutation_snv':
+                if self.xena_dtype in multi_aliquot_dtype and self.xena_dtype != 'mirna':
                     samples_list, duplicate = [], []
                     for index, id in file_df['cases.samples'].items():
                         tumor_types = [s['tissue_type'] for s in id ]
@@ -1022,30 +969,21 @@ class GDCOmicset(XenaDataset):
                         samples += submitter_ids 
                     file_df.drop('cases.samples', axis=1, inplace=True)
                     file_df[self.gdc_prefix] = samples
-                    file_df['name'] = file_df[self.gdc_prefix].astype(str) + '.' + file_df['file_id'].astype(str) + '.' + file_df['file_name'].apply(gdc.get_ext)
-                    file_df.set_index('name', inplace=True)
-                    file_dict = (
-                        file_df['file_id']
-                    ).to_dict()
-                    file_dict = {
-                    os.path.join(self.raw_data_dir, name): '{}/data/{}'.format(gdc.GDC_API_BASE, uuid)
-                        for name, uuid in file_dict.items()
-                    }
-                else:
-                    file_df.set_index('id', inplace=True)
-                    file_dict = (
-                        file_df[self.gdc_prefix].astype(str)
-                        + '.'
-                        + file_df['file_id'].astype(str)
-                        + '.'
-                        + file_df['file_name'].apply(gdc.get_ext)
-                    ).to_dict()
-                    file_dict = {
-                        '{}/data/{}'.format(gdc.GDC_API_BASE, uuid): os.path.join(
-                            self.raw_data_dir, name
-                        )
-                        for uuid, name in file_dict.items()
-                    }
+                elif self.xena_dtype == 'mirna':
+                    if 'cases.samples' in file_df.columns:
+                        file_df = file_df.explode('cases.samples').reset_index(drop=True)
+                        duplicated_df = pd.json_normalize(file_df['cases.samples'])
+                        duplicated_df.rename(columns={'submitter_id': 'cases.samples.submitter_id', 'tissue_type': 'cases.samples.tissue_type'}, inplace=True)
+                        file_df.fillna(duplicated_df, inplace=True)
+                file_df['name'] = file_df[self.gdc_prefix].astype(str) + '.' + file_df['file_id'].astype(str) + '.' + file_df['file_name'].apply(gdc.get_ext)
+                file_df.set_index('name', inplace=True)
+                file_dict = (
+                    file_df['file_id']
+                ).to_dict()
+                file_dict = {
+                os.path.join(self.raw_data_dir, name): '{}/data/{}'.format(gdc.GDC_API_BASE, uuid)
+                    for name, uuid in file_dict.items()
+                }
             if not file_dict:
                 msg = '\rNo {} data found for project {}.'
                 gdc_dtype = self._XENA_GDC_DTYPE[self.xena_dtype]
