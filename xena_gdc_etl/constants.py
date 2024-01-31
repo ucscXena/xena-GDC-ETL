@@ -97,4 +97,5 @@ multi_aliquot_dtype = [
     'segment_cnv_ascat-ngs',
     'gene-level_ascat-ngs',
     'somaticmutation_snv',
+    'methylation_epic',
 ]

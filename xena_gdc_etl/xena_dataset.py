@@ -947,7 +947,7 @@ class GDCOmicset(XenaDataset):
             except Exception:
                 file_dict = {}
             else:
-                if self.xena_dtype in multi_aliquot_dtype and self.xena_dtype != 'mirna':
+                if self.xena_dtype in multi_aliquot_dtype and self.xena_dtype != 'mirna' and self.xena_dtype != 'methylation_epic':
                     samples_list, duplicate = [], []
                     for index, id in file_df['cases.samples'].items():
                         tumor_types = [s['tissue_type'] for s in id ]
@@ -969,7 +969,7 @@ class GDCOmicset(XenaDataset):
                         samples += submitter_ids 
                     file_df.drop('cases.samples', axis=1, inplace=True)
                     file_df[self.gdc_prefix] = samples
-                elif self.xena_dtype == 'mirna':
+                elif self.xena_dtype == 'mirna' or self.xena_dtype == 'methylation_epic':
                     if 'cases.samples' in file_df.columns:
                         file_df = file_df.explode('cases.samples').reset_index(drop=True)
                         duplicated_df = pd.json_normalize(file_df['cases.samples'])
