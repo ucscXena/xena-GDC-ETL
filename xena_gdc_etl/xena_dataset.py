@@ -528,26 +528,27 @@ class XenaDataset(object):
             dir_name = os.path.dirname(paths_list[0])
             if os.path.exists(dir_name) and len(os.listdir(dir_name)) == total:
                 download_list = paths_list
-            count = 0
-            for path, url in self.download_map.items():
-                count += 1
-                response = requests_retry_session().get(url, stream=True)
-                if response.ok:
-                    path = os.path.abspath(path)
-                    status = '\r[{:d}/{:d}] Downloading to "{}" ...'
-                    print(status.format(count, total, path), end='')
-                    sys.stdout.flush()
-                    mkdir_p(os.path.dirname(path))
-                    with open(path, 'wb') as f:
-                        for chunk in response.iter_content(chunk_size):
-                            f.write(chunk)
-                    download_list.append(path)
-                else:
-                    raise IOError(
-                        '\nFail to download file {}. Response {}'.format(
-                            url, response.status_code
+            else:
+                count = 0
+                for path, url in self.download_map.items():
+                    count += 1
+                    response = requests_retry_session().get(url, stream=True)
+                    if response.ok:
+                        path = os.path.abspath(path)
+                        status = '\r[{:d}/{:d}] Downloading to "{}" ...'
+                        print(status.format(count, total, path), end='')
+                        sys.stdout.flush()
+                        mkdir_p(os.path.dirname(path))
+                        with open(path, 'wb') as f:
+                            for chunk in response.iter_content(chunk_size):
+                                f.write(chunk)
+                        download_list.append(path)
+                    else:
+                        raise IOError(
+                            '\nFail to download file {}. Response {}'.format(
+                                url, response.status_code
+                            )
                         )
-                    )
         print('')
         self.raw_data_list = download_list
         print(
