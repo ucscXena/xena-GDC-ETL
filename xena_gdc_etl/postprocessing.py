@@ -34,13 +34,6 @@ def create_parser():
         required=True,
         help='Path to CPTAC-3 data file. File will be read by pandas.read_csv with sep="\t".',
     )
-    parser.add_argument(
-        '-o',
-        '--output',
-        type=str,
-        required=True,
-        help='Filename for postprocessed data file. Output file will be saved in current directory.',
-    )
 
     return parser
 
