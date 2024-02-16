@@ -91,11 +91,3 @@ valid_dtype = [
     'clinical',
     'survival',
 ]
-
-multi_aliquot_dtype = [
-    'mirna',
-    'segment_cnv_ascat-ngs',
-    'gene-level_ascat-ngs',
-    'somaticmutation_snv',
-    'methylation_epic',
-]

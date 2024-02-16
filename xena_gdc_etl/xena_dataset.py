@@ -35,7 +35,6 @@ from .constants import (
     METADATA_TEMPLATE,
     METADATA_VARIABLES,
     GDC_RELEASE_URL,
-    multi_aliquot_dtype,
 )
 
 
@@ -947,7 +946,7 @@ class GDCOmicset(XenaDataset):
             except Exception:
                 file_dict = {}
             else:
-                if self.xena_dtype in multi_aliquot_dtype and self.xena_dtype != 'mirna' and self.xena_dtype != 'methylation_epic':
+                if self.xena_dtype == 'segment_cnv_ascat-ngs' and self.xena_dtype == 'gene-level_ascat-ngs' and self.xena_dtype == 'somaticmutation_snv':
                     samples_list, duplicate = [], []
                     for index, id in file_df['cases.samples'].items():
                         tumor_types = [s['tissue_type'] for s in id ]
@@ -969,7 +968,7 @@ class GDCOmicset(XenaDataset):
                         samples += submitter_ids 
                     file_df.drop('cases.samples', axis=1, inplace=True)
                     file_df[self.gdc_prefix] = samples
-                elif self.xena_dtype == 'mirna' or self.xena_dtype == 'methylation_epic':
+                else:
                     if 'cases.samples' in file_df.columns:
                         file_df = file_df.explode('cases.samples').reset_index(drop=True)
                         duplicated_df = pd.json_normalize(file_df['cases.samples'])
