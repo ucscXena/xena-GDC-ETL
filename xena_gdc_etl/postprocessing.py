@@ -81,14 +81,23 @@ def postprocess(data_type, df, gdc_data):
             for key, value in gdc_data.items():
                 if column in value: 
                     df.rename(columns={column: key}, inplace=True)
-        processed_df = df.T.groupby(level=0).first().T 
+        duplicated_cols = df.columns.duplicated()
+        duplicated = {list(df.columns)[i] for i, val in enumerate(duplicated_cols) if val}
+        processed_df = df.loc[:, ~duplicated_cols]
+        msg = '\r{} samples had duplicated data. The samples are: {}.'
+        print(msg.format(len(duplicated), ', '.join(duplicated)))
     else:
         df.set_index('sample', inplace=True)
         for index, row in df.iterrows():
             for key, value in gdc_data.items():
                 if index in value: 
                     df.rename(index={index: key}, inplace=True) 
+        df.reset_index(inplace=True)
+        duplicated_rows = df.duplicated()
+        duplicated = {val for i, val in enumerate(df[duplicated_rows]['sample'])}
         processed_df = df.drop_duplicates()
+        msg = '\r{} samples had duplicated data. The samples are: {}.'
+        print(msg.format(len(duplicated), ', '.join(duplicated)))
         
     return processed_df
 
