@@ -946,7 +946,7 @@ class GDCOmicset(XenaDataset):
             except Exception:
                 file_dict = {}
             else:
-                if self.xena_dtype == 'segment_cnv_ascat-ngs' and self.xena_dtype == 'gene-level_ascat-ngs' and self.xena_dtype == 'somaticmutation_snv':
+                if self.xena_dtype == 'segment_cnv_ascat-ngs' or self.xena_dtype == 'gene-level_ascat-ngs' or self.xena_dtype == 'somaticmutation_snv':
                     samples_list, duplicate = [], []
                     for index, id in file_df['cases.samples'].items():
                         tumor_types = [s['tissue_type'] for s in id ]
