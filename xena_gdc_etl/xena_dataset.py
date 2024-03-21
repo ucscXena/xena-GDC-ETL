@@ -51,18 +51,25 @@ def merge_cnv(filelist):
 
     xena_matrix = pd.DataFrame()
     total = len(filelist)
+    workflow = os.path.basename(os.path.dirname(filelist[0]))
     count = 0
     for path in filelist:
-        xena_matrix = pd.concat([xena_matrix, pd.read_csv(path, sep="\t", header=0, usecols=[1, 2, 3, 4]).assign(
-                sample=os.path.basename(path).split('.', 1)[0]
-            )
-        ])
+        if workflow == 'segment_cnv_ascat-ngs':
+            xena_matrix = pd.concat([xena_matrix, pd.read_csv(path, sep="\t", header=0, usecols=[1, 2, 3, 4]).assign(
+                    sample=os.path.basename(path).split('.', 1)[0]
+                )
+            ])
+        else:
+            xena_matrix = pd.concat([xena_matrix, pd.read_csv(path, sep="\t", header=0, usecols=[1, 2, 3, 5]).assign(
+                    sample=os.path.basename(path).split('.', 1)[0]
+                )
+            ])
         count += 1
         print('\rProcessed {}/{} file...'.format(count, total), end='')
         sys.stdout.flush()
     print('\rAll {} files have been processed. '.format(total))
     return xena_matrix.rename(
-        columns={'Chromosome': 'Chrom', 'Copy_Number': 'value'}
+        columns={'Chromosome': 'Chrom', 'Copy_Number': 'value', 'Segment_Mean': 'value'}
     ).set_index('sample')
 
 
@@ -725,6 +732,10 @@ class GDCOmicset(XenaDataset):
             'data_type': 'Copy Number Segment',
             'analysis.workflow_type': 'AscatNGS'
         },
+        'segment_cnv_DNAcopy': {
+            'data_type': 'Copy Number Segment',
+            'analysis.workflow_type': 'DNAcopy'
+        },
         'masked_cnv': {
             'data_type': 'Masked Copy Number Segment',
             'analysis.workflow_type': 'DNAcopy',
@@ -754,6 +765,18 @@ class GDCOmicset(XenaDataset):
             'data_type': 'Gene Level Copy Number',
             'analysis.workflow_type': 'AscatNGS',
         },
+        'gene-level_ascat2': {
+            'data_type': 'Gene Level Copy Number',
+            'analysis.workflow_type': 'ASCAT2',
+        },
+        'gene-level_ascat3': {
+            'data_type': 'Gene Level Copy Number',
+            'analysis.workflow_type': 'ASCAT3',
+        },
+        'gene-level_absolute': {
+            'data_type': 'Gene Level Copy Number',
+            'analysis.workflow_type': 'ABSOLUTE LiftOver',
+        },
         'somaticmutation_snv': {
             'data_type': 'Masked Somatic Mutation',
             'analysis.workflow_type': 'Aliquot Ensemble Somatic Variant Merging and Masking'
@@ -771,6 +794,10 @@ class GDCOmicset(XenaDataset):
             'data_type': 'Methylation Beta Value',
             'platform': 'illumina Human Methylation 450',
         },
+        'protein': {
+            'data_type': 'Protein Expression Quantification',
+            'platform': 'rppa',
+        },
     }
 
     # Prefix in filenames for downloaded files
@@ -782,12 +809,17 @@ class GDCOmicset(XenaDataset):
         'mirna': 'cases.samples.submitter_id',
         'mirna_isoform': 'cases.samples.submitter_id',
         'segment_cnv_ascat-ngs': 'cases.samples.submitter_id',
+        'segment_cnv_DNAcopy' : 'cases.samples.submitter_id',
         'masked_cnv': 'cases.samples.submitter_id',
         'gene-level_ascat-ngs': 'cases.samples.submitter_id',
+        'gene-level_ascat2': 'cases.samples.submitter_id',
+        'gene-level_ascat3': 'cases.samples.submitter_id',
+        'gene-level_absolute': 'cases.samples.submitter_id',
         'somaticmutation_snv': 'cases.samples.submitter_id',
         'methylation_epic': 'cases.samples.submitter_id',
         'methylation27': 'cases.samples.submitter_id',
         'methylation450': 'cases.samples.submitter_id',
+        'protein': 'cases.samples.submitter_id',
     }
 
     # Settings for making Xena matrix from GDC data
@@ -832,32 +864,49 @@ class GDCOmicset(XenaDataset):
         usecols=[1, 3],
         index_name='isoform_coords',
     )
-    _RAWS2MATRIX_FUNCS.update(dict.fromkeys(['segment_cnv_ascat-ngs', 'masked_cnv'], merge_cnv))
+    _RAWS2MATRIX_FUNCS.update(
+        dict.fromkeys(
+            ['segment_cnv_ascat-ngs', 'segment_cnv_DNAcopy', 'masked_cnv'],
+            merge_cnv
+        )
+    )
     _RAWS2MATRIX_FUNCS.update(
         dict.fromkeys(
             ['somaticmutation_snv'],
             snv_maf_matrix,
         )
     )
-    _RAWS2MATRIX_FUNCS['gene-level_ascat-ngs'] = functools.partial(
-        merge_sample_cols,
-        header = 0,
-        usecols=[0, 5],
-        index_name='Ensembl_ID',
-        fillna=True,
-        log2TF=False,
+    _RAWS2MATRIX_FUNCS.update(
+        dict.fromkeys(
+            ['gene-level_ascat-ngs', 'gene-level_ascat2', 'gene-level_ascat3', 'gene-level_absolute'],
+            functools.partial(
+                merge_sample_cols,
+                header = 0,
+                usecols=[0, 5],
+                index_name='Ensembl_ID',
+                fillna=True,
+                log2TF=False,
+            )
+        )
     )
     _RAWS2MATRIX_FUNCS.update(
         dict.fromkeys(
             ['methylation_epic', 'methylation27', 'methylation450'],
             functools.partial(
                 merge_sample_cols,
-                header=0,
+                header=None,
                 usecols=[0, 1],
                 log2TF=False,
                 index_name='Composite Element REF',
             ),
         )
+    )
+    _RAWS2MATRIX_FUNCS['protein'] = functools.partial(
+        merge_sample_cols,
+        header=0,
+        usecols=[0, 5],
+        log2TF=False,
+        index_name='Antigen_ID',
     )
 
     @property
@@ -946,7 +995,7 @@ class GDCOmicset(XenaDataset):
             except Exception:
                 file_dict = {}
             else:
-                if self.xena_dtype == 'segment_cnv_ascat-ngs' or self.xena_dtype == 'gene-level_ascat-ngs' or self.xena_dtype == 'somaticmutation_snv':
+                if self.xena_dtype == 'segment_cnv_ascat-ngs' or self.xena_dtype == 'gene-level_ascat-ngs' or self.xena_dtype == 'gene-level_ascat2' or self.xena_dtype == 'gene-level_ascat3' or self.xena_dtype == 'somaticmutation_snv':
                     samples_list, duplicate = [], []
                     for index, id in file_df['cases.samples'].items():
                         tumor_types = [s['tissue_type'] for s in id ]
@@ -1269,9 +1318,7 @@ class GDCPhenoset(XenaDataset):
                     'submitter_id.samples'
                 )
                 # Remove all empty columns
-                api_clin = api_clin.dropna(axis=1, how='all')
-                # print('Dropping TCGA-**-****-**Z samples ...')
-                # xena_matrix = api_clin[~api_clin.index.str.endswith('Z')]    
+                xena_matrix = api_clin.dropna(axis=1, how='all')  
             else:
                 xena_matrix = api_clin.dropna(axis=1, how='all').set_index(
                     'submitter_id.samples'

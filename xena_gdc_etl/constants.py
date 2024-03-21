@@ -48,14 +48,19 @@ METADATA_TEMPLATE = {
     'mirna': 'template.mirna.meta.json',
     'mirna_isoform': 'template.mirna_isoform.meta.json',
     'segment_cnv_ascat-ngs': 'template.cnv.meta.json', 
+    'segment_cnv_DNAcopy': 'template.cnv.meta.json',
     'masked_cnv': 'template.cnv.meta.json',
     'somaticmutation_snv': 'template.snv.meta.json',
-    'GDC_phenotype': 'template.phenotype.meta.json',
-    'survival': 'template.survival.meta.json',
-    'gene-level_ascat-ngs': 'template.ascat-ngs.meta.json',
+    'gene-level_ascat-ngs': 'template.ascat.meta.json',
+    'gene-level_ascat2': 'template.ascat.meta.json',
+    'gene-level_ascat3': 'template.ascat.meta.json',
+    'gene-level_absolute': 'template.absolute.meta.json',
     'methylation_epic': 'template.methylation.meta.json',
     'methylation27': 'template.methylation.meta.json',
     'methylation450': 'template.methylation.meta.json',
+    'protein': 'template.protein.meta.json',
+    'GDC_phenotype': 'template.phenotype.meta.json',
+    'survival': 'template.survival.meta.json',
 }
 
 # Jinja2 template variables for corresponding "xena_dtype".
@@ -67,11 +72,17 @@ METADATA_VARIABLES = {
     'mirna': {'gdc_type': 'miRNA Expression Quantification'},
     'mirna_isoform': {'gdc_type': 'Isoform Expression Quantification'},
     'segment_cnv_ascat-ngs': {'gdc_type': 'Copy Number Segment'},
+    'segment_cnv_DNAcopy': {'gdc_type': 'Copy Number Segment'},
     'masked_cnv': {'gdc_type': 'Masked Copy Number Segment'},
     'somaticmutation_snv': {'gdc_type': 'Ensemble Somatic Variant'},
+    'gene-level_ascat-ngs': {'gdc_type': 'Gene Level Copy Number'},
+    'gene-level_ascat2': {'gdc_type': 'Gene Level Copy Number'},
+    'gene-level_ascat3': {'gdc_type': 'Gene Level Copy Number'},
+    'gene-level_absolute': {'gdc_type': 'Gene Level Copy Number'},
     'methylation_epic': {'platform_num': 'epic'},
     'methylation27': {'platform_num': '27'},
     'methylation450': {'platform_num': '450'},
+    'protein': {'platform': 'rppa'}
 }
 
 valid_dtype = [
@@ -82,12 +93,17 @@ valid_dtype = [
     'mirna',
     'mirna_isoform',
     'segment_cnv_ascat-ngs', 
+    'segment_cnv_DNAcopy',
     'masked_cnv',
     'somaticmutation_snv',
     'gene-level_ascat-ngs',
+    'gene-level_ascat2',
+    'gene-level_ascat3',
+    'gene-level_absolute',
     'methylation_epic',
     'methylation27',
     'methylation450',
+    'protein',
     'clinical',
     'survival',
 ]
