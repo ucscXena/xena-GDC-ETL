@@ -82,7 +82,7 @@ METADATA_VARIABLES = {
     'methylation_epic': {'platform_num': 'epic'},
     'methylation27': {'platform_num': '27'},
     'methylation450': {'platform_num': '450'},
-    'protein': {'platform': 'rppa'}
+    'protein': {'gdc_type': 'Protein Expression Quantification', 'platform': 'rppa'}
 }
 
 valid_dtype = [
