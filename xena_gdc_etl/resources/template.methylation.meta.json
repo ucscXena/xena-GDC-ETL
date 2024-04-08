@@ -2,7 +2,7 @@
  "min":0.00000,
  "url":"{% if gdc_release %}{{ gdc_release }}, {% endif %}https://api.gdc.cancer.gov/data/",
  "dataSubType":"DNA methylation",
- ":probeMap":"EPIC.hg38.manifest.gencode.v36.probMap",
+ ":probeMap":"{{ probe_map }}",
  "dataProducer":"Genomic Data Commons",
  "label":"Illumina Human Methylation {{ platform_num }}",
  "max":1.00000,
