@@ -786,6 +786,11 @@ class GDCOmicset(XenaDataset):
             'analysis.workflow_type': 'SeSAMe Methylation Beta Estimation',
             'platform': 'illumina methylation epic'
         },
+        'methylation_epic_v2': { 
+            'data_type': 'Methylation Beta Value',
+            'analysis.workflow_type': 'SeSAMe Methylation Beta Estimation',
+            'platform': 'illumina methylation epic v2'
+        },
         'methylation27': {
             'data_type': 'Methylation Beta Value',
             'platform': 'illumina Human Methylation 27',
@@ -817,6 +822,7 @@ class GDCOmicset(XenaDataset):
         'gene-level_absolute': 'cases.samples.submitter_id',
         'somaticmutation_snv': 'cases.samples.submitter_id',
         'methylation_epic': 'cases.samples.submitter_id',
+        'methylation_epic_v2': 'cases.samples.submitter_id',
         'methylation27': 'cases.samples.submitter_id',
         'methylation450': 'cases.samples.submitter_id',
         'protein': 'cases.samples.submitter_id',
@@ -891,7 +897,7 @@ class GDCOmicset(XenaDataset):
     )
     _RAWS2MATRIX_FUNCS.update(
         dict.fromkeys(
-            ['methylation_epic', 'methylation27', 'methylation450'],
+            ['methylation_epic', 'methylation_epic_v2', 'methylation27', 'methylation450'],
             functools.partial(
                 merge_sample_cols,
                 header=None,

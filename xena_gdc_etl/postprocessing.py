@@ -75,7 +75,7 @@ def postprocess(data_type, df, gdc_data):
         pandas.core.frame.DataFrame: Transformed pandas DataFrame.
     """
 
-    sample_columns = ['star_counts', 'star_tpm', 'star_fpkm', 'star_fpkm-uq', 'gene-level_ascat-ngs', 'methylation_epic']
+    sample_columns = ['star_counts', 'star_tpm', 'star_fpkm', 'star_fpkm-uq', 'gene-level_ascat-ngs', 'methylation_epic', 'methylation_epic_v2']
     if data_type in sample_columns:
         for column in df.columns:
             for key, value in gdc_data.items():

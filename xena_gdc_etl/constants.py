@@ -56,6 +56,7 @@ METADATA_TEMPLATE = {
     'gene-level_ascat3': 'template.ascat.meta.json',
     'gene-level_absolute': 'template.absolute.meta.json',
     'methylation_epic': 'template.methylation.meta.json',
+    'methylation_epic_v2': 'template.methylation.meta.json',
     'methylation27': 'template.methylation.meta.json',
     'methylation450': 'template.methylation.meta.json',
     'protein': 'template.protein.meta.json',
@@ -80,6 +81,7 @@ METADATA_VARIABLES = {
     'gene-level_ascat3': {'gdc_type': 'Gene Level Copy Number (ASCAT3)'},
     'gene-level_absolute': {'gdc_type': 'Gene Level Copy Number (ABSOLUTE)'},
     'methylation_epic': {'probe_map': 'EPIC.hg38.manifest.gencode.v36.probMap', 'platform_num': 'epic'},
+    'methylation_epic_v2': {'probe_map': 'EPIC.hg38.manifest.gencode.v36.probMap', 'platform_num': 'epic v2'},
     'methylation27': {'probe_map': 'illuminaMethyl27_hg38_GDC', 'platform_num': '27'},
     'methylation450': {'probe_map': 'illuminaMethyl450_hg38_GDC', 'platform_num': '450'},
     'protein': {'gdc_type': 'Protein Expression Quantification', 'platform': 'rppa'}
@@ -101,6 +103,7 @@ valid_dtype = [
     'gene-level_ascat3',
     'gene-level_absolute',
     'methylation_epic',
+    'methylation_epic_v2',
     'methylation27',
     'methylation450',
     'protein',
