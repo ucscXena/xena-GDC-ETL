@@ -736,30 +736,9 @@ class GDCOmicset(XenaDataset):
             'data_type': 'Copy Number Segment',
             'analysis.workflow_type': 'DNAcopy'
         },
-        'masked_cnv': {
+        'masked_cnv_DNAcopy': {
             'data_type': 'Masked Copy Number Segment',
             'analysis.workflow_type': 'DNAcopy',
-            'cases.samples.sample_type_id': (
-                [
-                    '01',
-                    '02',
-                    '03',
-                    '04',
-                    '05',
-                    '06',
-                    '07',
-                    '08',
-                    '09',
-                    '15',
-                    '16',
-                    '20',
-                    '40',
-                    '50',
-                    '60',
-                    '61',
-                    '99',
-                ]
-            ),
         },
         'gene-level_ascat-ngs': {
             'data_type': 'Gene Level Copy Number',
@@ -815,7 +794,7 @@ class GDCOmicset(XenaDataset):
         'mirna_isoform': 'cases.samples.submitter_id',
         'segment_cnv_ascat-ngs': 'cases.samples.submitter_id',
         'segment_cnv_DNAcopy' : 'cases.samples.submitter_id',
-        'masked_cnv': 'cases.samples.submitter_id',
+        'masked_cnv_DNAcopy': 'cases.samples.submitter_id',
         'gene-level_ascat-ngs': 'cases.samples.submitter_id',
         'gene-level_ascat2': 'cases.samples.submitter_id',
         'gene-level_ascat3': 'cases.samples.submitter_id',
@@ -872,7 +851,7 @@ class GDCOmicset(XenaDataset):
     )
     _RAWS2MATRIX_FUNCS.update(
         dict.fromkeys(
-            ['segment_cnv_ascat-ngs', 'segment_cnv_DNAcopy', 'masked_cnv'],
+            ['segment_cnv_ascat-ngs', 'segment_cnv_DNAcopy', 'masked_cnv_DNAcopy'],
             merge_cnv
         )
     )
@@ -1024,7 +1003,7 @@ class GDCOmicset(XenaDataset):
                     file_df.drop('cases.samples', axis=1, inplace=True)
                     file_df[self.gdc_prefix] = samples
                 else:
-                    if self.xena_dtype == 'segment_cnv_DNAcopy':
+                    if self.xena_dtype == 'segment_cnv_DNAcopy' or 'masked_cnv_DNAcopy':
                         file_df = file_df[file_df['cases.samples.tissue_type'] != 'Normal']
                     if 'cases.samples' in file_df.columns:
                         file_df = file_df.explode('cases.samples').reset_index(drop=True)
