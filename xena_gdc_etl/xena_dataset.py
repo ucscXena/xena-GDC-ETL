@@ -1295,25 +1295,14 @@ class GDCPhenoset(XenaDataset):
                     for n in api_clin.columns
                 }
             )
-            if all([i.startswith('TCGA-') for i in self.projects]):
-                # Remove code 10, Blood Derived Normal, sample:
-                # https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/sample-type-codes
-                sample_mask = api_clin['submitter_id.samples'].map(
-                    lambda s: s[-3:-1] not in ['10']
-                )
-                api_clin = api_clin[sample_mask].set_index(
-                    'submitter_id.samples'
-                )
-                # Remove all empty columns
-                xena_matrix = api_clin.dropna(axis=1, how='all')  
-            else:
-                xena_matrix = api_clin.dropna(axis=1, how='all').set_index(
-                    'submitter_id.samples'
-                )
-                # Remove Blood Derived Normal samples
-                xena_matrix = xena_matrix[xena_matrix['sample_type.samples'].isin(
-                ['Blood Derived Normal']
-                ) == False]
+            api_clin = api_clin.rename(columns={'submitter_id.samples': 'sample'})
+            xena_matrix = api_clin.dropna(axis=1, how='all').set_index(
+                'sample'
+            )
+            # Remove Blood Derived Normal samples
+            xena_matrix = xena_matrix[xena_matrix['sample_type.samples'].isin(
+            ['Blood Derived Normal']
+            ) == False]
         print('Dropping slide samples with no analyte data ...')
         xena_matrix.drop(drop_samples, axis=0, inplace=True, errors='ignore')
         # Transformation done 

@@ -75,7 +75,7 @@ def postprocess(data_type, df, gdc_data):
         pandas.core.frame.DataFrame: Transformed pandas DataFrame.
     """
 
-    sample_columns = ['star_counts', 'star_tpm', 'star_fpkm', 'star_fpkm-uq', 'gene-level_ascat-ngs', 'methylation_epic', 'methylation_epic_v2']
+    sample_columns = ['star_counts', 'star_tpm', 'star_fpkm', 'star_fpkm-uq', 'mirna', 'gene-level_ascat-ngs', 'methylation_epic', 'methylation_epic_v2']
     if data_type in sample_columns:
         for column in df.columns:
             for key, value in gdc_data.items():
@@ -98,7 +98,8 @@ def postprocess(data_type, df, gdc_data):
         processed_df = df.drop_duplicates()
         msg = '\r{} samples had duplicated data. The samples are: {}.'
         print(msg.format(len(duplicated), ', '.join(duplicated)))
-        
+    processed_df.set_index(df.columns[0], inplace=True)
+
     return processed_df
 
 
