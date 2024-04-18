@@ -532,6 +532,8 @@ def get_samples_clinical(projects=None):
                         new_ages.append(float('inf'))
                 age_at_earliest_diagnosis.append(min(new_ages))
         diagnoses_df['xena_derived.diagnoses.age_at_earliest_diagnosis'] = age_at_earliest_diagnosis
+        age_at_earliest_diagnosis_in_years = [days / 365 if type(days) != str else days for days in age_at_earliest_diagnosis]
+        diagnoses_df['xena_derived.diagnoses.age_at_earliest_diagnosis_in_years'] = age_at_earliest_diagnosis_in_years
     except KeyError:
         pass
     try:

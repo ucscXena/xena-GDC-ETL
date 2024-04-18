@@ -1003,7 +1003,7 @@ class GDCOmicset(XenaDataset):
                     file_df.drop('cases.samples', axis=1, inplace=True)
                     file_df[self.gdc_prefix] = samples
                 else:
-                    if self.xena_dtype == 'segment_cnv_DNAcopy' or 'masked_cnv_DNAcopy':
+                    if self.xena_dtype == 'segment_cnv_DNAcopy' or self.xena_dtype == 'masked_cnv_DNAcopy':
                         file_df = file_df[file_df['cases.samples.tissue_type'] != 'Normal']
                     if 'cases.samples' in file_df.columns:
                         file_df = file_df.explode('cases.samples').reset_index(drop=True)
