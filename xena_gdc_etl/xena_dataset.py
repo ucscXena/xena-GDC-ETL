@@ -35,6 +35,7 @@ from .constants import (
     METADATA_TEMPLATE,
     METADATA_VARIABLES,
     GDC_RELEASE_URL,
+    duplicated_dtype,
 )
 
 
@@ -54,14 +55,17 @@ def merge_cnv(filelist):
     workflow = os.path.basename(os.path.dirname(filelist[0]))
     count = 0
     for path in filelist:
+        file_name = os.path.basename(path)
+        UUID_pattern = re.search('.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', file_name, flags=re.I)
+        sample_id = file_name[:UUID_pattern.span()[0]]
         if workflow == 'segment_cnv_ascat-ngs':
             xena_matrix = pd.concat([xena_matrix, pd.read_csv(path, sep="\t", header=0, usecols=[1, 2, 3, 4]).assign(
-                    sample=os.path.basename(path).split('.', 1)[0]
+                    sample=sample_id
                 )
             ])
         else:
             xena_matrix = pd.concat([xena_matrix, pd.read_csv(path, sep="\t", header=0, usecols=[1, 2, 3, 5]).assign(
-                    sample=os.path.basename(path).split('.', 1)[0]
+                    sample=sample_id
                 )
             ])
         count += 1
@@ -78,7 +82,6 @@ def snv_maf_matrix(
         compression='gzip',
         sep='\t',
         comment='#',
-        get_sid=lambda f: os.path.basename(f).split('.', 1)[0],
     ):
     """Transform GDC's MAF data into Xena data matrix.
 
@@ -96,7 +99,9 @@ def snv_maf_matrix(
     """
     sample_dict = {}
     for path in filelist:
-        sample_id = get_sid(path)  # os.path.basename(path).split('.', 1)[0]
+        file_name = os.path.basename(path)
+        UUID_pattern = re.search('.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', file_name, flags=re.I)
+        sample_id = file_name[:UUID_pattern.span()[0]]
         if sample_id not in sample_dict:
             sample_dict[sample_id] = []
         sample_dict[sample_id].append(path)
@@ -148,7 +153,6 @@ def merge_sample_cols(
     skiprows=None, # STAR_Counts file has a row labeling the data
     comment=None,
     index_name='id',
-    get_sid=lambda f: os.path.basename(f).split('.', 1)[0],
     fillna=False,
     log2TF=True,
 ):
@@ -171,7 +175,9 @@ def merge_sample_cols(
     # will be very helpful.
     sample_dict = {}
     for path in filelist:
-        sample_id = get_sid(path)  # os.path.basename(path).split('.', 1)[0]
+        file_name = os.path.basename(path)
+        UUID_pattern = re.search('.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', file_name, flags=re.I)
+        sample_id = file_name[:UUID_pattern.span()[0]]
         if sample_id not in sample_dict:
             sample_dict[sample_id] = []
         sample_dict[sample_id].append(path)
@@ -756,8 +762,14 @@ class GDCOmicset(XenaDataset):
             'data_type': 'Gene Level Copy Number',
             'analysis.workflow_type': 'ABSOLUTE LiftOver',
         },
-        'somaticmutation_snv': {
+        'somaticmutation_wxs': {
             'data_type': 'Masked Somatic Mutation',
+            'experimental_strategy': 'WXS',
+            'analysis.workflow_type': 'Aliquot Ensemble Somatic Variant Merging and Masking'
+        },
+        'somaticmutation_targeted': {
+            'data_type': 'Masked Somatic Mutation',
+            'experimental_strategy': 'Targeted Sequencing',
             'analysis.workflow_type': 'Aliquot Ensemble Somatic Variant Merging and Masking'
         },
         'methylation_epic': { 
@@ -799,7 +811,8 @@ class GDCOmicset(XenaDataset):
         'gene-level_ascat2': 'cases.samples.submitter_id',
         'gene-level_ascat3': 'cases.samples.submitter_id',
         'gene-level_absolute': 'cases.samples.submitter_id',
-        'somaticmutation_snv': 'cases.samples.submitter_id',
+        'somaticmutation_wxs': 'cases.samples.submitter_id',
+        'somaticmutation_targeted': 'cases.samples.submitter_id',
         'methylation_epic': 'cases.samples.submitter_id',
         'methylation_epic_v2': 'cases.samples.submitter_id',
         'methylation27': 'cases.samples.submitter_id',
@@ -857,7 +870,7 @@ class GDCOmicset(XenaDataset):
     )
     _RAWS2MATRIX_FUNCS.update(
         dict.fromkeys(
-            ['somaticmutation_snv'],
+            ['somaticmutation_wxs', 'somaticmutation_targeted'],
             snv_maf_matrix,
         )
     )
@@ -980,7 +993,8 @@ class GDCOmicset(XenaDataset):
             except Exception:
                 file_dict = {}
             else:
-                if self.xena_dtype == 'segment_cnv_ascat-ngs' or self.xena_dtype == 'gene-level_ascat-ngs' or self.xena_dtype == 'gene-level_ascat2' or self.xena_dtype == 'gene-level_ascat3' or self.xena_dtype == 'somaticmutation_snv':
+                if self.xena_dtype in duplicated_dtype:
+                    file_df.to_csv('test.tsv')
                     samples_list, duplicate = [], []
                     for index, id in file_df['cases.samples'].items():
                         tumor_types = [s['tissue_type'] for s in id ]
@@ -1466,24 +1480,13 @@ class GDCSurvivalset(XenaDataset):
             typ='json',
         )
         drop_samples = get_slides({'project.project_id':self.projects})
-        if self.projects[0].startswith('TCGA-'):
-            # case_samples = [c for c in case_samples if 'submitter_sample_ids' in c] # ?
-            samples_df = pd.json_normalize(
-                case_samples, 'samples', 'id'
-            ).rename(columns={'submitter_id': 'sample'})
-            sample_mask = samples_df['sample'].map(
-            lambda s: s[-3:-1] not in ['10']
-            )
-            samples_df = samples_df[sample_mask]
-            # print('Dropping TCGA-**-****-**Z samples ...')
-        else:
-            samples_df = pd.json_normalize(
-                case_samples, 'samples', 'id'
-            )
-            # Remove Blood Derived Normal samples
-            samples_df = samples_df[samples_df['sample_type'].isin(
-                ['Blood Derived Normal']
-            ) == False].rename(columns={'submitter_id': 'sample'})
+        samples_df = pd.json_normalize(
+            case_samples, 'samples', 'id'
+        )
+        # Remove Blood Derived Normal samples
+        samples_df = samples_df[samples_df['sample_type'].isin(
+            ['Blood Derived Normal']
+        ) == False].rename(columns={'submitter_id': 'sample'})
         # Make sample indexed survival matrix
         df = (
             pd.merge(survival_df, samples_df, how='inner', on='id') 

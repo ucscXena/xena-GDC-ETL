@@ -50,7 +50,8 @@ METADATA_TEMPLATE = {
     'segment_cnv_ascat-ngs': 'template.cnv.meta.json', 
     'segment_cnv_DNAcopy': 'template.cnv.meta.json',
     'masked_cnv_DNAcopy': 'template.cnv.meta.json',
-    'somaticmutation_snv': 'template.snv.meta.json',
+    'somaticmutation_wxs': 'template.snv.meta.json',
+    'somaticmutation_targeted': 'template.snv.meta.json',
     'gene-level_ascat-ngs': 'template.ascat.meta.json',
     'gene-level_ascat2': 'template.ascat.meta.json',
     'gene-level_ascat3': 'template.ascat.meta.json',
@@ -75,7 +76,8 @@ METADATA_VARIABLES = {
     'segment_cnv_ascat-ngs': {'gdc_type': 'Copy Number Segment (AscatNGS)'},
     'segment_cnv_DNAcopy': {'gdc_type': 'Copy Number Segment (DNAcopy)'},
     'masked_cnv_DNAcopy': {'gdc_type': 'Masked Copy Number Segment (DNAcopy)'},
-    'somaticmutation_snv': {'gdc_type': 'Ensemble Somatic Variant'},
+    'somaticmutation_wxs': {'gdc_type': 'Ensemble Somatic Variant'},
+    'somaticmutation_targeted': {'gdc_type': 'Ensemble Somatic Variant'},
     'gene-level_ascat-ngs': {'gdc_type': 'Gene Level Copy Number (AscatNGS)'},
     'gene-level_ascat2': {'gdc_type': 'Gene Level Copy Number (ASCAT2)'},
     'gene-level_ascat3': {'gdc_type': 'Gene Level Copy Number (ASCAT3)'},
@@ -97,7 +99,8 @@ valid_dtype = [
     'segment_cnv_ascat-ngs', 
     'segment_cnv_DNAcopy',
     'masked_cnv_DNAcopy',
-    'somaticmutation_snv',
+    'somaticmutation_wxs',
+    'somaticmutation_targeted',
     'gene-level_ascat-ngs',
     'gene-level_ascat2',
     'gene-level_ascat3',
@@ -109,4 +112,13 @@ valid_dtype = [
     'protein',
     'clinical',
     'survival',
+]
+
+duplicated_dtype = [
+    'segment_cnv_ascat-ngs',
+    'gene-level_ascat-ngs',
+    'gene-level_ascat2',
+    'gene-level_ascat3',
+    'somaticmutation_wxs',
+    'somaticmutation_targeted',
 ]
