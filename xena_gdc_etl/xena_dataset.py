@@ -994,7 +994,6 @@ class GDCOmicset(XenaDataset):
                 file_dict = {}
             else:
                 if self.xena_dtype in duplicated_dtype:
-                    file_df.to_csv('test.tsv')
                     samples_list, duplicate = [], []
                     for index, id in file_df['cases.samples'].items():
                         tumor_types = [s['tissue_type'] for s in id ]
