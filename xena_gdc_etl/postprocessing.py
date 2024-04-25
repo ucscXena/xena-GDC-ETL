@@ -111,8 +111,17 @@ def main():
     new_dir = os.path.join(os.path.dirname(os.path.dirname(options.file)), 'Postprocessed_Matrices')
     if not os.path.exists(new_dir):
         os.mkdir(new_dir)
-    gdc_data = get_gdc_data(options.project)
-    processed_df = postprocess(options.datatype, file_df, gdc_data)
+    if options.project == 'BEATAML1.0-COHORT':
+        if options.datatype.startswith('star_'):
+            processed_df = file_df.set_index('Ensembl_ID')
+            for column in file_df.columns:
+                processed_df.rename(columns={column: column[:-1]}, inplace=True)
+        else:
+            file_df['sample'] = file_df['sample'].str[:-1]
+            processed_df = file_df.set_index('sample')
+    else: 
+        gdc_data = get_gdc_data(options.project)
+        processed_df = postprocess(options.datatype, file_df, gdc_data)
     processed_df.to_csv(os.path.join(new_dir, filename), sep='\t')
 
 if __name__ == '__main__':
