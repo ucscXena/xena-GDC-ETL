@@ -483,14 +483,35 @@ def get_samples_clinical(projects=None):
             in_filter = {'project.project_id': [projects]}
 
     # Get available fields for cases dynamically
-    mapping = search('cases/_mapping', typ='json', method='POST')['fields']
+    mapping = search('cases/_mapping', typ='json', method='GET')['fields']
     fields = []
     for field in mapping:
         if not field.startswith('files.') and not field.startswith('summary.'):
             fields.append(field)
-    res = search(
-        'cases', in_filter=in_filter, fields=fields, typ='json', method='POST'
+    half = len(fields)//2
+    fields1 = fields[:half]
+    fields2 = fields[half:]
+
+    # Make API calls and merge data accordingly based on id
+    id_map = {}
+    res = []
+    res1 = search(
+        'cases', in_filter=in_filter, fields=fields1, typ='json', method='POST'
     )
+    res2 = search(
+        'cases', in_filter=in_filter, fields=fields2, typ='json', method='POST'
+    )
+    for c in range(0, len(res2)):
+        id_map[res2[c]['id']] = c
+    for i in range(0, len(res1)):
+        if res1[i]['id'] in id_map:
+            res.append(res1[i] | res2[id_map[res1[i]['id']]])
+            del id_map[res1[i]['id']]
+        elif res1[i]['id'] not in id_map:
+            res.append(res1[i])
+    if len(id_map) != 0:
+        for id in id_map:
+            res.append(res2[id_map[id]])
     # to_drops = set()
     # for ele in res:
     #     to_drops |= set(get_to_drops(ele))

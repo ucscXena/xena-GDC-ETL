@@ -1312,10 +1312,6 @@ class GDCPhenoset(XenaDataset):
             xena_matrix = api_clin.dropna(axis=1, how='all').set_index(
                 'sample'
             )
-            # Remove Blood Derived Normal samples
-            xena_matrix = xena_matrix[xena_matrix['sample_type.samples'].isin(
-            ['Blood Derived Normal']
-            ) == False]
         print('Dropping slide samples with no analyte data ...')
         xena_matrix.drop(drop_samples, axis=0, inplace=True, errors='ignore')
         # Transformation done 
@@ -1482,10 +1478,6 @@ class GDCSurvivalset(XenaDataset):
         samples_df = pd.json_normalize(
             case_samples, 'samples', 'id'
         )
-        # Remove Blood Derived Normal samples
-        samples_df = samples_df[samples_df['sample_type'].isin(
-            ['Blood Derived Normal']
-        ) == False].rename(columns={'submitter_id': 'sample'})
         # Make sample indexed survival matrix
         df = (
             pd.merge(survival_df, samples_df, how='inner', on='id') 
