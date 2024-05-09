@@ -82,10 +82,10 @@ METADATA_VARIABLES = {
     'gene-level_ascat2': {'gdc_type': 'Gene Level Copy Number (ASCAT2)'},
     'gene-level_ascat3': {'gdc_type': 'Gene Level Copy Number (ASCAT3)'},
     'gene-level_absolute': {'gdc_type': 'Gene Level Copy Number (ABSOLUTE)'},
-    'methylation_epic': {'probe_map': 'EPIC.hg38.manifest.gencode.v36.probMap', 'platform_num': 'epic'},
-    'methylation_epic_v2': {'probe_map': 'EPIC.hg38.manifest.gencode.v36.probMap', 'platform_num': 'epic v2'},
-    'methylation27': {'probe_map': 'illuminaMethyl27_hg38_GDC', 'platform_num': '27'},
-    'methylation450': {'probe_map': 'illuminaMethyl450_hg38_GDC', 'platform_num': '450'},
+    'methylation_epic': {'probe_map': 'EPIC.hg38.manifest.gencode.v36.probeMap', 'platform_num': 'epic'},
+    'methylation_epic_v2': {'probe_map': 'EPIC.hg38.manifest.gencode.v36.probeMap', 'platform_num': 'epic v2'},
+    'methylation27': {'probe_map': 'HM27.hg38.manifest.gencode.v36.probeMap', 'platform_num': '27'},
+    'methylation450': {'probe_map': 'HM450.hg38.manifest.gencode.v36.probeMap', 'platform_num': '450'},
     'protein': {'gdc_type': 'Protein Expression Quantification', 'platform': 'rppa'}
 }
 
