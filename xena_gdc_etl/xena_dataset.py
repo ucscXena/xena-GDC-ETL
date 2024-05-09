@@ -1482,11 +1482,11 @@ class GDCSurvivalset(XenaDataset):
         df = (
             pd.merge(survival_df, samples_df, how='inner', on='id') 
             .drop(['id', 'sample_type'], axis=1)
-            .set_index('sample')
+            .rename(columns={'submitter_id': 'sample'})
         )
         print('Dropping slide samples with no analyte data ...')
         df.drop(drop_samples, axis=0, inplace=True, errors='ignore')
-        # df = df[~df.index.str.endswith('Z')]
+        df.set_index('sample', inplace=True)
         mkdir_p(os.path.dirname(self.matrix))
         df.to_csv(self.matrix, sep='\t')
         print('\rXena matrix is saved at {}.'.format(self.matrix))
