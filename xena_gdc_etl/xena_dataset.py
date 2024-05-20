@@ -579,7 +579,7 @@ class XenaDataset(object):
                 for md5 in md5sums:
                     os.remove(os.path.join(dir_name, md5sums[md5]))
                 print(
-                    '\n{} of the existing files are up-to-date. {} files to be updated.'.format(
+                    '\r{} of the existing files are up-to-date. {} files to be updated.'.format(
                         len(download_list), len(self.download_map) - len(download_list)
                     )
                 )
