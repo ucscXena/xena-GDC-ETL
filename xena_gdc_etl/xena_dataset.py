@@ -557,11 +557,20 @@ class XenaDataset(object):
             count = 0
             paths_list = list(self.download_map.keys())
             dir_name = os.path.dirname(paths_list[0])
+            files = os.listdir(dir_name)
             dup_download_map = self.download_map.copy()          
-            if os.path.exists(dir_name) and len(os.listdir(dir_name)) > 0: 
-                files = os.listdir(dir_name)
+            if os.path.exists(dir_name) and len(files) > 0: 
+                print(
+                    '{} existing files have been found at {} of {}.'.format(
+                        len(files), dir_name, self._projects
+                    )
+                )
+                f_count = 0
                 for p in files:
+                    f_count += 1
                     md5sums[(get_md5sum(os.path.join(dir_name, p)))] = p
+                    exist_status = '\r[{:d}/{:d}] Checking if existing file are up to date ...'
+                    print(exist_status.format(f_count, len(files)), end='')
                 for path in paths_list:
                     if dup_download_map[path][0] in md5sums:
                         download_list.append(path)
@@ -570,8 +579,8 @@ class XenaDataset(object):
                 for md5 in md5sums:
                     os.remove(os.path.join(dir_name, md5sums[md5]))
                 print(
-                    '{} up-to-date files have been found at {} of {}.'.format(
-                        len(download_list), dir_name, self.projects
+                    '\n{} of the existing files are up-to-date. {} files to be updated.'.format(
+                        len(download_list), len(self.download_map) - len(download_list)
                     )
                 )
             total = len(self.download_map) - len(download_list)
