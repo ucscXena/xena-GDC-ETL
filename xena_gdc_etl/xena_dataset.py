@@ -24,6 +24,7 @@ import sys
 import warnings
 
 import jinja2
+import hashlib
 from lxml import etree
 import numpy as np
 import pandas as pd
@@ -140,7 +141,6 @@ def snv_maf_matrix(
             }
         )
     )
-
     return xena_matrix
 
 
@@ -223,6 +223,24 @@ def merge_sample_cols(
         return np.log2(xena_matrix + 1)
     else:
         return xena_matrix
+
+
+def get_md5sum(path):
+    """Get md5sum of a file.
+
+    Args:
+        file (str): The path to a Xena data matrix.
+
+    Returns:
+        md5sum (str): The md5sum of a file. 
+    """
+
+    h = hashlib.md5()
+    with open(path, 'rb') as file: 
+        data = file.read()
+        h.update(data)
+    md5sum = h.hexdigest()
+    return md5sum
 
 
 def get_slides(in_filter):
@@ -535,32 +553,48 @@ class XenaDataset(object):
         print('Starts to download...', end='')
         download_list = []
         if self.xena_dtype != 'clinical':
-            total = len(self.download_map)
+            md5sums = {}
+            count = 0
             paths_list = list(self.download_map.keys())
             dir_name = os.path.dirname(paths_list[0])
-            if os.path.exists(dir_name) and len(os.listdir(dir_name)) == total:
-                download_list = paths_list
-            else:
-                count = 0
-                for path, url in self.download_map.items():
-                    count += 1
-                    response = requests_retry_session().get(url, stream=True)
-                    if response.ok:
-                        path = os.path.abspath(path)
-                        status = '\r[{:d}/{:d}] Downloading to "{}" ...'
-                        print(status.format(count, total, path), end='')
-                        sys.stdout.flush()
-                        mkdir_p(os.path.dirname(path))
-                        with open(path, 'wb') as f:
-                            for chunk in response.iter_content(chunk_size):
-                                f.write(chunk)
+            dup_download_map = self.download_map.copy()          
+            if os.path.exists(dir_name) and len(os.listdir(dir_name)) > 0: 
+                files = os.listdir(dir_name)
+                for p in files:
+                    md5sums[(get_md5sum(os.path.join(dir_name, p)))] = p
+                for path in paths_list:
+                    if dup_download_map[path][0] in md5sums:
                         download_list.append(path)
-                    else:
-                        raise IOError(
-                            '\nFail to download file {}. Response {}'.format(
-                                url, response.status_code
-                            )
+                        del md5sums[dup_download_map[path][0]]
+                        del dup_download_map[path]
+                for md5 in md5sums:
+                    os.remove(os.path.join(dir_name, md5sums[md5]))
+                print(
+                    '{} up-to-date files have been found at {} of {}.'.format(
+                        len(download_list), dir_name, self.projects
+                    )
+                )
+            total = len(self.download_map) - len(download_list)
+            for path, data in dup_download_map.items():
+                count += 1
+                url = data[1]
+                response = requests_retry_session().get(url, stream=True)
+                if response.ok:
+                    path = os.path.abspath(path)
+                    status = '\r[{:d}/{:d}] Downloading to "{}" ...'
+                    print(status.format(count, total, path), end='')
+                    sys.stdout.flush()
+                    mkdir_p(os.path.dirname(path))
+                    with open(path, 'wb') as f:
+                        for chunk in response.iter_content(chunk_size):
+                            f.write(chunk)
+                    download_list.append(path)
+                else:
+                    raise IOError(
+                        '\nFail to download file {}. Response {}'.format(
+                            url, response.status_code
                         )
+                    )
         print('')
         self.raw_data_list = download_list
         print(
@@ -982,7 +1016,7 @@ class GDCOmicset(XenaDataset):
             assert self._download_map
             return self._download_map
         except (AttributeError, AssertionError):
-            fields = ['file_id', 'file_name', self.gdc_prefix, 'cases.samples.tissue_type']
+            fields = ['file_id', 'file_name', 'md5sum', self.gdc_prefix, 'cases.samples.tissue_type']
             try:
                 print('Searching for raw data ...', end='')
                 file_df = gdc.search(
@@ -1024,13 +1058,10 @@ class GDCOmicset(XenaDataset):
                         duplicated_df.rename(columns={'submitter_id': 'cases.samples.submitter_id', 'tissue_type': 'cases.samples.tissue_type'}, inplace=True)
                         file_df.fillna(duplicated_df, inplace=True)
                 file_df['name'] = file_df[self.gdc_prefix].astype(str) + '.' + file_df['file_id'].astype(str) + '.' + file_df['file_name'].apply(gdc.get_ext)
-                file_df.set_index('name', inplace=True)
-                file_dict = (
-                    file_df['file_id']
-                ).to_dict()
+                file_dict = file_df.set_index('name').T.to_dict('list')
                 file_dict = {
-                os.path.join(self.raw_data_dir, name): '{}/data/{}'.format(gdc.GDC_API_BASE, uuid)
-                    for name, uuid in file_dict.items()
+                os.path.join(self.raw_data_dir, name): [values[2],'{}/data/{}'.format(gdc.GDC_API_BASE, values[0])]
+                    for name, values in file_dict.items()
                 }
             if not file_dict:
                 msg = '\rNo {} data found for project {}.'
