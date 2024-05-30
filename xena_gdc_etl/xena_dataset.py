@@ -557,19 +557,19 @@ class XenaDataset(object):
             count = 0
             paths_list = list(self.download_map.keys())
             dir_name = os.path.dirname(paths_list[0])
-            files = os.listdir(dir_name)
-            dup_download_map = self.download_map.copy()          
-            if os.path.exists(dir_name) and len(files) > 0: 
+            dup_download_map = self.download_map.copy()  
+            if os.path.exists(dir_name) and len(os.listdir(dir_name)) > 0: 
+                files = os.listdir(dir_name)
+                f_count = 0
                 print(
                     '{} existing files have been found at {} of {}.'.format(
                         len(files), dir_name, self._projects
                     )
                 )
-                f_count = 0
                 for p in files:
                     f_count += 1
                     md5sums[(get_md5sum(os.path.join(dir_name, p)))] = p
-                    exist_status = '\r[{:d}/{:d}] Checking if existing file are up to date ...'
+                    exist_status = '\r[{:d}/{:d}] Checking if existing file are up-to-date ...'
                     print(exist_status.format(f_count, len(files)), end='')
                 for path in paths_list:
                     if dup_download_map[path][0] in md5sums:
@@ -1352,7 +1352,7 @@ class GDCPhenoset(XenaDataset):
             xena_matrix = api_clin.dropna(axis=1, how='all').set_index(
                 'sample'
             )
-        print('Dropping slide samples with no analyte data ...')
+        print('Dropping samples with no analyte data ...')
         xena_matrix.drop(drop_samples, axis=0, inplace=True, errors='ignore')
         # Transformation done 
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
@@ -1524,7 +1524,7 @@ class GDCSurvivalset(XenaDataset):
             .drop(['id', 'sample_type'], axis=1)
             .rename(columns={'submitter_id': 'sample'})
         )
-        print('Dropping slide samples with no analyte data ...')
+        print('Dropping samples with no analyte data ...')
         df.drop(drop_samples, axis=0, inplace=True, errors='ignore')
         df.set_index('sample', inplace=True)
         mkdir_p(os.path.dirname(self.matrix))
