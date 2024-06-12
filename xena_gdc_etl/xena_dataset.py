@@ -59,7 +59,7 @@ def merge_cnv(filelist):
         file_name = os.path.basename(path)
         UUID_pattern = re.search('.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', file_name, flags=re.I)
         sample_id = file_name[:UUID_pattern.span()[0]]
-        if workflow == 'segment_cnv_ascat-ngs':
+        if workflow == 'segment_cnv_ascat-ngs' or workflow == 'allele_cnv_ascat2' or workflow == 'allele_cnv_ascat3':
             xena_matrix = pd.concat([xena_matrix, pd.read_csv(path, sep="\t", header=0, usecols=[1, 2, 3, 4]).assign(
                     sample=sample_id
                 )
@@ -244,7 +244,7 @@ def get_md5sum(path):
 
 
 def get_slides(in_filter):
-    """Find samples with only slides and no analyte data.
+    """Find samples with no analyte data.
 
     Args:
         in_filter (dict): A dict of query conditions which will be
@@ -257,16 +257,23 @@ def get_slides(in_filter):
         list: Samples to be dropped.
     """
 
-    drop_samples = []
-    cases = gdc.search('cases', 
-                        in_filter=in_filter, 
-                        fields=["samples.submitter_id", "samples.portions.analytes.analyte_id"],
-                        typ='json',
-                    )
-    for case in cases:
-        for sample in case['samples']:
-            if 'portions' not in sample:
-                drop_samples.append(sample['submitter_id'])
+    cases = gdc.search(
+        'cases',
+        in_filter=in_filter, 
+        fields=['samples.submitter_id', 'samples.portions.analytes.analyte_id'],
+        typ='json',
+    )
+    drop_samples = [sample['submitter_id'] for case in cases for sample in case['samples'] if 'portions' not in sample]
+    files_filter = {'cases.project.project_id': in_filter['project.project_id'], 'files.data_category': ['copy number variation', 'simple nucleotide variation'], 'access': ['open']}
+    files = gdc.search(
+        'files',
+        in_filter=files_filter,
+        fields=['cases.samples.submitter_id', 'cases.samples.tissue_type'],
+        typ='json',
+    )
+    add_drops = [sample['submitter_id'] for id in files for sample in id['cases'][0]['samples'] if sample['tissue_type'] == 'Normal' if sample['submitter_id'] not in drop_samples]
+    drop_samples = list(set().union(drop_samples, add_drops))
+
     return drop_samples
 
 
@@ -789,6 +796,14 @@ class GDCOmicset(XenaDataset):
             'data_type': 'Masked Copy Number Segment',
             'analysis.workflow_type': 'DNAcopy',
         },
+        'allele_cnv_ascat2': {
+            'data_type': 'Allele-specific Copy Number Segment',
+            'analysis.workflow_type': 'ASCAT2',
+        },
+        'allele_cnv_ascat3': {
+            'data_type': 'Allele-specific Copy Number Segment',
+            'analysis.workflow_type': 'ASCAT3',
+        },
         'gene-level_ascat-ngs': {
             'data_type': 'Gene Level Copy Number',
             'analysis.workflow_type': 'AscatNGS',
@@ -850,6 +865,8 @@ class GDCOmicset(XenaDataset):
         'segment_cnv_ascat-ngs': 'cases.samples.submitter_id',
         'segment_cnv_DNAcopy' : 'cases.samples.submitter_id',
         'masked_cnv_DNAcopy': 'cases.samples.submitter_id',
+        'allele_cnv_ascat2': 'cases.samples.submitter_id',
+        'allele_cnv_ascat3': 'cases.samples.submitter_id',
         'gene-level_ascat-ngs': 'cases.samples.submitter_id',
         'gene-level_ascat2': 'cases.samples.submitter_id',
         'gene-level_ascat3': 'cases.samples.submitter_id',
@@ -907,7 +924,7 @@ class GDCOmicset(XenaDataset):
     )
     _RAWS2MATRIX_FUNCS.update(
         dict.fromkeys(
-            ['segment_cnv_ascat-ngs', 'segment_cnv_DNAcopy', 'masked_cnv_DNAcopy'],
+            ['segment_cnv_ascat-ngs', 'segment_cnv_DNAcopy', 'masked_cnv_DNAcopy', 'allele_cnv_ascat2', 'allele_cnv_ascat3'],
             merge_cnv
         )
     )
@@ -945,9 +962,9 @@ class GDCOmicset(XenaDataset):
     _RAWS2MATRIX_FUNCS['protein'] = functools.partial(
         merge_sample_cols,
         header=0,
-        usecols=[0, 5],
+        usecols=[4, 5],
         log2TF=False,
-        index_name='Antigen_ID',
+        index_name='peptide_target',
     )
 
     @property
