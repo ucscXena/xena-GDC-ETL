@@ -117,6 +117,18 @@ def snv_maf_matrix(
             comment=comment,
             usecols=[0, 4, 5, 6, 10, 12, 15, 36, 39, 41, 51, 139]
         )
+        if df.empty:
+            no_mutation = {
+                'Hugo_Symbol': '',
+                'Chromosome': '',
+                'Start_Position': -1,
+                'End_Position': -1,
+                'Reference_Allele': '',
+                'Tumor_Seq_Allele2': '',
+                'HGVSp_Short': '',
+                'Consequence': '',
+            }
+            df.loc[0] = no_mutation
         df['sample'] = sample_id
         xena_matrix = pd.concat([xena_matrix, df])
         count += len(sample_dict[sample_id])
