@@ -530,8 +530,12 @@ def get_samples_clinical(projects=None):
             diagnoses.setdefault('treatments', [])
             if type(diagnoses['treatments']) == dict:
                 diagnoses['treatments'] = [diagnoses['treatments']]
-    # Some cohorts do not have any diagnosis or treatment data
+            diagnoses.setdefault('pathology_details', [])
+            if type(diagnoses['pathology_details']) == dict:
+                diagnoses['pathology_details'] = [diagnoses['pathology_details']]
+    # Some cohorts do not have any diagnosis, pathology, and/or treatment data
     diagnoses_df = None
+    pathology_df = None
     treatments_df = None
     try: 
         diagnoses_df = pd.json_normalize(reduced_no_samples_json, record_path=['diagnoses'], record_prefix='diagnoses.', meta=['id'])
@@ -558,6 +562,12 @@ def get_samples_clinical(projects=None):
     except KeyError:
         pass
     try:
+        pathology_df = pd.json_normalize(reduced_no_samples_json, record_path=['diagnoses', 'pathology_details'], record_prefix='diagnoses.pathology_details.', meta=['id'])
+        pathology_df = pathology_df.dropna(axis=1, how='all').fillna('').astype(str).groupby('id').agg(list)
+        pathology_df = format_multiple_data(pathology_df)
+    except KeyError:
+        pass
+    try:
         treatments_df = pd.json_normalize(reduced_no_samples_json, record_path=['diagnoses', 'treatments'], record_prefix='diagnoses.treatments.', meta=['id'])
         treatments_df = treatments_df.dropna(axis=1, how='all').fillna('').astype(str).groupby('id').agg(list) 
         treatments_df = format_multiple_data(treatments_df)
@@ -567,7 +577,10 @@ def get_samples_clinical(projects=None):
         del case['diagnoses']
     cases_df = pd.json_normalize(reduced_no_samples_json) 
     if diagnoses_df is not None:
+        diagnoses_df.drop('diagnoses.pathology_details', axis=1, inplace=True, errors='ignore')
         cases_df = pd.merge(cases_df, diagnoses_df, how='left', on='id')
+    if pathology_df is not None:
+        cases_df = pd.merge(cases_df, pathology_df, how='left', on='id')
     if treatments_df is not None:
         cases_df = pd.merge(cases_df, treatments_df, how='left', on='id')
     # In the list of reduced json, "samples" fields for each case are not
