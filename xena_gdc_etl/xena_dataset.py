@@ -138,11 +138,6 @@ def snv_maf_matrix(
     print('\rCalculating "dna_vaf" ...', end='')
     xena_matrix['dna_vaf'] = xena_matrix['t_alt_count'] / xena_matrix['t_depth']
     print('\rRe-organizing matrix ...', end='')
-    no_mutation_samples = set(xena_matrix.index[xena_matrix['start'] == -1].tolist())
-    for sample in no_mutation_samples:
-        if not xena_matrix[(xena_matrix.index == sample) & (xena_matrix['start'] != -1)].empty:
-            remove = (xena_matrix.index == sample) & (xena_matrix['start'] == -1)
-            xena_matrix = xena_matrix[~remove]
     xena_matrix = (
         xena_matrix.drop(['t_alt_count', 't_depth'], axis=1)
         .set_index('sample')
@@ -159,6 +154,11 @@ def snv_maf_matrix(
             }
         )
     )
+    no_mutation_samples = set(xena_matrix.index[xena_matrix['start'] == -1].tolist())
+    for sample in no_mutation_samples:
+        if not xena_matrix[(xena_matrix.index == sample) & (xena_matrix['start'] != -1)].empty:
+            remove = (xena_matrix.index == sample) & (xena_matrix['start'] == -1)
+            xena_matrix = xena_matrix[~remove]
     return xena_matrix
 
 
