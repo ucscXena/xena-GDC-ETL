@@ -63,7 +63,7 @@ METADATA_TEMPLATE = {
     'methylation27': 'template.methylation.meta.json',
     'methylation450': 'template.methylation.meta.json',
     'protein': 'template.protein.meta.json',
-    'GDC_phenotype': 'template.phenotype.meta.json',
+    'clinical': 'template.clinical.meta.json',
     'survival': 'template.survival.meta.json',
 }
 
