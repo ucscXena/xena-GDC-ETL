@@ -100,6 +100,7 @@ TCGA_STUDY_ABBR = {
 }
 
 GDC_DROPPED_FIELDS = {
+    'annotations',
     'aliquot_ids',
     'submitter_aliquot_ids',
     'created_datetime',
@@ -134,6 +135,7 @@ GDC_DROPPED_FIELDS = {
     'slide_ids',
     'analyte_ids',
     'diagnoses',
+    'diagnoses.pathology_details',
     'diagnoses.treatments',
     'family_histories.updated_datetime',
     'family_histories.submitter_id',
@@ -161,15 +163,13 @@ def format_multiple_data(df):
     Returns: 
         pandas.core.frame.DataFrame: Transformed pandas DataFrame.
     """
-    
-    df.drop('diagnoses.treatments', axis=1, inplace=True, errors='ignore')
 
+    df = df.dropna(axis=1, how='all').fillna('').astype(str).groupby('id').agg(list)
     for column in df.columns:
         df[column] = [''.join(x) if len(x) <= 1 and type(x[0]) == str else int(x[0]) if len(x) <= 1 and type(x[0] == int) else x for x in df[column]]
         for index, row in df.iterrows():
             if all(i == '' for i in row[column]):
                 df.loc[index, column] = ''    
-    
     return df
 
 def simple_and_filter(in_dict={}, exclude_dict={}):
@@ -521,25 +521,35 @@ def get_samples_clinical(projects=None):
     )
     for case in reduced_no_samples_json: 
         try:
+            if type(case['annotations']) == dict:
+                case['annotations'] = [case['annotations']]
+        except:
+            case['annotations'] = []
+        try:
             if type(case['diagnoses']) == dict: 
                 case['diagnoses'] = [case['diagnoses']] 
         except: 
             case['diagnoses'] = [] 
     for case in reduced_no_samples_json:
         for diagnoses in case['diagnoses']:
-            diagnoses.setdefault('treatments', [])
-            if type(diagnoses['treatments']) == dict:
-                diagnoses['treatments'] = [diagnoses['treatments']]
             diagnoses.setdefault('pathology_details', [])
             if type(diagnoses['pathology_details']) == dict:
                 diagnoses['pathology_details'] = [diagnoses['pathology_details']]
-    # Some cohorts do not have any diagnosis, pathology, and/or treatment data
+            diagnoses.setdefault('treatments', [])
+            if type(diagnoses['treatments']) == dict:
+                diagnoses['treatments'] = [diagnoses['treatments']]
+    # Some cohorts do not have any diagnosis, pathology, annotations, and/or treatment data
+    annotations_df = None
     diagnoses_df = None
     pathology_df = None
     treatments_df = None
     try: 
+        annotations_df = pd.json_normalize(reduced_no_samples_json, record_path=['annotations'], record_prefix='annotations.', meta=['id'])
+        annotations_df = format_multiple_data(annotations_df)
+    except KeyError:
+        pass
+    try: 
         diagnoses_df = pd.json_normalize(reduced_no_samples_json, record_path=['diagnoses'], record_prefix='diagnoses.', meta=['id'])
-        diagnoses_df = diagnoses_df.dropna(axis=1, how='all').fillna('').astype(str).groupby('id').agg(list)
         diagnoses_df = format_multiple_data(diagnoses_df)
         age_at_earliest_diagnosis = []
         for ages in diagnoses_df['diagnoses.age_at_diagnosis'].values.tolist():
@@ -563,21 +573,20 @@ def get_samples_clinical(projects=None):
         pass
     try:
         pathology_df = pd.json_normalize(reduced_no_samples_json, record_path=['diagnoses', 'pathology_details'], record_prefix='diagnoses.pathology_details.', meta=['id'])
-        pathology_df = pathology_df.dropna(axis=1, how='all').fillna('').astype(str).groupby('id').agg(list)
         pathology_df = format_multiple_data(pathology_df)
     except KeyError:
         pass
     try:
         treatments_df = pd.json_normalize(reduced_no_samples_json, record_path=['diagnoses', 'treatments'], record_prefix='diagnoses.treatments.', meta=['id'])
-        treatments_df = treatments_df.dropna(axis=1, how='all').fillna('').astype(str).groupby('id').agg(list) 
         treatments_df = format_multiple_data(treatments_df)
     except KeyError: 
         pass
     for case in reduced_no_samples_json:
         del case['diagnoses']
     cases_df = pd.json_normalize(reduced_no_samples_json) 
+    if annotations_df is not None:
+        cases_df = pd.merge(cases_df, annotations_df, how='left', on='id')
     if diagnoses_df is not None:
-        diagnoses_df.drop('diagnoses.pathology_details', axis=1, inplace=True, errors='ignore')
         cases_df = pd.merge(cases_df, diagnoses_df, how='left', on='id')
     if pathology_df is not None:
         cases_df = pd.merge(cases_df, pathology_df, how='left', on='id')

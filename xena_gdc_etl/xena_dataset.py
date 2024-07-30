@@ -1383,12 +1383,11 @@ class GDCPhenoset(XenaDataset):
                     for n in api_clin.columns
                 }
             )
-            api_clin = api_clin.rename(columns={'submitter_id.samples': 'sample'})
-            xena_matrix = api_clin.dropna(axis=1, how='all').set_index(
-                'sample'
-            )
+            xena_matrix = api_clin.rename(columns={'submitter_id.samples': 'sample'})
+        xena_matrix.set_index('sample', inplace=True)
         print('Dropping samples with no analyte data ...')
         xena_matrix.drop(drop_samples, axis=0, inplace=True, errors='ignore')
+        xena_matrix.dropna(axis=1, how='all', inplace=True)
         # Transformation done 
         print('\rSaving matrix to {} ...'.format(self.matrix), end='')
         mkdir_p(self.matrix_dir)
