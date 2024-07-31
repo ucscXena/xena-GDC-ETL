@@ -275,23 +275,59 @@ def get_slides(in_filter):
         list: Samples to be dropped.
     """
 
+    keep_samples = []
+    drop_samples = []
+
+    # Get samples associated with transcriptome, proteome, and/or methylation file(s)
+    filter1 = {'cases.project.project_id': in_filter['project.project_id'], 'files.data_category': ['transcriptome profiling', 'proteome profiling', 'dna methylation'], 'access': ['open']}
+    files1 = gdc.search(
+        'files',
+        in_filter=filter1,
+        fields=['cases.samples.submitter_id'],
+        typ='json',
+    )
+    for id in files1:
+        samples = id['cases'][0]['samples']
+        for sample in samples:
+            submitter_id = sample['submitter_id']
+            if submitter_id not in keep_samples:
+                keep_samples.append(submitter_id)
+    # Get 'Tumor' samples associated with copy number variation and/or simple nucleotide variation file(s)
+    filter2  = {'cases.project.project_id': in_filter['project.project_id'], 'files.data_category': ['copy number variation', 'simple nucleotide variation'], 'access': ['open']}
+    files2 = gdc.search(
+        'files',
+        in_filter=filter2,
+        fields=['cases.samples.submitter_id', 'cases.samples.tissue_type'],
+        typ='json',
+    )
+    for id in files2:
+        samples = id['cases'][0]['samples'] 
+        if len(samples) == 1:
+            sample = samples[0]['submitter_id']
+            if sample not in keep_samples:
+                keep_samples.append(sample)
+    for id in files2: 
+        samples = id['cases'][0]['samples']
+        if len(samples) > 1:
+            for sample in samples:
+                submitter_id = sample['submitter_id']
+                if sample['tissue_type'] == 'Normal':
+                    if submitter_id not in keep_samples and submitter_id not in drop_samples:
+                        drop_samples.append(submitter_id)
+                elif sample['tissue_type'] == 'Tumor':
+                    keep_samples.append(submitter_id)
+    # Get samples with no analyte data and not associated with any files
     cases = gdc.search(
         'cases',
         in_filter=in_filter, 
         fields=['samples.submitter_id', 'samples.portions.analytes.analyte_id'],
         typ='json',
     )
-    drop_samples = [sample['submitter_id'] for case in cases for sample in case['samples'] if 'portions' not in sample]
-    files_filter = {'cases.project.project_id': in_filter['project.project_id'], 'files.data_category': ['copy number variation', 'simple nucleotide variation'], 'access': ['open']}
-    files = gdc.search(
-        'files',
-        in_filter=files_filter,
-        fields=['cases.samples.submitter_id', 'cases.samples.tissue_type'],
-        typ='json',
-    )
-    add_drops = [sample['submitter_id'] for id in files for sample in id['cases'][0]['samples'] if sample['tissue_type'] == 'Normal' if sample['submitter_id'] not in drop_samples]
-    drop_samples = list(set().union(drop_samples, add_drops))
-
+    for case in cases:
+        for sample in case['samples']:
+            if 'portions' not in sample:
+                if sample['submitter_id'] not in keep_samples and sample['submitter_id'] not in drop_samples:
+                    drop_samples.append(sample['submitter_id'])
     return drop_samples
 
 
