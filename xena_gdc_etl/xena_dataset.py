@@ -261,8 +261,10 @@ def get_md5sum(path):
     return md5sum
 
 
-def get_slides(in_filter):
-    """Find samples with no analyte data.
+def get_keep_samples(in_filter):
+    """Find samples associated with open access transcriptome profiling,
+    proteome profiling, dna methylation, copy number variation, and simple nucleotide
+    variation file(s).
 
     Args:
         in_filter (dict): A dict of query conditions which will be
@@ -272,63 +274,35 @@ def get_slides(in_filter):
         ``simple_and_filter`` function for details.
 
     Returns: 
-        list: Samples to be dropped.
+        list: Samples to be kept in matrix.
     """
 
     keep_samples = []
-    drop_samples = []
-
-    # Get samples associated with transcriptome, proteome, and/or methylation file(s)
-    filter1 = {'cases.project.project_id': in_filter['project.project_id'], 'files.data_category': ['transcriptome profiling', 'proteome profiling', 'dna methylation'], 'access': ['open']}
-    files1 = gdc.search(
+    f_filter = {'cases.project.project_id': in_filter['project.project_id'], 
+        'files.data_category': ['transcriptome profiling', 'proteome profiling', 'dna methylation', 'copy number variation', 'simple nucleotide variation'],
+        'access': ['open']
+    }
+    files = gdc.search(
         'files',
-        in_filter=filter1,
-        fields=['cases.samples.submitter_id'],
+        in_filter=f_filter,
+        fields=['data_category', 'cases.samples.submitter_id', 'cases.samples.tissue_type'],
         typ='json',
     )
-    for id in files1:
-        samples = id['cases'][0]['samples']
-        for sample in samples:
-            submitter_id = sample['submitter_id']
-            if submitter_id not in keep_samples:
-                keep_samples.append(submitter_id)
-    # Get 'Tumor' samples associated with copy number variation and/or simple nucleotide variation file(s)
-    filter2  = {'cases.project.project_id': in_filter['project.project_id'], 'files.data_category': ['copy number variation', 'simple nucleotide variation'], 'access': ['open']}
-    files2 = gdc.search(
-        'files',
-        in_filter=filter2,
-        fields=['cases.samples.submitter_id', 'cases.samples.tissue_type'],
-        typ='json',
-    )
-    for id in files2:
-        samples = id['cases'][0]['samples'] 
-        if len(samples) == 1:
-            sample = samples[0]['submitter_id']
-            if sample not in keep_samples:
-                keep_samples.append(sample)
-    for id in files2: 
-        samples = id['cases'][0]['samples']
-        if len(samples) > 1:
+    for file in files: 
+        samples = file['cases'][0]['samples']
+        # Get samples associated with transcriptome, proteome, and/or methylation file(s)
+        if file['data_category'] in ['Transcriptome Profiling', 'Proteome Profiling', 'DNA Methylation']:
             for sample in samples:
                 submitter_id = sample['submitter_id']
-                if sample['tissue_type'] == 'Normal':
-                    if submitter_id not in keep_samples and submitter_id not in drop_samples:
-                        drop_samples.append(submitter_id)
-                elif sample['tissue_type'] == 'Tumor':
+                if submitter_id not in keep_samples:
                     keep_samples.append(submitter_id)
-    # Get samples with no analyte data and not associated with any files
-    cases = gdc.search(
-        'cases',
-        in_filter=in_filter, 
-        fields=['samples.submitter_id', 'samples.portions.analytes.analyte_id'],
-        typ='json',
-    )
-    for case in cases:
-        for sample in case['samples']:
-            if 'portions' not in sample:
-                if sample['submitter_id'] not in keep_samples and sample['submitter_id'] not in drop_samples:
-                    drop_samples.append(sample['submitter_id'])
-    return drop_samples
+        # Get 'Tumor' samples associated with copy number variation and/or simple nucleotide variation file(s)
+        if file['data_category'] in ['Copy Number Variation', 'Simple Nucleotide Variation']:
+            for sample in samples: 
+                submitter_id = sample['submitter_id']
+                if sample['tissue_type'] == 'Tumor' and submitter_id not in keep_samples:
+                    keep_samples.append(submitter_id)                 
+    return keep_samples
 
 
 class XenaDataset(object):
@@ -1408,7 +1382,7 @@ class GDCPhenoset(XenaDataset):
 
         message = 'Make Xena matrix for {} data of {}.'
         print(message.format(self.xena_dtype, self.projects))
-        drop_samples = get_slides({'project.project_id':self.projects})
+        keep_samples = get_keep_samples({'project.project_id':self.projects})
         if self.xena_dtype == 'clinical':
             # Query GDC API for GDC harmonized phenotype info
             api_clin = gdc.get_samples_clinical(self.projects)
@@ -1421,7 +1395,9 @@ class GDCPhenoset(XenaDataset):
             )
             xena_matrix = api_clin.rename(columns={'submitter_id.samples': 'sample'})
         xena_matrix.set_index('sample', inplace=True)
-        print('Dropping samples with no analyte data ...')
+        print('Dropping samples with no data ...')
+        matrix_samples = list(xena_matrix.index.values)
+        drop_samples = [sample for sample in matrix_samples if sample not in keep_samples]
         xena_matrix.drop(drop_samples, axis=0, inplace=True, errors='ignore')
         xena_matrix.dropna(axis=1, how='all', inplace=True)
         # Transformation done 
@@ -1584,7 +1560,7 @@ class GDCSurvivalset(XenaDataset):
             fields=['samples.submitter_id', 'samples.sample_type'],
             typ='json',
         )
-        drop_samples = get_slides({'project.project_id':self.projects})
+        keep_samples = get_keep_samples({'project.project_id':self.projects})
         samples_df = pd.json_normalize(
             case_samples, 'samples', 'id'
         )
@@ -1594,8 +1570,10 @@ class GDCSurvivalset(XenaDataset):
             .drop(['id', 'sample_type'], axis=1)
             .rename(columns={'submitter_id': 'sample'})
         )
-        print('Dropping samples with no analyte data ...')
         df.set_index('sample', inplace=True)
+        print('Dropping samples with no data ...')
+        matrix_samples = list(df.index.values)
+        drop_samples = [sample for sample in matrix_samples if sample not in keep_samples]
         df.drop(drop_samples, axis=0, inplace=True, errors='ignore')
         mkdir_p(os.path.dirname(self.matrix))
         df.to_csv(self.matrix, sep='\t')
