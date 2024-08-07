@@ -644,16 +644,16 @@ class XenaDataset(object):
                             url, response.status_code
                         )
                     )
-        if redacted != 0: 
-            r_path = os.path.join(os.getcwd(), "redacted.txt")
-            print('{} files from the GDC are redacted.'.format(redacted))
-            print('Saving list of redacted files to "{}" ...'.format(r_path))
-            with open(
-                r_path,
-                "w",
-            ) as outfile:
-                for f in r_files:
-                    outfile.write('Fail to download file {}. Response 451\n'.format(f))
+            if redacted != 0: 
+                r_path = os.path.join(os.getcwd(), "redacted.txt")
+                print('{} files from the GDC are redacted.'.format(redacted))
+                print('Saving list of redacted files to "{}" ...'.format(r_path))
+                with open(
+                    r_path,
+                    "w",
+                ) as outfile:
+                    for f in r_files:
+                        outfile.write('Fail to download file {}. Response 451\n'.format(f))
         print('')
         self.raw_data_list = download_list
         print(
