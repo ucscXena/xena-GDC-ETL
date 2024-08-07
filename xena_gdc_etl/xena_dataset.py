@@ -590,9 +590,11 @@ class XenaDataset(object):
         if self.xena_dtype != 'clinical':
             md5sums = {}
             count = 0
+            redacted = 0
             paths_list = list(self.download_map.keys())
             dir_name = os.path.dirname(paths_list[0])
             dup_download_map = self.download_map.copy()  
+            r_files = []
             if os.path.exists(dir_name) and len(os.listdir(dir_name)) > 0: 
                 files = os.listdir(dir_name)
                 f_count = 0
@@ -633,12 +635,25 @@ class XenaDataset(object):
                         for chunk in response.iter_content(chunk_size):
                             f.write(chunk)
                     download_list.append(path)
+                elif response.status_code == 451: # Some files from cohorts (such as TARGET-AML) have been redacted from the GDC
+                    redacted += 1
+                    r_files.append(url)
                 else:
                     raise IOError(
                         '\nFail to download file {}. Response {}'.format(
                             url, response.status_code
                         )
                     )
+        if redacted != 0: 
+            r_path = os.path.join(os.getcwd(), "redacted.txt")
+            print('{} files from the GDC are redacted.'.format(redacted))
+            print('Saving list of redacted files to "{}" ...'.format(r_path))
+            with open(
+                r_path,
+                "w",
+            ) as outfile:
+                for f in r_files:
+                    outfile.write('Fail to download file {}. Response 451\n'.format(f))
         print('')
         self.raw_data_list = download_list
         print(
