@@ -1097,35 +1097,22 @@ class GDCOmicset(XenaDataset):
                 file_dict = {}
             else:
                 if self.xena_dtype in duplicated_dtype:
-                    samples_list, duplicate = [], []
-                    for index, id in file_df['cases.samples'].items():
-                        tumor_types = [s['tissue_type'] for s in id ]
-                        num_tumor = tumor_types.count('Tumor')
-                        assert num_tumor >= 1 and tumor_types.count('Normal') >= 1 # Check that file is associated with at least 1 tumor and 1 normal sample
-                        if num_tumor >= 2: # Some projects, such as CPTAC-3, have the same aliquot for multiple samples in a case used for analyses e.g. case C3L-01330
-                            duplicate.extend([index] * (num_tumor - 1))
-                        samples_list += [sample['submitter_id'] for sample in id if sample['tissue_type'] == 'Tumor'] # List of all samples that are tumors
-                    duplicated_df = file_df.iloc[duplicate,:]
-                    file_df = pd.concat([file_df, duplicated_df], ignore_index=True).set_index('file_id', drop=False)
-                    file_df.sort_values(by='id', inplace=True)
-                    indexes = file_df.index.drop_duplicates(keep='first')
-                    samples = []
-                    for index in indexes:
-                        if type(file_df.loc[index, 'cases.samples']) != list:
-                            submitter_ids = [s['submitter_id'] for s in file_df.at[index, 'cases.samples'][0] if s['submitter_id'] in samples_list]
-                        else:
-                            submitter_ids = [s['submitter_id'] for s in file_df.at[index, 'cases.samples'] if s['submitter_id'] in samples_list]
-                        samples += submitter_ids 
-                    file_df.drop('cases.samples', axis=1, inplace=True)
-                    file_df[self.gdc_prefix] = samples
-                else:
-                    if self.xena_dtype == 'segment_cnv_DNAcopy' or self.xena_dtype == 'masked_cnv_DNAcopy':
+                    if 'cases.samples.tissue_type' in file_df.columns:
                         file_df = file_df[file_df['cases.samples.tissue_type'] != 'Normal']
+                    file_df = file_df.rename(columns={'submitter_id': self.gdc_prefix}).dropna(axis=1, how='all')
                     if 'cases.samples' in file_df.columns:
+                        samples_list = [] # List of all samples that are tumors
                         file_df = file_df.explode('cases.samples').reset_index(drop=True)
-                        duplicated_df = pd.json_normalize(file_df['cases.samples'])
-                        duplicated_df.rename(columns={'submitter_id': 'cases.samples.submitter_id', 'tissue_type': 'cases.samples.tissue_type'}, inplace=True)
-                        file_df.fillna(duplicated_df, inplace=True)
+                        normalized_df = pd.json_normalize(file_df['cases.samples'])
+                        file_df = pd.concat([file_df, normalized_df], axis=1).set_index('file_id').rename(columns={'submitter_id': self.gdc_prefix})
+                        files = list(file_df.index.unique())
+                        for file_id in files:
+                            file = file_df.loc[file_id]
+                            if file['tissue_type'].value_counts()['Normal'] >= 1 and file['tissue_type'].value_counts()['Tumor'] >= 1: # Check that file is associated with at least 1 tumor and 1 normal sample
+                                samples_list += file[file['tissue_type'] == 'Tumor'][self.gdc_prefix].to_list() 
+                        file_df = file_df[file_df[self.gdc_prefix].isin(samples_list)]
+                    file_df.reset_index(inplace=True)
+                    file_df = file_df[['file_id', 'file_name', 'md5sum', self.gdc_prefix]]
                 file_df['name'] = file_df[self.gdc_prefix].astype(str) + '.' + file_df['file_id'].astype(str) + '.' + file_df['file_name'].apply(gdc.get_ext)
                 file_dict = file_df.set_index('name').T.to_dict('list')
                 file_dict = {

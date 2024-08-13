@@ -122,6 +122,8 @@ valid_dtype = [
 
 duplicated_dtype = [
     'segment_cnv_ascat-ngs',
+    'segment_cnv_DNAcopy',
+    'masked_cnv_DNAcopy',
     'allele_cnv_ascat2',
     'allele_cnv_ascat3',
     'gene-level_ascat-ngs',
