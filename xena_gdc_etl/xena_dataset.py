@@ -1113,6 +1113,11 @@ class GDCOmicset(XenaDataset):
                         file_df = file_df[file_df[self.gdc_prefix].isin(samples_list)]
                     file_df.reset_index(inplace=True)
                     file_df = file_df[['file_id', 'file_name', 'md5sum', self.gdc_prefix]]
+                else:
+                    if 'cases.samples' in file_df.columns:
+                        file_df = file_df.explode('cases.samples').reset_index(drop=True)
+                        normalized_df = pd.json_normalize(file_df['cases.samples']).rename(columns={'submitter_id': self.gdc_prefix, 'tissue_type': 'cases.samples.tissue_type'})
+                        file_df.fillna(normalized_df, inplace=True)
                 file_df['name'] = file_df[self.gdc_prefix].astype(str) + '.' + file_df['file_id'].astype(str) + '.' + file_df['file_name'].apply(gdc.get_ext)
                 file_dict = file_df.set_index('name').T.to_dict('list')
                 file_dict = {
