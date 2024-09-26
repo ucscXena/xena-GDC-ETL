@@ -1568,6 +1568,11 @@ class GDCSurvivalset(XenaDataset):
             typ='json',
         )
         keep_samples = get_keep_samples({'project.project_id':self.projects})
+        no_survival = []
+        for case in case_samples: # Some cohorts contain cases with no samples, such as TARGET-ALL-P2, TARGET-NBL, and TARGET-OS
+            if 'samples' not in case:
+                no_survival.append(case)
+        case_samples = [c for c in case_samples if c not in no_survival]
         samples_df = pd.json_normalize(
             case_samples, 'samples', 'id'
         )
