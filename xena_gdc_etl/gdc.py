@@ -17,7 +17,11 @@ import warnings
 import pandas as pd
 import requests
 
+from warnings import simplefilter
+simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
+
 from .utils import mkdir_p, reduce_json_array, get_json_objects, get_to_drops
+
 
 GDC_API_BASE = 'https://api.gdc.cancer.gov'
 _SUPPORTED_FILE_TYPES = {
@@ -95,6 +99,78 @@ TCGA_STUDY_ABBR = {
     'UVM': 'Uveal Melanoma',
 }
 
+GDC_DROPPED_FIELDS = {
+    'annotations',
+    'aliquot_ids',
+    'submitter_aliquot_ids',
+    'created_datetime',
+    'sample_ids',
+    'diagnosis_ids',
+    'submitter_sample_ids',
+    'submitter_diagnosis_ids',
+    'updated_datetime',
+    'index_date',
+    'state',
+    'project.dbgap_accession_number',
+    'project.releasable',
+    'project.state',
+    'project.program.dbgap_accession_number',
+    'project.program.program_id',
+    'project.released',
+    'diagnoses.created_datetime',
+    'diagnoses.updated_datetime',
+    'diagnoses.state',
+    'diagnoses.submitter_id',
+    'diagnoses.diagnosis_id',
+    'demographic.submitter_id',
+    'demographic.created_datetime',
+    'demographic.demographic_id',
+    'demographic.updated_datetime',
+    'demographic.state',
+    'submitter_slide_ids',
+    'submitter_analyte_ids',
+    'follow_ups',
+    'portion_ids',
+    'submitter_portion_ids',
+    'slide_ids',
+    'analyte_ids',
+    'diagnoses',
+    'diagnoses.pathology_details',
+    'diagnoses.treatments',
+    'family_histories.updated_datetime',
+    'family_histories.submitter_id',
+    'family_histories.state',
+    'family_histories.created_datetime',
+    'family_histories.family_history_id',
+    'exposures.submitter_id',
+    'exposures.created_datetime',
+    'exposures.updated_datetime',
+    'exposures.exposure_id',
+    'exposures.state',
+    'samples.created_datetime',
+    'samples.updated_datetime',
+    'samples.state',
+    'samples.portions',
+}
+
+def format_multiple_data(df):
+    """Format DataFrame where some samples have multiple data for a single
+    field (e.g., diagnoses, treatments). 
+
+    Args: 
+        df (pandas.core.frame.DataFrame): A DataFrame to be formatted
+        to account for multiple data for a field.
+    Returns: 
+        pandas.core.frame.DataFrame: Transformed pandas DataFrame.
+    """
+
+    df = df.dropna(axis=1, how='all').fillna('').astype(str).groupby('id').agg(list)
+    for column in df.columns:
+        df[column] = [''.join(x) if len(x) <= 1 and type(x[0]) == str else int(x[0]) if len(x) <= 1 and type(x[0] == int) else x for x in df[column]]
+        for index, row in df.iterrows():
+            if all(i == '' for i in row[column]):
+                df.loc[index, column] = ''    
+    return df
 
 def simple_and_filter(in_dict={}, exclude_dict={}):
     """Make a simple GDC API compatible query filter from a dict, in which
@@ -163,7 +239,7 @@ def search(
             https://docs.gdc.cancer.gov/API/Users_Guide/Getting_Started/#api-endpoints
         in_filter (dict, optional): A dict of query conditions which will be
             used to perform the query. Each (key, value) pair represents for
-            one ondition. It will be passed to ``simple_and_filter`` for
+            one condition. It will be passed to ``simple_and_filter`` for
             making a query filter compatible with GDC API. Please check
             ``simple_and_filter`` function for details.
         exclude_filter (dict, optional): An optional dict of query conditions
@@ -241,7 +317,7 @@ def search(
         if typ.lower() == 'json':
             return results
         try:
-            return pd.io.json.json_normalize(reduce_json_array(results))
+            return pd.json_normalize(reduce_json_array(results))
         except Exception:
             warnings.warn(
                 'Fail to convert searching results into table. '
@@ -405,36 +481,117 @@ def get_samples_clinical(projects=None):
             in_filter = {'project.project_id': projects}
         else:
             in_filter = {'project.project_id': [projects]}
-    fields = [
-        'case_id',
-        'created_datetime',
-        'disease_type',
-        'id',
-        'primary_site',
-        'state',
-        'submitter_id',
-        'updated_datetime',
-    ]
-    expand = [
-        'demographic',
-        'diagnoses',
-        'exposures',
-        'family_histories',
-        'project',
-        'samples',
-        'tissue_source_site',
-    ]
-    res = search(
-        'cases', in_filter=in_filter, fields=fields, expand=expand, typ='json'
+
+    # Get available fields for cases dynamically
+    mapping = search('cases/_mapping', typ='json', method='GET')['fields']
+    fields = []
+    for field in mapping:
+        if not field.startswith('files.') and not field.startswith('summary.'):
+            fields.append(field)
+    half = len(fields)//2
+    fields1 = fields[:half]
+    fields2 = fields[half:]
+
+    # Make API calls and merge data accordingly based on id
+    id_map = {}
+    res = []
+    res1 = search(
+        'cases', in_filter=in_filter, fields=fields1, typ='json', method='POST'
     )
-    to_drops = set()
-    for ele in res:
-        to_drops |= set(get_to_drops(ele))
-    print("Dropping columns {} for {} projects".format(to_drops, projects))
+    res2 = search(
+        'cases', in_filter=in_filter, fields=fields2, typ='json', method='POST'
+    )
+    for c in range(0, len(res2)):
+        id_map[res2[c]['id']] = c
+    for i in range(0, len(res1)):
+        if res1[i]['id'] in id_map:
+            res.append(res1[i] | res2[id_map[res1[i]['id']]])
+            del id_map[res1[i]['id']]
+        elif res1[i]['id'] not in id_map:
+            res.append(res1[i])
+    if len(id_map) != 0:
+        for id in id_map:
+            res.append(res2[id_map[id]])
+    # to_drops = set()
+    # for ele in res:
+    #     to_drops |= set(get_to_drops(ele))
+    # print("Dropping columns {} for {} projects".format(to_drops, projects))
     reduced_no_samples_json = reduce_json_array(
         [{k: v for k, v in d.items() if k != 'samples'} for d in res]
     )
-    cases_df = pd.io.json.json_normalize(reduced_no_samples_json)
+    for case in reduced_no_samples_json: 
+        try:
+            if type(case['annotations']) == dict:
+                case['annotations'] = [case['annotations']]
+        except:
+            case['annotations'] = []
+        try:
+            if type(case['diagnoses']) == dict: 
+                case['diagnoses'] = [case['diagnoses']] 
+        except: 
+            case['diagnoses'] = [] 
+    for case in reduced_no_samples_json:
+        for diagnoses in case['diagnoses']:
+            diagnoses.setdefault('pathology_details', [])
+            if type(diagnoses['pathology_details']) == dict:
+                diagnoses['pathology_details'] = [diagnoses['pathology_details']]
+            diagnoses.setdefault('treatments', [])
+            if type(diagnoses['treatments']) == dict:
+                diagnoses['treatments'] = [diagnoses['treatments']]
+    # Some cohorts do not have any diagnosis, pathology, annotations, and/or treatment data
+    annotations_df = None
+    diagnoses_df = None
+    pathology_df = None
+    treatments_df = None
+    try: 
+        annotations_df = pd.json_normalize(reduced_no_samples_json, record_path=['annotations'], record_prefix='annotations.', meta=['id'])
+        annotations_df = format_multiple_data(annotations_df)
+    except KeyError:
+        pass
+    try: 
+        diagnoses_df = pd.json_normalize(reduced_no_samples_json, record_path=['diagnoses'], record_prefix='diagnoses.', meta=['id'])
+        diagnoses_df = format_multiple_data(diagnoses_df)
+        age_at_earliest_diagnosis = []
+        for ages in diagnoses_df['diagnoses.age_at_diagnosis'].values.tolist():
+            if type(ages) == str: 
+                try:
+                    age_at_earliest_diagnosis.append(float(ages))
+                except:
+                    age_at_earliest_diagnosis.append('')
+            else:
+                new_ages = []
+                for age in ages:
+                    try:
+                        new_ages.append(float(age))
+                    except:
+                        new_ages.append(float('inf'))
+                age_at_earliest_diagnosis.append(min(new_ages))
+        diagnoses_df['xena_derived.diagnoses.age_at_earliest_diagnosis'] = age_at_earliest_diagnosis
+        age_at_earliest_diagnosis_in_years = [days / 365 if type(days) != str else days for days in age_at_earliest_diagnosis]
+        diagnoses_df['xena_derived.diagnoses.age_at_earliest_diagnosis_in_years'] = age_at_earliest_diagnosis_in_years
+    except KeyError:
+        pass
+    try:
+        pathology_df = pd.json_normalize(reduced_no_samples_json, record_path=['diagnoses', 'pathology_details'], record_prefix='diagnoses.pathology_details.', meta=['id'])
+        pathology_df = format_multiple_data(pathology_df)
+    except KeyError:
+        pass
+    try:
+        treatments_df = pd.json_normalize(reduced_no_samples_json, record_path=['diagnoses', 'treatments'], record_prefix='diagnoses.treatments.', meta=['id'])
+        treatments_df = format_multiple_data(treatments_df)
+    except KeyError: 
+        pass
+    for case in reduced_no_samples_json:
+        del case['diagnoses']
+    cases_df = pd.json_normalize(reduced_no_samples_json) 
+    if annotations_df is not None:
+        cases_df = pd.merge(cases_df, annotations_df, how='left', on='id')
+    if diagnoses_df is not None:
+        cases_df = pd.merge(cases_df, diagnoses_df, how='left', on='id')
+    if pathology_df is not None:
+        cases_df = pd.merge(cases_df, pathology_df, how='left', on='id')
+    if treatments_df is not None:
+        cases_df = pd.merge(cases_df, treatments_df, how='left', on='id')
     # In the list of reduced json, "samples" fields for each case are not
     # consistently ``list`` (if there is only 1 sample for the case, it will
     # be reduced into "naked" ``dict``). Therefore, it cannot be normalized
@@ -444,14 +601,14 @@ def get_samples_clinical(projects=None):
     #    for r in res:
     #        r.setdefault('samples', [{}])
     #        samples_json.append(r)
-    samples_df = pd.io.json.json_normalize(
+    samples_df = pd.json_normalize(
         [r for r in res if 'samples' in r],
         'samples',
         'id',
         record_prefix='samples.',
     )
     merged_df = pd.merge(cases_df, samples_df, how='inner', on='id')
-    merged_df.drop(list(to_drops), axis=1, inplace=True)
+    merged_df.drop(GDC_DROPPED_FIELDS, axis=1, inplace=True, errors='ignore')
     return merged_df
 
 

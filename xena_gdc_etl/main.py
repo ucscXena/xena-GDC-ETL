@@ -5,14 +5,13 @@ import os
 import pkg_resources
 
 import pandas as pd
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 from .utils import handle_merge_xena
 from .gdc import gdc_check_new, get_project_info
 from .constants import valid_dtype, GDC_RELEASE_URL
 from .xena_dataset import GDCOmicset, GDCPhenoset, GDCSurvivalset
 from .gdc2xena import gdc2xena
-
 
 __version__ = pkg_resources.get_distribution("xena_gdc_etl").version
 
@@ -84,15 +83,18 @@ def main():
         root_dir = os.path.dirname(options.matrix)
         if options.datatype == 'survival':
             dataset = GDCSurvivalset(options.project, root_dir)
-        elif options.datatype == 'raw_phenotype':
-            if options.project.startswith('TCGA'):
-                dataset = GDCPhenoset(
-                    options.project, 'raw_phenotype', root_dir
-                )
-            if options.project.startswith('TARGET'):
-                dataset = GDCPhenoset(options.project, 'clinical', root_dir)
-        elif options.datatype == 'GDC_phenotype':
-            dataset = GDCPhenoset(options.project, 'GDC_phenotype', root_dir)
+        elif options.datatype == 'clinical':
+            dataset = GDCPhenoset(options.project, root_dir)
+        
+        # elif options.datatype == 'raw_phenotype':
+        #     if options.project.startswith('TCGA'):
+        #         dataset = GDCPhenoset(
+        #             options.project, 'raw_phenotype', root_dir
+        #         )
+        #     if options.project.startswith('TARGET'):
+        #         dataset = GDCPhenoset(options.project, 'clinical', root_dir)
+        # elif options.datatype == 'GDC_phenotype':
+        #     dataset = GDCPhenoset(options.project, 'GDC_phenotype', root_dir)
         else:
             dataset = GDCOmicset(options.project, options.datatype, root_dir)
         dataset.matrix = options.matrix

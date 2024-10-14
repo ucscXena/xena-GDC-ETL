@@ -1,0 +1,15 @@
+{"cohort":"{{ xena_cohort }}",
+ "url":"{% if gdc_release %}{{ gdc_release }}, {% endif %}https://api.gdc.cancer.gov/data/",
+ "dataSubType":"protein expression",
+ "dataProducer":"Genomic Data Commons",
+ "label":"{{ gdc_type }}",
+ "colNormalization":true,
+ "wrangling_procedure":"value from different samples are combined into genomicMatrix",
+ "PLATFORM":"{{ platform }}",
+ "type":"genomicMatrix",
+ "wrangler":"Xena GDC ETL script",
+ "version":"{{ date }}",
+ "unit":"normalized RPPA value"{% if notes %},
+ "notes":"{{ notes }}"{% endif %},
+ "description": "More information on the GDC pipeline used to generate this data: https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/RPPA_intro/"
+}

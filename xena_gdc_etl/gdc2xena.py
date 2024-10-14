@@ -32,7 +32,6 @@ import shutil
 from .xena_dataset import (
     GDCOmicset,
     GDCPhenoset,
-    GDCAPIPhenoset,
     GDCSurvivalset,
 )
 
@@ -85,15 +84,8 @@ def gdc2xena(root_dir, projects, xena_dtypes, delete_raw_data=False):
         for dtype in xena_dtypes:
             if dtype == 'survival':
                 dataset = GDCSurvivalset(project, root_dir)
-            elif dtype == 'raw_phenotype':
-                if project.startswith('TCGA'):
-                    dataset = GDCPhenoset(project, 'raw_phenotype', root_dir)
-                if project.startswith('TARGET'):
-                    dataset = GDCPhenoset(project, 'clinical', root_dir)
-            elif dtype == 'GDC_phenotype':
-                dataset = GDCPhenoset(project, 'GDC_phenotype', root_dir)
-            elif dtype == 'Xena_phenotype':
-                dataset = GDCAPIPhenoset(project, root_dir)
+            elif dtype == 'clinical':
+                dataset = GDCPhenoset(project, root_dir)
             else:
                 dataset = GDCOmicset(project, dtype, root_dir)
             try:

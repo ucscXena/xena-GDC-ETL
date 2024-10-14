@@ -6,5 +6,6 @@
  "type":"clinicalMatrix",
  "wrangler":"Xena GDC ETL script",
  "version":"{{ date }}"{% if notes %},
- "notes":"{{ notes }}"{% endif %}
+ "notes":"{{ notes }}"{% endif %},
+ ":clinicalFeature":"featureSetting.tsv",
 }
